@@ -66,6 +66,8 @@ S = S.minimal_cover(cover_type="translation")
 
 # Dynamical orbit closure computation
 O = flatsurf.GL2ROrbitClosure(S)
+print("ambient vector space dimension: %d"%O._U.nrows())
+print("number field degree: %d"%O.base_ring().degree())
 print(O._surface) # underlying pyflatsurf surface
 
 # Prediction for orbit closure
@@ -79,9 +81,39 @@ parabolic = True
 undetermined = 0
 explored = 0
 
+# TODO: we might want to move that in GL2ROrbitClosure
+# TODO: there is a lot of redundancy here since we have some rotation invariance
+# (see https://github.com/flatsurf/sage-flatsurf/issues/35)
+def decomposition_sample(O):
+    max_norm2 = None
+    explored = set()
+    for e in O._surface.edges():
+        v = O._surface.fromEdge(e.positive())
+        v = O.V2sage(O.V2(v))
+        if max_norm2 is None:
+            max_norm2 = v[0]**2 + v[1]**2
+        else:
+            max_norm2 = max(max_norm2, v[0]**2 + v[1]**2)
+        if v[1]:
+            v /= v[1]
+        else:
+            v /= v[0]
+        v.set_immutable()
+        if v not in explored:
+            yield O.decomposition(v, limit=args.depth)
+            explored.add(v)
+
+    # consider unvisited directions twice as long as the edges
+    for d in O.decompositions_depth_first(2*max_norm2, args.depth, visited=explored):
+        yield d
+
+    # pick edges of size what was asked in the script
+    for d in O.decompositions_depth_first(args.bound, args.depth, visited=explored):
+        yield d
+
 # computation
 dim = O.dimension()
-for d in O.decompositions_depth_first(args.bound, args.depth):
+for d in decomposition_sample(O):
     print("Investigating in direction %s "%d.u, end='')
     sys.stdout.flush()
     explored += 1
@@ -103,8 +135,8 @@ for d in O.decompositions_depth_first(args.bound, args.depth):
     O.update_tangent_space_from_flow_decomposition(d)
     new_dim = O.dimension()
     if new_dim != dim:
+        print("new tangent vector(s): dimension increase from %d/%d to %d/%d" % (dim, ambient_dim, new_dim, ambient_dim))
         dim = new_dim
-        print("new tangent vector: dim=%d/%d" % (dim, ambient_dim))
     if dim == ambient_locus.dimension() and (not args.test_complete_periodicity or not cyl_completely_periodic):
         print("nothing more to be investigated")
         break
