@@ -1,5 +1,13 @@
 r"""
 Entrypoint to run surveys.
+
+Execute this file with Python to see possible commands.
+
+Typically, you invoke this providing some source(s) and some target(s), e.g.,
+to compute the orbit closure of all quadrilaterals:
+```
+python survey ngons -n 4 orbit-closure
+```
 """
 #*********************************************************************
 #  This file is part of flatsurf.
@@ -25,6 +33,7 @@ import click
 from .sources import generators
 from .targets import targets
 from .services import Services
+from .scheduler import Scheduler
 
 @click.group(chain=True)
 def survey():
@@ -37,12 +46,21 @@ def survey():
 
     """
 
+
+# Register sources and targets as subcommans of "survey".
 for kind in [generators, targets]:
     for command in kind:
         survey.add_command(command)
 
+
 @survey.resultcallback()
 def process(commands):
+    r"""
+    Run the specified subcommands of ``survey``.
+
+    >>> from click.testing import CliRunner
+    >>> CliRunner().invoke(survey, ["--dry-run", "ngons", "-n", "4", "--limit", 6, "orbit-closure"]).output
+    """
     sources = []
     targets = []
     for command in commands:
@@ -53,31 +71,6 @@ def process(commands):
             targets.append(command)
 
     Scheduler(sources, targets).start()
-
-
-class Scheduler:
-    def __init__(self, sources, targets):
-        self.sources = sources
-        self.targets = targets
-
-    def start(self):
-        for source in self.sources:
-            for item in source:
-                self._work(item)
-
-    def _work(self, source):
-        command = self._render_command(source)
-        self._run(command)
-
-    def _render_command(self, source):
-        from itertools import chain
-        from .sources.surface import Surface
-        services = Services()
-        services.register(Surface, lambda service: source)
-        return list(chain(source.command(), *[target(services).command() for target in self.targets]))
-
-    def _run(self, command):
-        print(command)
 
 
 if __name__ == "__main__": survey()
