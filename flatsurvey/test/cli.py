@@ -1,3 +1,10 @@
+r"""
+Helpers for click CLI testing.
+
+Click's own CliRunner is quite cumbersome to work with in some simple test
+scenarios so we wrap it in more convenient ways here.
+
+"""
 #*********************************************************************
 #  This file is part of flatsurf.
 #
@@ -17,23 +24,25 @@
 #  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
 
-class Services:
+import click
+
+def invoke(command, *args):
     r"""
-    A collection of singleton services.
+    Invoke the click ``command`` with the given list of string arguments.
+
+    >>> @click.command()
+    ... def hello(): print("Hello World")
+    >>> invoke(hello)
+    Hello World
+
+    >>> @click.command()
+    ... def fails(): raise Exception("expected error")
+    >>> invoke(fails)
+    Traceback (most recent call last):
+    ...
+    Exception: expected error
+
     """
-    def __init__(self):
-        self._singletons = {}
-
-    def get(self, service, factory=None):
-        if factory is None:
-            factory = service
-        if service not in self._singletons:
-            self._singletons[service] = factory
-        if callable(self._singletons[service]):
-            self._singletons[service] = self._singletons[service](self)
-        return self._singletons[service]
-
-    def register(self, key, factory):
-        if key in self._singletons:
-            raise ValueError("singleton for this key already registered")
-        self._singletons[key] = factory
+    from click.testing import CliRunner
+    invocation = CliRunner().invoke(command, args, catch_exceptions=False)
+    print(invocation.output.strip())

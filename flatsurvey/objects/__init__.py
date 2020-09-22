@@ -32,4 +32,4 @@ from .pickle import pickle
 
 generators = [ngons]
 
-sources = [ngon, pickle]
+objects = [ngon, pickle]

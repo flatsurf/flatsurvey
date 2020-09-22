@@ -1,8 +1,11 @@
 r"""
-Objects of interest such as translation surfaces loaded from encoded pickles
+Possible targets that can be resolved during a survey.
+
+These targets are automatically registered as commands to the survey and worker
+entrypoints as subcommands.
 """
 #*********************************************************************
-#  This file is part of flatsurf.
+#  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020 Julian Rüth
 #
@@ -17,18 +20,9 @@ Objects of interest such as translation surfaces loaded from encoded pickles
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
+#  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
+from .orbit_closure import orbit_closure
+from .flow_decomposition import cylinder_periodic_direction, completely_cylinder_periodic
 
-import click
-
-@click.command()
-@click.option("--encoded", type=str, required=True, help="a base64 encoded surface")
-def pickle(encoded):
-    r"""
-    Load a base64 encoded pickle
-    """
-    from base64 import b64decode
-    from sage.all import loads
-    encoded = b64decode(encoded.strip().encode('ASCII'))
-    return loads(encoded)
+goals = [orbit_closure, cylinder_periodic_direction, completely_cylinder_periodic]

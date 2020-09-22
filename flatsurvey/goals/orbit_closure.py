@@ -3,9 +3,9 @@ Computes the GL_2(R) orbit closure of a surface
 
 EXAMPLES::
 
-    >>> from survey.sources.ngons import Ngon
+    >>> from survey.objects.ngons import Ngon
     >>> from survey.services import Services
-    >>> from survey.sources.surface import Surface
+    >>> from survey.objects.surface import Surface
     >>> services = Services()
     >>> services.register(Surface, Ngon((1, 5, 10)))
     >>> o = OrbitClosure(services)
@@ -15,7 +15,7 @@ EXAMPLES::
 
 """
 #*********************************************************************
-#  This file is part of flatsurf.
+#  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020 Julian Rüth
 #
@@ -30,39 +30,34 @@ EXAMPLES::
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
+#  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
 import click
 
-from .flow_decomposition import FlowDecompositions
-from .service import Service
+from pinject import copy_args_to_internal_fields
 
-class OrbitClosure(Service):
-    def __init__(self, services):
-        super().__init__(services)
-        from ..sources.surface import Surface
-        self.surface = services.get(Surface)
-        self.complete = False
-        self._decompositions = self._get(FlowDecompositions)
+from .flow_decomposition import FlowDecompositions
+from ..pipeline import Consumer
+from ..util.click.group import GroupedCommand
+
+class OrbitClosure(Consumer):
+    @copy_args_to_internal_fields
+    def __init__(self, surface, report, flow_decompositions):
+        super().__init__(flow_decompositions)
 
     def command(self):
         return ["orbit-closure"]
 
-    def result(self):
-        return self.surface.orbit_closure()
+    def _consume(self, decomposition, cost):
+        orbit_closure = self._surface.orbit_closure()
+        orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
+        self._report.progress(self, "dimension", orbit_closure.dimension(), self._surface._bound)
+        self._report.update(self, orbit_closure, dimension=orbit_closure.dimension(), dense=orbit_closure.dimension() == self._surface._bound or None)
+        assert orbit_closure.dimension() <= self._surface._bound, "%s <= %s"%(orbit_closure.dimension(), self._surface._bound)
+        if orbit_closure.dimension() == self._surface._bound:
+            return Consumer.COMPLETED
+        return not Consumer.COMPLETED
 
-    def resolve(self):
-        while not self.complete and self._decompositions.advance():
-            pass
-
-    def consume(self):
-        if self.complete: return
-        decomposition = self._decompositions.current
-        o = self.surface.orbit_closure()
-        o.update_tangent_space_from_flow_decomposition(decomposition)
-        if o.dimension() == self.surface.ambient_stratum().dimension():
-            self.complete = True
-
-@click.command(name="orbit-closure")
+@click.command(name="orbit-closure", cls=GroupedCommand, group="Goals")
 def orbit_closure():
     return OrbitClosure

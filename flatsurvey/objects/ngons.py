@@ -4,7 +4,7 @@ Translation Surfaces coming from unfoldings of n-gons
 EXAMPLES::
 
     >>> from survey.sources.ngons import Ngon
-    >>> Ngon((1, 2, 3)).translation_cover()
+    >>> Ngon(1, 2, 3).translation_cover()
     TranslationSurface built from 12 polygons
 
 """
@@ -32,6 +32,7 @@ import click
 from sage.all import cached_method
 
 from .surface import Surface
+from ..util.click.group import GroupedCommand
 
 class Ngon(Surface):
     r"""
@@ -47,11 +48,20 @@ class Ngon(Surface):
         TranslationSurface built from 6 polygons
 
     """
-    def __init__(self, angles, length='exact-real'):
+    def __init__(self, *angles, length='exact-real'):
         self.angles = angles
         self.length = length
+        self._name = "-".join([str(a) for a in angles])
+
+    @property
+    def _bound(self):
+        # TODO: Find a better way to pass this information to the worker? Or at least do it properly on the level of Surface.
+        from flatsurf import EquiangularPolygons
+        return EquiangularPolygons(*self.angles).billiard_unfolding_stratum_dimension('half-translation', marked_points=True)
 
     def reference(self):
+        from sage.all import gcd
+
         if len(self.angles) == 3:
             a, b, c = self.angles
             if a == b == 1: return "Veech 1989"
@@ -66,8 +76,24 @@ class Ngon(Surface):
             if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
             if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
 
+        if list(sorted(self.angles)) != list(self.angles):
+            return "Same orbit closure as %s"%(tuple(sorted(self.angles)),)
+
+        if gcd(self.angles) != 1:
+            return "Same as %s"%(tuple(a / gcd(self.angles) for a in self.angles),)
+
+        if len(self.angles) == 4:
+            a, b, c, d = self.angles
+            if a == b and c == 2*a and d == 2*c:
+                return "Cover of a triangle"
+        if len(self.angles) == 5:
+            from itertools import permutations
+            for a, b, c, d, e in permutations(self.angles):
+                if c == 2*a and d == 2*b and e == 3*c:
+                    return "Cover of a triangle"
+
     def __repr__(self):
-        return "Ngon(%r)"%(tuple(self.angles),)
+        return "Ngon%r"%(self.angles,)
 
     @cached_method
     def polygon(self):
@@ -77,31 +103,48 @@ class Ngon(Surface):
         EXAMPLES::
 
             TODO: Why does this doctest not run?
-            >>> Ngon((1, 1, 1)).polygon()
+            >>> Ngon(1, 1, 1).polygon()
 
         """
-        from pyexactreal import ExactReals
         from flatsurf import EquiangularPolygons
         E = EquiangularPolygons(*self.angles)
         if self.length == "exact-real":
-            L = E.lengths_polytope()
+            from pyexactreal import ExactReals
             R = ExactReals(E.base_ring())
+        elif self.length == "e-antic":
+            from pyeantic import RealEmbeddedNumberField
+            R = RealEmbeddedNumberField(E.base_ring())
+        else:
+            raise NotImplementedError(self.length)
+
+        L = E.lengths_polytope()
+        def random_lengths():
+            # TODO: Do this properly in sage-flatsurf
             from sage.all import VectorSpace, span, free_module_element
             U = L.ambient_space().subspace([])
+    
             lengths = free_module_element(R, len(self.angles))
             for ray in L.rays():
                 ray = ray.vector()
-                print(ray)
                 if ray not in U:
                     U += span([ray])
-                    length = R.random_element() if len(lengths) else R.one()
-                    print(length)
+                    length = R.zero()
+                    while not length:
+                        length = R.random_element() if lengths else R.one()
                     lengths += length * ray
-                    print(lengths)
-            print(E(*lengths))
-            return E(*lengths)
-        else:
-            raise NotImplementedError(self.length)
+
+            return lengths
+
+        for n in range(1024):
+            lengths = random_lengths()
+            print(lengths)
+            try:
+                return E(*lengths)
+            except ValueError as e:
+                print(e)
+                pass
+
+        raise Exception("giving up on", E)
 
     @cached_method
     def translation_cover(self):
@@ -116,51 +159,60 @@ class Ngon(Surface):
         E = EquiangularPolygons(*self.angles)
         return E.billiard_unfolding_stratum("half-translation", True)
 
+    @classmethod
+    def to_yaml(cls, representer, self):
+        from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf
+
+        surface = to_pyflatsurf(self.translation_cover())
+        representer.add_representer(type(surface), type(surface).to_yaml)
+
+        return representer.represent_data({
+            'angles': self.angles,
+            'length': self.length,
+            'polygon': self.polygon(),
+            'translation_cover': self.translation_cover(),
+            'surface': surface,
+        })
+
 
 @click.command()
 @click.option("--angle", "-a", multiple=True, type=int, help="inner angles of the polygon in multiples of (N - 2)π/A where N is the number of vertices and A the sum of all provided angles")
-@click.option("--length", type=click.Choice(["exact-real"]), default="exact-real", help="how side lengths are chosen")
+@click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
 def ngon(angle, length):
     r"""
     Construct an n-gon
     """
-    return Ngon(angle, length)
+    return Ngon(*angle, length=length)
 
-@click.command()
+@click.command(cls=GroupedCommand, group="Objects")
 @click.option("--vertices", "-n", type=int, required=True, help="number of vertices")
-@click.option("--length", type=click.Choice(["exact-real"]), default="exact-real", help="how side lengths are chosen")
+@click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
 @click.option("--limit", type=int, default=None, help="maximum sum of angles")
 @click.option("--include-literature", default=False, is_flag=True, help="include ngons described in literature")
-def ngons(vertices, length, limit, include_literature):
+@click.option("--family", type=str, default=None)
+def ngons(vertices, length, limit, include_literature, family):
     r"""
     Return all n-gons with the given characteristics.
     """
     from itertools import count
-    for total_angle in count(start=vertices):
-        if limit is not None and total_angle >= limit:
+    for total_angle in count(start=0):
+        # TODO: Do not allow angles that lead to angles >=2π.
+        if limit is not None and total_angle > limit:
             break
 
-        for angles in partitions(total_angle, vertices):
-            # TODO: Actually, arbitrary permutations are fine.
-            if angles != min(list(rotations(angles)) + list(rotations(reversed(angles)))):
-                continue
-            from sage.all import gcd
-            if gcd(angles) != 1:
-                continue
+        if family:
+            pool = eval(family, {'n': total_angle})
+            if not isinstance(pool, list): pool = [pool]
+        else:
+            pool = partitions(total_angle, vertices)
 
-            if len(angles) == 4:
-                a, b, c, d = angles
-                if a == b and c == 2*a and d == 2*c:
-                    # this quadrilateral is a cover of a triangle
-                    continue
-            # TODO: These don't have to be a < b < c < d in that order actually, i.e., we could have c < b here.
-            if len(angles) == 5:
-                a, b, c, d, e = angles
-                if c == 2*a and d == 2*b and e == 3*c:
-                    # this pentagon is a cover of a triangle
-                    continue
 
-            ngon = Ngon(angles, length)
+        for angles in pool:
+            ngon = Ngon(*angles, length=length)
+
+            if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
+                # angles contains an angle of 2π (or more.)
+                continue
 
             if not include_literature and ngon.reference(): continue
 
