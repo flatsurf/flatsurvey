@@ -121,15 +121,18 @@ class Ngon(Surface):
         def random_lengths():
             # TODO: Do this properly in sage-flatsurf
             from sage.all import VectorSpace, span, free_module_element
+            from random import shuffle
             U = L.ambient_space().subspace([])
     
             lengths = free_module_element(R, len(self.angles))
-            for ray in L.rays():
+            rays = list(L.rays())
+            shuffle(rays)
+            for ray in rays:
                 ray = ray.vector()
                 if ray not in U:
                     U += span([ray])
                     length = R.zero()
-                    while not length:
+                    while length <= 0:
                         length = R.random_element() if lengths else R.one()
                     lengths += length * ray
 
