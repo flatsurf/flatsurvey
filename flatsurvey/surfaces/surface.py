@@ -61,6 +61,14 @@ class Surface:
         from flatsurf import GL2ROrbitClosure
         return GL2ROrbitClosure(self.translation_cover())
 
+    @property
+    def orbit_closure_bound(self):
+        raise NotImplementedError
+
+    def flat_triangulation(self):
+        from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf
+        return self.orbit_closure()._surface
+
     def command(self):
         r"""
         Return command line arguments that can be used to recreate this surface.

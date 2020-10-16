@@ -45,4 +45,5 @@ def invoke(command, *args):
     """
     from click.testing import CliRunner
     invocation = CliRunner().invoke(command, args, catch_exceptions=False)
-    print(invocation.output.strip())
+    output = invocation.output.strip()
+    if output: print(output)

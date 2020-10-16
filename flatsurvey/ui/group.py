@@ -68,6 +68,9 @@ class GroupedCommand(click.Command):
         self.group = kwargs.pop('group', None)
         super().__init__(*args, **kwargs)
 
+    def get_short_help_str(self, limit=None):
+        return super().get_short_help_str(limit=1024)
+
 
 class GroupedOption(click.Option):
     r"""

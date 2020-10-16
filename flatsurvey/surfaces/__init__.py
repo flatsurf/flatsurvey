@@ -1,11 +1,15 @@
 r"""
-Possible targets that can be resolved during a survey.
+Translation Surfaces and Related Structures of Interest
 
-These targets are automatically registered as commands to the survey and worker
-entrypoints as subcommands.
+There are two kinds of closely related structures in the ``sources`` module,
+individual sources, such as a particular unfolding of a polygon, and generators
+of families of such structures such as unfoldings of all triangles.
+
+This module does not expose the actual structures but the ``click`` command
+line interface that is used to generate them.
 """
 #*********************************************************************
-#  This file is part of flatsurvey.
+#  This file is part of flatsurf.
 #
 #        Copyright (C) 2020 Julian Rüth
 #
@@ -20,9 +24,12 @@ entrypoints as subcommands.
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
+#  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
-from .orbit_closure import orbit_closure
-from .flow_decomposition import cylinder_periodic_direction, completely_cylinder_periodic
 
-goals = [orbit_closure, cylinder_periodic_direction, completely_cylinder_periodic]
+from .ngons import ngons, ngon, Ngon
+from .pickle import pickle
+
+generators = [ngons]
+
+commands = [ngon, pickle]

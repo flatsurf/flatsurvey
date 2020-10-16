@@ -101,8 +101,12 @@ class Scheduler:
         from .objects.surface import Surface
 
         # TODO: This code is duplicated between the two __main__s
+        from random import randint
+        lot = randint(0, 2**64)
+
         objects = graph(
             provide('surface', lambda: source),
+            provide('lot', lambda: lot),
             provide('reporters', lambda: reporters),
             provide('goals', lambda: goals),
         )

@@ -13,17 +13,25 @@ TESTS::
     >>> from ..test.cli import invoke
     >>> invoke(worker) # doctest: +NORMALIZE_WHITESPACE
     Usage: worker [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
-      Main command to invoke the worker; specific objects and goals are
-      registered automatically as subcommands.
+      Explore a surface.
     Options:
       --debug
       --help   Show this message and exit.
-    Commands:
-      completely-cylinder-periodic
-      cylinder-periodic-direction
-      ngon                          Construct an n-gon
-      orbit-closure
-      pickle                        Load a base64 encoded pickle
+    Goals:
+      completely-cylinder-periodic  Determine whether for all directions given by
+                                    saddle connections, the decomposition of the
+                                    surface is completely cylinder periodic, i.e.,
+                                    the decomposition consists only of cylinders.
+      cylinder-periodic-direction   Determine whether there is a direction for which
+                                    the surface decomposes into cylinders.
+      orbit-closure                 Determine the GL₂(R) orbit closure.
+    Reports:
+      dynamodb  Report results to the DynamoDB cloud database.
+      log       Write results and progress to a log file.
+      yaml      Write results to a YAML file.
+    Surfaces:
+      ngon    Unfolding of an n-gon with prescribed angles.
+      pickle  A base64 encoded pickle.
 
 """
 #*********************************************************************
@@ -45,26 +53,34 @@ TESTS::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
 
+import sys
 import click
+import pinject
+import collections
 
-import pdb
+import flatsurvey.surfaces
+import flatsurvey.jobs
+import flatsurvey.reporting
 
-from ..objects import objects
-from ..goals import goals
-from ..reports import reporters, Report, Reporter, Log
-from ..objects.surface import Surface
-from ..pipeline import graph, provide
+from flatsurvey.pipeline import Consumer
+from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
+from flatsurvey.ui.group import CommandWithGroups
 
-@click.group(chain=True)
+@click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
 @click.option("--debug", is_flag=True)
 def worker(debug):
     r"""
     Main command to invoke the worker; specific objects and goals are
     registered automatically as subcommands.
+
+    >>> from ..test.cli import invoke
+    >>> invoke(worker)
+
     """
 
 
-for kind in [objects, goals, reporters]:
+# Register subcommands
+for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.reporting.commands]:
     for command in kind:
         worker.add_command(command)
 
@@ -74,43 +90,34 @@ def process(commands, debug):
     r"""
     Run the specified subcommands of ``worker``.
 
+    EXAMPLES:
+
+    We compute the orbit closure of the unfolding of a equilateral triangle,
+    i.e., the torus::
+
     >>> from ..test.cli import invoke
     >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
+    [Ngon(1, 1, 1)] [OrbitClosure] dimension: 2/2
 
     """
-    if debug: import pdb
+    if debug:
+        import pdb
 
     try:
-      source = None
-      goals = []
-      reporters = []
+        bindings = dict(collections.ChainMap({}, *commands))
 
-      for command in commands:
-          if isinstance(command, Surface):
-              if source is not None:
-                  raise ValueError("cannot process more than one source at once")
-              source = command
-          elif Reporter in command.mro():
-              reporters.append(command)
-          else:
-              goals.append(command)
+        binding_specs = list(bindings.values())
+        binding_specs.append(ListBindingSpec("goals",
+            [cls for cls in bindings.keys() if Consumer in cls.mro()]))
+        binding_specs.append(ListBindingSpec("reporters",
+            [cls for cls in bindings.keys() if flatsurvey.reporting.report.Reporter in cls.mro()] or [flatsurvey.reporting.Log]))
+        binding_specs.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
-      if not reporters:
-          reporters = [Log]
+        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=binding_specs)
 
-      objects = graph(
-          provide('surface', lambda: source),
-          provide('reporters', lambda: reporters),
-          provide('goals', lambda: goals),
-      )
+        worker = objects.provide(Worker)
+        worker.start()
 
-      reporters = [objects.provide(reporter) for reporter in reporters]
-      goals = [objects.provide(goal) for goal in goals]
-
-      objects.provide(Worker).start()
-
-      for reporter in reporters:
-          reporter.flush()
     except:
         if debug:
             pdb.post_mortem()
@@ -119,25 +126,29 @@ def process(commands, debug):
 
 class Worker:
     r"""
-    Works on ``goals`` until they are all resolved.
+    Works on a set of ``goals`` until they are all resolved.
 
-    >>> Worker(Services(), [])
-    Worker
+    EXAMPLES::
+
+    >>> goals = [flatsurvey.goals.Trivial()]
+    >>> worker = Worker(goals=goals, reporters=[])
+    >>> worker.start()
 
     """
-    def __init__(self, goals):
-        self._goals = goals
-
-    def  __repr__(self): return "Worker"
+    @pinject.copy_args_to_internal_fields
+    def __init__(self, goals, reporters): pass
 
     def start(self):
         r"""
-        Resolve all registered goals.
-
-        >>> Worker(Services(), []).start()
+        Run until all our goals are resolved.
 
         """
         for goal in self._goals:
             goal.resolve()
+        for goal in self._goals:
+            goal.report()
+        for reporter in self._reporters:
+            reporter.flush()
+
 
 if __name__ == "__main__": worker()

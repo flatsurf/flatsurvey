@@ -3,7 +3,7 @@ import click
 
 from pinject import copy_args_to_internal_fields
 
-from ..util.click.group import GroupedCommand
+from flatsurvey.ui.group import GroupedCommand
 
 from .report import Reporter
 
@@ -22,6 +22,9 @@ class Pickle:
 
 
 class Yaml(Reporter):
+    r"""
+    Write results to a YAML file.
+    """
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=sys.stdout):
         self._data = { 'surface': surface }
@@ -66,11 +69,8 @@ class Yaml(Reporter):
             ret['value'] = value
         return ret
     
-    def update(self, source, result, **kwargs):
+    def result(self, source, result, **kwargs):
         self._data[source.key()] = self._render(result, **kwargs)
-
-    def partial(self, source, result, **kwargs):
-        self._data.get(source.key(), []).append(self._render(result, **kwargs))
 
     def flush(self):
         self._yaml.dump(self._data, self._stream)
@@ -82,11 +82,7 @@ class Yaml(Reporter):
         return ["yaml"] + output
 
 
-@click.command(name="yaml", cls=GroupedCommand, group="Reports")
+@click.command(name="yaml", cls=GroupedCommand, group="Reports", help=Yaml.__doc__)
 @click.option("--output", type=click.File("w"), default=None)
 def yaml(output):
-    class Configured(Yaml):
-        def __init__(self, surface):
-            stream = output or open("%s.yaml"%(surface._name,), "w")
-            super().__init__(surface, stream=stream)
-    return Configured
+    return PartialBindingSpec(Yaml)(stream=output or open("%s.yaml"%(surface._name,), "w"))

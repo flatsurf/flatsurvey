@@ -1,12 +1,5 @@
 r"""
-Translation Surfaces and Related Structures of Interest
-
-There are two kinds of closely related structures in the ``sources`` module,
-individual sources, such as a particular unfolding of a polygon, and generators
-of families of such structures such as unfoldings of all triangles.
-
-This module does not expose the actual structures but the ``click`` command
-line interface that is used to generate them.
+Objects of interest such as translation surfaces loaded from encoded pickles
 """
 #*********************************************************************
 #  This file is part of flatsurf.
@@ -27,9 +20,17 @@ line interface that is used to generate them.
 #  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
 
-from .ngons import ngons, ngon
-from .pickle import pickle
+import click
 
-generators = [ngons]
+from flatsurvey.ui.group import GroupedCommand
 
-objects = [ngon, pickle]
+@click.command(cls=GroupedCommand, group="Surfaces")
+@click.option("--base64", type=str, required=True, help="a base64 encoded surface")
+def pickle(base64):
+    r"""
+    A base64 encoded pickle.
+    """
+    from base64 import b64decode
+    from sage.all import loads
+    encoded = b64decode(base64.strip().encode('ASCII'))
+    return loads(encoded)

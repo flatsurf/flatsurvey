@@ -32,11 +32,13 @@ import click
 from sage.all import cached_method
 
 from .surface import Surface
-from ..util.click.group import GroupedCommand
+from flatsurvey.ui.group import GroupedCommand
+
+from flatsurvey.pipeline.util import PartialBindingSpec
 
 class Ngon(Surface):
     r"""
-    The translation surface coming from the unfolding of an n-gon with prescribed angles.
+    Unfolding of an n-gon with prescribed angles.
 
     EXAMPLES:
 
@@ -48,16 +50,16 @@ class Ngon(Surface):
         TranslationSurface built from 6 polygons
 
     """
-    def __init__(self, *angles, length='exact-real'):
+    def __init__(self, angles, length='exact-real', lengths=None):
         self.angles = angles
         self.length = length
-        self._name = "-".join([str(a) for a in angles])
+        self._lengths.set_cache(lengths)
 
-    @property
-    def _bound(self):
-        # TODO: Find a better way to pass this information to the worker? Or at least do it properly on the level of Surface.
-        from flatsurf import EquiangularPolygons
-        return EquiangularPolygons(*self.angles).billiard_unfolding_stratum_dimension('half-translation', marked_points=True)
+        if any(a == sum(angles) / (len(angles) - 2) for a in angles):
+            print("Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?")
+
+        self._name = "-".join([str(a) for a in angles])
+        self._eliminate_marked_points = True
 
     def reference(self):
         from sage.all import gcd
@@ -82,30 +84,19 @@ class Ngon(Surface):
         if gcd(self.angles) != 1:
             return "Same as %s"%(tuple(a / gcd(self.angles) for a in self.angles),)
 
-        if len(self.angles) == 4:
-            a, b, c, d = self.angles
-            if a == b and c == 2*a and d == 2*c:
-                return "Cover of a triangle"
-        if len(self.angles) == 5:
-            from itertools import permutations
-            for a, b, c, d, e in permutations(self.angles):
-                if c == 2*a and d == 2*b and e == 3*c:
-                    return "Cover of a triangle"
+    @property
+    def orbit_closure_bound(self):
+        if not hasattr(self, "_bound"):
+            from flatsurf import EquiangularPolygons
+            self._bound = EquiangularPolygons(*self.angles).billiard_unfolding_stratum_dimension('half-translation', marked_points=not self._eliminate_marked_points)
+
+        return self._bound
 
     def __repr__(self):
         return "Ngon%r"%(self.angles,)
 
     @cached_method
-    def polygon(self):
-        r"""
-        Return an actual n-gon with concrete lengths selected.
-
-        EXAMPLES::
-
-            TODO: Why does this doctest not run?
-            >>> Ngon(1, 1, 1).polygon()
-
-        """
+    def _lengths(self):
         from flatsurf import EquiangularPolygons
         E = EquiangularPolygons(*self.angles)
         if self.length == "exact-real":
@@ -140,17 +131,43 @@ class Ngon(Surface):
 
         for n in range(1024):
             lengths = random_lengths()
-            print(lengths)
             try:
-                return E(*lengths)
+                E(lengths)
             except ValueError as e:
-                print(e)
-                pass
+                continue
+            return lengths
 
         raise Exception("giving up on", E)
 
     @cached_method
+    def polygon(self):
+        r"""
+        Return an actual n-gon with concrete lengths selected.
+
+        EXAMPLES::
+
+            TODO: Why does this doctest not run?
+            >>> Ngon(1, 1, 1).polygon()
+
+        """
+        from flatsurf import EquiangularPolygons
+        E = EquiangularPolygons(*self.angles)
+
+        return E(self._lengths())
+
+    @cached_method
     def translation_cover(self):
+        S = self._translation_cover()
+        if self._eliminate_marked_points:
+            from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf, to_pyflatsurf
+            S = to_pyflatsurf(S)
+            S.delaunay()
+            S = from_pyflatsurf(S)
+            S = S.erase_marked_points()
+        return S
+
+    @cached_method
+    def _translation_cover(self):
         from flatsurf import similarity_surfaces
         S = similarity_surfaces.billiard(self.polygon())
         S = S.minimal_cover(cover_type="translation")
@@ -177,17 +194,17 @@ class Ngon(Surface):
             'surface': surface,
         })
 
+    def __reduce__(self):
+        return (Ngon, (self.angles, self.length, self._lengths.cache))
 
-@click.command()
+
+@click.command(cls=GroupedCommand, group="Surfaces", help=Ngon.__doc__)
 @click.option("--angle", "-a", multiple=True, type=int, help="inner angles of the polygon in multiples of (N - 2)π/A where N is the number of vertices and A the sum of all provided angles")
 @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
 def ngon(angle, length):
-    r"""
-    Construct an n-gon
-    """
-    return Ngon(*angle, length=length)
+    return PartialBindingSpec(Ngon, name="surface")(angles=angle, length=length)
 
-@click.command(cls=GroupedCommand, group="Objects")
+@click.command(cls=GroupedCommand, group="Surfaces")
 @click.option("--vertices", "-n", type=int, required=True, help="number of vertices")
 @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
 @click.option("--limit", type=int, default=None, help="maximum sum of angles")
@@ -211,10 +228,14 @@ def ngons(vertices, length, limit, include_literature, family):
 
 
         for angles in pool:
-            ngon = Ngon(*angles, length=length)
+            ngon = Ngon(angles, length=length)
 
             if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
                 # angles contains an angle of 2π (or more.)
+                continue
+
+            if any(a == sum(angles) / (len(angles) - 2) for a in angles):
+                # an angle is π
                 continue
 
             if not include_literature and ngon.reference(): continue
