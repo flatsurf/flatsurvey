@@ -210,7 +210,7 @@ class Consumer:
             >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections)
 
             >>> oc.report()
-            [Ngon(1, 3, 5)] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_3(4) (ambient dimension 6)
+            [Ngon((1, 3, 5))] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_3(4) (ambient dimension 6) (dimension: 2) (directions: 0) (directions_with_cylinders: 0) (dense: None)
 
         """
         pass

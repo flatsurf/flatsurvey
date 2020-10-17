@@ -114,9 +114,9 @@ class OrbitClosure(Consumer):
         Run until we find the orbit closure, i.e., investigate in two directions::
 
             >>> assert oc.resolve() == Consumer.COMPLETED
-            [Ngon(1, 3, 5)] [OrbitClosure] dimension: 4/6
-            [Ngon(1, 3, 5)] [OrbitClosure] dimension: 6/6
-            [Ngon(1, 3, 5)] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6)
+            [Ngon((1, 3, 5))] [OrbitClosure] dimension: 4/6
+            [Ngon((1, 3, 5))] [OrbitClosure] dimension: 6/6
+            [Ngon((1, 3, 5))] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
 
         """
         self._directions += 1
@@ -162,7 +162,7 @@ class OrbitClosure(Consumer):
         return not Consumer.COMPLETED
 
     def report(self):
-        if self._resolved is not Consumer.COMPLETED:
+        if self._resolved != Consumer.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
             self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_bound or None)
 

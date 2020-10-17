@@ -93,7 +93,12 @@ class Ngon(Surface):
         return self._bound
 
     def __repr__(self):
-        return "Ngon%r"%(self.angles,)
+        return f"Ngon({self.angles})"
+
+    def _flatsurvey_characteristics(self):
+        return {
+            "angles": list(self.angles)
+        }
 
     @cached_method
     def _lengths(self):
@@ -138,6 +143,9 @@ class Ngon(Surface):
             return lengths
 
         raise Exception("giving up on", E)
+
+    def command(self):
+        raise NotImplementedError
 
     @cached_method
     def polygon(self):
@@ -195,7 +203,16 @@ class Ngon(Surface):
         })
 
     def __reduce__(self):
-        return (Ngon, (self.angles, self.length, self._lengths.cache))
+        return (Ngon, (self.angles, self.length, self._lengths()))
+
+    def __hash__(self):
+        return hash((self.angles, self._lengths()))
+
+    def __eq__(self, other):
+        return isinstance(other, Ngon) and self.angles == other.angles and self._lengths() == other._lengths()
+
+    def __ne__(self, other):
+        return not (self == other)
 
 
 @click.command(cls=GroupedCommand, group="Surfaces", help=Ngon.__doc__)

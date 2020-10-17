@@ -53,10 +53,9 @@ class CompletelyCylinderPeriodic(Consumer):
 
     EXAMPLES::
 
-        >>> from flatsurvey.surfaces.ngons import Ngon
+        >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-        >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
         >>> CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions)
@@ -84,16 +83,30 @@ class CompletelyCylinderPeriodic(Consumer):
             command.append(f"--limit={self._limit}")
         return command
 
+    @classmethod
+    def reduce(self, results):
+        r"""
+        Given a list of historic results, return a final verdict.
+
+        EXAMPLES::
+
+            >>> CompletelyCylinderPeriodic.reduce([None, None])
+            >>> CompletelyCylinderPeriodic.reduce([None, False])
+            False
+
+        """
+        assert not any(results)
+        return False if any(result == False for result in results) else None
+
     def _consume(self, decomposition, cost):
         r"""
         Determine wheter ``decomposition`` is cylinder periodic.
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces.ngons import Ngon
+            >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-            >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
@@ -109,7 +122,7 @@ class CompletelyCylinderPeriodic(Consumer):
         completely cylinder periodic::
 
             >>> ccp.report()
-            [Ngon(1, 1, 1)] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯
+            [Ngon((1, 1, 1))] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
 
         """
         if decomposition.decomposition.minimalComponents():
@@ -128,5 +141,5 @@ class CompletelyCylinderPeriodic(Consumer):
         return not Consumer.COMPLETED
 
     def report(self, result=None, **kwargs):
-        if self._resolved is not Consumer.COMPLETED:
+        if self._resolved != Consumer.COMPLETED:
             self._report.result(self, result, cylinder_periodic_directions=self._cylinder_periodic_directions, undetermined_directions=self._undetermined_directions, **kwargs)

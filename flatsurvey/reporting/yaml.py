@@ -1,11 +1,44 @@
-import sys
+r"""
+Writes computation results as machine readable YAML files.
+
+EXAMPLES::
+
+    >>> from flatsurvey.test.cli import invoke
+    >>> from flatsurvey.worker import worker
+    >>> invoke(worker, "yaml", "--help") # doctest: +NORMALIZE_WHITESPACE
+    Usage: worker yaml [OPTIONS]
+      Writes results to a YAML file.
+    Options:
+      --output FILENAME  [default: derived from surface name]
+      --help             Show this message and exit.
+
+"""
+#*********************************************************************
+#  This file is part of flatsurvey.
+#
+#        Copyright (C) 2020 Julian Rüth
+#
+#  Flatsurvey is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  Flatsurvey is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
+#*********************************************************************
+
 import click
 
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.ui.group import GroupedCommand
 
-from .report import Reporter
+from flatsurvey.reporting.reporter import Reporter
 
 class Pickle:
     def __init__(self, raw):
@@ -23,10 +56,32 @@ class Pickle:
 
 class Yaml(Reporter):
     r"""
-    Write results to a YAML file.
+    Writes results to a YAML file.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.surfaces import Ngon
+        >>> surface = Ngon((1, 1, 1))
+        >>> log = Yaml(surface)
+
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
+        >>> from flatsurvey.reporting import Report
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+        >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions)
+        >>> ccp.report()
+
+        >>> log.flush() # doctest: +ELLIPSIS
+        surface:
+        ...
+        completely-cylinder-periodic:
+        - {cylinder_periodic_directions: 0, undetermined_directions: 0, value: !!null ''}
+
     """
     @copy_args_to_internal_fields
-    def __init__(self, surface, stream=sys.stdout):
+    def __init__(self, surface, stream=None):
+        import sys
+        self._stream = stream or sys.stdout
+
         self._data = { 'surface': surface }
 
         from ruamel.yaml import YAML
@@ -70,19 +125,45 @@ class Yaml(Reporter):
         return ret
     
     def result(self, source, result, **kwargs):
-        self._data[source.key()] = self._render(result, **kwargs)
+        r"""
+        Report that computation ``source`` concluded with ``result``.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> log = Yaml(surface)
+
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
+            >>> from flatsurvey.reporting import Report
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([log]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+
+        Write the first two flow decompositions to the YAML output:
+
+            >>> flow_decompositions.produce()
+            True
+            >>> flow_decompositions.produce()
+            True
+
+            >>> log.flush()
+
+        """
+        self._data.setdefault(str(source), [])
+        self._data[str(source)].append(self._render(result, **kwargs))
 
     def flush(self):
         self._yaml.dump(self._data, self._stream)
         self._stream.flush()
 
+    @classmethod
+    @click.command(name="yaml", cls=GroupedCommand, group="Reports", help=__doc__.split("EXAMPLES")[0])
+    @click.option("--output", type=click.File("w"), default=None, help="[default: derived from surface name]")
+    def click(output):
+        return PartialBindingSpec(Yaml)(stream=output or open("%s.yaml"%(surface._name,), "w"))
+
     def command(self):
-        if self._stream is sys.stdout: output = []
-        else: output = ["--output", self._stream.name]
-        return ["yaml"] + output
-
-
-@click.command(name="yaml", cls=GroupedCommand, group="Reports", help=Yaml.__doc__)
-@click.option("--output", type=click.File("w"), default=None)
-def yaml(output):
-    return PartialBindingSpec(Yaml)(stream=output or open("%s.yaml"%(surface._name,), "w"))
+        import sys
+        command = ["yaml"]
+        if self._stream is not sys.stdout:
+            command.append(f"--output={self._stream.name}")
+        return command

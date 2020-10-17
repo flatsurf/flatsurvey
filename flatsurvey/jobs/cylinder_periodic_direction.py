@@ -100,7 +100,7 @@ class CylinderPeriodicDirection(Consumer):
         cylinder periodic::
 
             >>> flow_decompositions.produce()
-            [Ngon(1, 1, 1)] [CylinderPeriodicDirection] True
+            [Ngon((1, 1, 1))] [CylinderPeriodicDirection] True (directions: 1)
             True
 
         """
@@ -117,5 +117,5 @@ class CylinderPeriodicDirection(Consumer):
         return not Consumer.COMPLETED
 
     def report(self, result=None, **kwargs):
-        if self._resolved is not Consumer.COMPLETED:
+        if self._resolved != Consumer.COMPLETED:
             self._report.result(self, result, directions=self._directions)
