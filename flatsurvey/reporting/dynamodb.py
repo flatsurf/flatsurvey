@@ -209,7 +209,7 @@ class DynamoDB(Reporter):
 
         sha = hashlib.sha256()
         sha.update(raw)
-        key = f"{sha.hexdigest()}.pickle.gz"
+        key = f"pickles/{sha.hexdigest()}.pickle.gz"
 
         compressed = io.BytesIO()
         compressed.write(compress(raw))

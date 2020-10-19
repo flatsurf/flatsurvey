@@ -296,8 +296,6 @@ class Ngons:
     
     
             for angles in pool:
-                ngon = Ngon(angles, length=length)
-    
                 if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
                     # angles contains an angle of 2π (or more.)
                     continue
@@ -305,6 +303,8 @@ class Ngons:
                 if any(a == sum(angles) / (len(angles) - 2) for a in angles):
                     # an angle is π
                     continue
+    
+                ngon = Ngon(angles, length=length)
     
                 if not include_literature and ngon.reference(): continue
     
