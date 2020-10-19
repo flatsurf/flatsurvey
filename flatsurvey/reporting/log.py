@@ -90,7 +90,7 @@ class Log(Reporter):
     @click.option("--output", type=click.File("w"), default=None, help="[default: stdout]")
     def click(output):
         return {
-            "bindings": [ FactoryBindingSpec("log", lambda surface: Log(surface, output or open(f"{surface}.log", "w"))) ],
+            "bindings": [ FactoryBindingSpec("log", lambda surface: Log(surface, output or open(f"{surface.basename()}.log", "w"))) ],
             "reporters": [ Log ],
         }
 

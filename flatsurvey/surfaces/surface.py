@@ -149,6 +149,20 @@ class Surface:
         from sage.all import dumps
         return ["pickle", "--base64", b64encode(dumps(self)).decode('ASCII').strip()]
 
+    def basename(self):
+        r"""
+        Return a prefix for files such as logfiles.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> Ngon((1, 2, 3)).basename()
+            ngon-1-2-3
+
+        """
+        import re
+        return re.sub('[^\\w]+', '-', repr(self)).strip('-').lower()
+
     def __repr__(self):
         raise NotImplementedError("to be able to log results for surfaces we need a printable representation")
 

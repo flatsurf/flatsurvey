@@ -182,7 +182,7 @@ class Yaml(Reporter):
     @click.option("--output", type=click.File("w"), default=None, help="[default: derived from surface name]")
     def click(output):
         return {
-            "bindings": [ FactoryBindingSpec("yaml", lambda surface: Yaml(surface, stream=output or open(f"{surface}.yaml", "w"))) ],
+            "bindings": [ FactoryBindingSpec("yaml", lambda surface: Yaml(surface, stream=output or open(f"{surface.basename()}.yaml", "w"))) ],
             "reporters": [ Yaml ],
         }
 
