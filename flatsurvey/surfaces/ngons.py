@@ -137,7 +137,7 @@ class Ngon(Surface):
         return f"Ngon({self.angles})"
 
     def _flatsurvey_characteristics(self):
-        return { "angles": list(self.angles) }
+        return { "angles": [int(a) for a in self.angles] }
 
     @cached_method
     def _lengths(self):

@@ -63,7 +63,6 @@ class SaddleConnectionOrientations(Processor):
                 vector = type(vector)(vector.x() / vector.y(), vector.y() / vector.y())
             except Exception: pass
 
-
         import cppyy
         flat_triangulation = self._saddle_connections._surface.flat_triangulation()
         source = cppyy.gbl.flatsurf.Vertex.source(connection.source(), flat_triangulation.combinatorial())
@@ -71,6 +70,7 @@ class SaddleConnectionOrientations(Processor):
         if self._seen.find(vector) == self._seen.end():
             self._seen.insert(vector)
             self._current = connection.vector()
+            self._current = type(self._current)(self._current)
             self._notify_consumers(cost)
 
         return not Processor.COMPLETED

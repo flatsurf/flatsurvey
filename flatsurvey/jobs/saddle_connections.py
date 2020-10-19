@@ -60,8 +60,7 @@ class SaddleConnections(Producer):
             self._by_length()
         try:
             self._current = next(self._connections)
-            # TODO: This seems to work around a bug with cppyy. Without this we get a "zero vector has no direction"
-            str(self._current)
+            self._current = type(self._current)(self._current)
             return not Producer.EXHAUSTED
         except StopIteration:
             return Producer.EXHAUSTED
