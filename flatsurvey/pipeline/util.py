@@ -65,15 +65,13 @@ def PartialBindingSpec(prototype, name=None):
 
         >>> class AaaBee:
         ...     def __init__(self, a, b): pass
-        >>> bindings = PartialBindingSpec(AaaBee)(a=1)
-        >>> binding = bindings[AaaBee]
+        >>> binding = PartialBindingSpec(AaaBee)(a=1)
         >>> inspect.signature(binding.provide_aaa_bee)
         <Signature (b)>
 
     We can also explicitly rebind under a different name::
 
-        >>> bindings = PartialBindingSpec(AaaBee, name="bee")(a=1)
-        >>> binding = bindings[AaaBee]
+        >>> binding = PartialBindingSpec(AaaBee, name="bee")(a=1)
         >>> inspect.signature(binding.provide_bee)
         <Signature (b)>
 
@@ -90,7 +88,7 @@ def PartialBindingSpec(prototype, name=None):
         binding = type(f"Partial{prototype.__name__}Binding", (pinject.BindingSpec,), {
             f"provide_{name}": provider,
         })()
-        return {prototype: binding}
+        return binding
     return wrap
 
 
@@ -111,7 +109,7 @@ def FactoryBindingSpec(name, prototype):
     signature = inspect.signature(prototype)
     args = [param for param in signature.parameters.keys()]
     provider = f"def provide_{name}(self, {', '.join(args)}): return prototype({', '.join(args)})"
-    provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {}, f"provide_{name}")
+    provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {'prototype': prototype}, f"provide_{name}")
     provider.__module__ = "__main__"
     binding = type(f"{name}FactoryBinding", (pinject.BindingSpec,), {
         f"provide_{name}": provider

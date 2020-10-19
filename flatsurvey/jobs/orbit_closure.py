@@ -86,7 +86,10 @@ class OrbitClosure(Consumer):
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="abort search after processing that many flow decompositions with cylinders without an increase in dimension")
     @click.option("--expansions", type=int, default=DEFAULT_EXPANSIONS, show_default=True, help="when the --limit has been reached, restart the search with random saddle connections that are twice as long as the ones used previously; repeat this doubling process EXPANSIONS many times")
     def click(limit, expansions):
-        return PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions)
+        return {
+            "goals": [OrbitClosure],
+            "bindings": [PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions)],
+        }
 
     def command(self):
         command = ["orbit-closure"]

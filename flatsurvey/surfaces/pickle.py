@@ -37,6 +37,7 @@ EXAMPLES::
 import click
 
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.pipeline.util import FactoryBindingSpec
 
 @click.command(cls=GroupedCommand, group="Surfaces")
 @click.option("--base64", type=str, required=True, help="a base64 encoded surface")
@@ -47,4 +48,6 @@ def pickle(base64):
     from base64 import b64decode
     from sage.all import loads
     encoded = b64decode(base64.strip().encode('ASCII'))
-    return loads(encoded)
+    return {
+        "bindings": [ FactoryBindingSpec("surface", lambda: loads(encoded))]
+    }

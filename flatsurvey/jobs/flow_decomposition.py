@@ -72,7 +72,9 @@ class FlowDecompositions(Processor):
     @click.command(name="flow-decompositions", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES:')[0])
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="Zorich induction steps to perform before giving up")
     def click(limit):
-        return PartialBindingSpec(FlowDecompositions)(limit=limit)
+        return {
+            'bindings': [ PartialBindingSpec(FlowDecompositions)(limit=limit) ]
+        }
 
     def command(self):
         command = ["flow-decompositions"]

@@ -246,7 +246,9 @@ class Ngon(Surface):
     @click.option("--angle", "-a", multiple=True, type=int, help="inner angles of the polygon in multiples of (N - 2)π/A where N is the number of vertices and A the sum of all provided angles")
     @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
     def click(angle, length):
-        return PartialBindingSpec(Ngon, name="surface")(angles=angle, length=length)
+        return {
+            "bindings": [ PartialBindingSpec(Ngon, name="surface")(angles=angle, length=length) ]
+        }
 
 
 class Ngons:

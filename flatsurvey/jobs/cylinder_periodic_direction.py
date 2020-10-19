@@ -71,8 +71,11 @@ class CylinderPeriodicDirection(Consumer):
     @classmethod
     @click.command(name="cylinder-periodic-direction", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, help="stop search after having looked at that many flow decompositions  [default: no limit]")
-    def click():
-        return PartialBinding(CylinderPeriodicDirection)(limit=limit)
+    def click(limit):
+        return {
+            'bindings': [ PartialBindingSpec(CylinderPeriodicDirection)(limit=limit) ],
+            'goals': [ CylinderPeriodicDirection ],
+        }
 
     def command(self):
         command = ["cylinder-periodic-direction"]

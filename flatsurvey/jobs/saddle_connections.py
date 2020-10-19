@@ -69,7 +69,9 @@ class SaddleConnections(Producer):
     @classmethod
     @click.command(name="saddle-connections", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES')[0])
     def click():
-        return SaddleConnections
+        return {
+            'bindings': SaddleConnections
+        }
 
     def command(self):
         return ["saddle-connections"]

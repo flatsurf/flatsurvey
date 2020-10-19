@@ -44,6 +44,7 @@ from pinject import copy_args_to_internal_fields
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.pipeline.util import PartialBindingSpec
 
 class DynamoDB(Reporter):
     r"""
@@ -69,39 +70,43 @@ class DynamoDB(Reporter):
         import boto3
         self._dynamodb = boto3.client("dynamodb", region_name=region)
 
-        self._dynamodb.create_table(TableName=table,
-            AttributeDefinitions=[{
-                "AttributeName": "uuid",
-                "AttributeType": "S",
-            }, {
-                "AttributeName": "surface-key",
-                "AttributeType": "S",
-            }, {
-                "AttributeName": "job",
-                "AttributeType": "S",
-            }],
-            KeySchema=[{
-                "AttributeName": "uuid",
-                "KeyType": "HASH",
-            }],
-            GlobalSecondaryIndexes=[{
-                "IndexName": "surface-job",
-                "KeySchema": [{
+        existing_tables = self._dynamodb.list_tables()['TableNames']
+        if table not in existing_tables:
+            self._dynamodb.create_table(TableName=table,
+                AttributeDefinitions=[{
+                    "AttributeName": "uuid",
+                    "AttributeType": "S",
+                }, {
                     "AttributeName": "surface-key",
-                    "KeyType": "HASH",
+                    "AttributeType": "S",
                 }, {
                     "AttributeName": "job",
-                    "KeyType": "RANGE",
+                    "AttributeType": "S",
                 }],
-                "Projection": {
-                    "ProjectionType": "KEYS_ONLY",
-                },
-            }])
+                KeySchema=[{
+                    "AttributeName": "uuid",
+                    "KeyType": "HASH",
+                }],
+                GlobalSecondaryIndexes=[{
+                    "IndexName": "surface-job",
+                    "KeySchema": [{
+                        "AttributeName": "surface-key",
+                        "KeyType": "HASH",
+                    }, {
+                        "AttributeName": "job",
+                        "KeyType": "RANGE",
+                    }],
+                    "Projection": {
+                        "ProjectionType": "KEYS_ONLY",
+                    },
+                }],
+                BillingMode="PAY_PER_REQUEST")
 
-        self._dynamodb.get_waiter('table_exists').wait(TableName=table)
+            self._dynamodb.get_waiter('table_exists').wait(TableName=table)
 
         self._s3 = boto3.client("s3", region_name=region)
-        self._s3.create_bucket(Bucket=bucket)
+        if not any(b['Name'] == bucket for b in self._s3.list_buckets()['Buckets']):
+            self._s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": region})
 
     @classmethod
     def table(self, table=DEFAULT_TABLE, region=DEFAULT_REGION):
@@ -252,10 +257,14 @@ class DynamoDB(Reporter):
         characteristics = item._flatsurvey_characteristics() if hasattr(item, "_flatsurvey_characteristics") else {}
 
         from pickle import dumps
+        try:
+            dump = dumps(item)
+        except Exception as e:
+            dump = ("Failed: " + str(e)).encode('UTF-8')
         return {
             **characteristics,
             "description": str(item),
-            "pickle": self.s3(dumps(item)),
+            "pickle": self.s3(dump),
         };
 
     def result(self, job, result, **kwargs):
@@ -291,7 +300,10 @@ class DynamoDB(Reporter):
     @click.option("--table", type=str, default=DEFAULT_TABLE, show_default=True, help="DynamoDB table to write to")
     @click.option("--bucket", type=str, default=DEFAULT_BUCKET, show_default=True, help="S3 bucket to write to")
     def click(region, table, bucket):
-        return PartialBindingSpec(DynamoDB)(region=region, table=table, bucket=bucket)
+        return {
+            'bindings': [ PartialBindingSpec(DynamoDB)(region=region, table=table, bucket=bucket) ],
+            'reporters': [ DynamoDB ],
+        }
 
     def command(self):
         command = ["dynamodb"]

@@ -37,8 +37,8 @@ import click
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.ui.group import GroupedCommand
-
 from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.pipeline.util import FactoryBindingSpec
 
 class Pickle:
     def __init__(self, raw):
@@ -181,7 +181,10 @@ class Yaml(Reporter):
     @click.command(name="yaml", cls=GroupedCommand, group="Reports", help=__doc__.split("EXAMPLES")[0])
     @click.option("--output", type=click.File("w"), default=None, help="[default: derived from surface name]")
     def click(output):
-        return PartialBindingSpec(Yaml)(stream=output or open("%s.yaml"%(surface._name,), "w"))
+        return {
+            "bindings": [ FactoryBindingSpec("yaml", lambda surface: Yaml(surface, stream=output or open(f"{surface}.yaml", "w"))) ],
+            "reporters": [ Yaml ],
+        }
 
     def command(self):
         import sys

@@ -29,6 +29,7 @@ line interface that is used to generate them.
 
 from .ngons import Ngons, Ngon
 from .pickle import pickle
+from .surface import Surface
 
 generators = [Ngons.click]
 

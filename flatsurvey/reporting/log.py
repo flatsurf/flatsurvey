@@ -89,7 +89,10 @@ class Log(Reporter):
     @click.command(name="log", cls=GroupedCommand, group="Reports", help=__doc__.split('EXAMPLES')[0])
     @click.option("--output", type=click.File("w"), default=None, help="[default: stdout]")
     def click(output):
-        return FactoryBindingSpec("log", lambda surface: Log(surface, stream or open("%s.log"%surface._name, "w")))
+        return {
+            "bindings": [ FactoryBindingSpec("log", lambda surface: Log(surface, output or open(f"{surface}.log", "w"))) ],
+            "reporters": [ Log ],
+        }
 
     def progress(self, source, unit, count, total=None):
         r"""

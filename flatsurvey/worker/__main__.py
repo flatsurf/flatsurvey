@@ -88,17 +88,6 @@ for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.
         worker.add_command(command)
 
 
-def create_object_graph(bindings):
-    binding_specs = list(bindings.values())
-    binding_specs.append(ListBindingSpec("goals",
-        [cls for cls in bindings.keys() if Consumer in cls.mro()]))
-    binding_specs.append(ListBindingSpec("reporters",
-        [cls for cls in bindings.keys() if flatsurvey.reporting.Reporter in cls.mro()] or [flatsurvey.reporting.Log]))
-    binding_specs.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
-
-    return pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=binding_specs)
-
-
 @worker.resultcallback()
 def process(commands, debug):
     r"""
@@ -120,8 +109,21 @@ def process(commands, debug):
         import pdb
 
     try:
-        bindings = dict(collections.ChainMap({}, *commands))
-        objects = create_object_graph(bindings)
+        bindings = []
+        goals = []
+        reporters = []
+
+        for command in commands:
+            bindings.extend(command.get('bindings', []))
+            goals.extend(command.get('goals', []))
+            reporters.extend(command.get('reporters', []))
+
+        bindings.append(ListBindingSpec("goals", goals))
+        bindings.append(ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log]))
+        from random import randint
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
+
+        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=bindings)
 
         worker = objects.provide(Worker)
         worker.start()

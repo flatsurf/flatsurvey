@@ -4,9 +4,7 @@ Access cached results from previous runs.
 Currently, the only cache we support is Amazon's DynamoDB/S3. It would be
 fairly trivial to change that and allow for other similar systems as well.
 
-    >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
-    >>> invoke(worker, "cache", "--help") # doctest: +NORMALIZE_WHITESPACE
+TODO: This is WIP and not really implemented yet.
 
 """
 #*********************************************************************
@@ -89,60 +87,3 @@ class CacheRows:
 
     def reduce(self):
         return self._job.reduce([row['result'] if 'result' in row else None for row in self._rows])
-
-#    def __init__(self, surface=None):
-#        import  boto3
-#        self._dynamodb = boto3.resource("dynamodb")
-#        self._s3 = boto3.client("s3")
-#        self._table = self._dynamodb.Table("flatsurvey")
-#
-#        if surface is not None:
-#            raise NotImplementedError
-#
-#        response = self._table.scan()
-#        makerow = lambda row: {key: self.restore(value) for key, value in row.items() }
-#        self._rows = [makerow(row) for row in response['Items']]
-#        while response.get('LastEvaluatedKey'):
-#            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-#            self._rows.extend([makerow(row) for row in response['Items']])
-#
-#    def ngons(self, n):
-#        for row in self.results():
-#            if row['surface']['description'].count(',') == n - 1:
-#                yield row
-#
-#    def polygon(self, angles):
-#        for row in self.results():
-#            if str(list(angles)) in row['surface']['description']:
-#                yield row
-#
-#    def drop_column(self, column):
-#        for row in self._rows:
-#            self._table.update_item(Key={'timestamp': row['timestamp']}, UpdateExpression=f'REMOVE {column}')
-#
-#    def restore(self, value):
-#        if isinstance(value, dict) and 'pickle' in value:
-#            # cache = None
-#            def load():
-#                # nonlocal cache
-#                # if cache is None:
-#                from zlib import decompress
-#                from pickle import loads
-#                import urllib.request
-#                with urllib.request.urlopen(value['pickle']) as pickle:
-#                    pickle = decompress(pickle.read())
-#                    return loads(pickle)
-#
-#            value['load'] = load
-#
-#        return value
-#
-#    def results(self):
-#        rows = {}
-#        for row in self._rows:
-#            key = row['surface']['description'], row['job']['name']
-#            if key in rows:
-#                if rows[key]['timestamp'] > row['timestamp']: continue
-#            rows[key] = row
-#
-#        return rows.values()

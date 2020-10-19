@@ -78,7 +78,9 @@ class SaddleConnectionOrientations(Processor):
     @classmethod
     @click.command(name="saddle-connection-orientations", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES')[0])
     def click():
-        return SaddleConnectionOrientations
+        return {
+            'bindings': SaddleConnectionOrientations
+        }
 
     def command(self):
         return ["saddle-connection-orientations"]
