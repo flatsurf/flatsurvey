@@ -6,7 +6,7 @@ there is some direction with a minimal component but it can never say "yes",
 _all_ directions are cylinder periodic.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "completely-cylinder-periodic", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker completely-cylinder-periodic [OPTIONS]
       Determines whether for all directions given by saddle connections, the

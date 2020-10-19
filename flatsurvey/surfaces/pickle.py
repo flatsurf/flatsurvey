@@ -1,5 +1,19 @@
 r"""
-Objects of interest such as translation surfaces loaded from encoded pickles
+Deserializes a translation surface from a Base64 encoded pickle.
+
+This is used internally to pass surfaces from the survey invocation to the workers.
+
+EXAMPLES::
+
+    >>> from flatsurvey.test.cli import invoke
+    >>> from flatsurvey.worker.__main__ import worker
+    >>> invoke(worker, "pickle", "--help") # doctest: +NORMALIZE_WHITESPACE
+    Usage: worker pickle [OPTIONS]
+      A base64 encoded pickle.
+    Options:
+      --base64 TEXT  a base64 encoded surface  [required]
+      --help         Show this message and exit.
+    
 """
 #*********************************************************************
 #  This file is part of flatsurf.

@@ -59,6 +59,8 @@ class Processor(Producer, Consumer):
         Producer.__init__(self)
         Consumer.__init__(self, producers=producers)
 
+        self._produced = False
+
     def produce(self):
         r"""
         Ask our producers to produce until our own ``consume`` gets called so
@@ -80,12 +82,15 @@ class Processor(Producer, Consumer):
             (0, (c ~ 1.7320508))
 
         """
-        # Note that we do not cycle through the producers here but always call
-        # the first one until it is exhausted, the the second one, …
+        self._current = None
+
         # Currently, we do not have processors with multiple sources. When we
         # have, we might need a better strategy here.
-        for source in self._producers:
-            if source.produce() != Producer.EXHAUSTED:
-                return not Producer.EXHAUSTED
+        while self._current is None:
+            for source in self._producers:
+                if source.produce() != Producer.EXHAUSTED:
+                    break
+            else:
+                return Producer.EXHAUSTED
 
-        return Producer.EXHAUSTED
+        return not Producer.EXHAUSTED

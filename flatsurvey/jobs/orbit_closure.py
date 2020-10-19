@@ -8,7 +8,7 @@ investigated that would lead us to the full space.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "orbit-closure", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker orbit-closure [OPTIONS]
       Determine the GL₂(R) orbit closure of ``surface``.
@@ -130,14 +130,14 @@ class OrbitClosure(Consumer):
 
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
-        self._report.progress(self, "dimension", orbit_closure.dimension(), self._surface.orbit_closure_bound)
+        self._report.progress(self, "dimension", orbit_closure.dimension(), self._surface.orbit_closure_dimension_upper_bound)
 
-        assert orbit_closure.dimension() <= self._surface.orbit_closure_bound, "%s <= %s"%(orbit_closure.dimension(), self._surface.orbit_closure_bound)
+        assert orbit_closure.dimension() <= self._surface.orbit_closure_dimension_upper_bound, "%s <= %s"%(orbit_closure.dimension(), self._surface.orbit_closure_dimension_upper_bound)
 
         if dimension != orbit_closure.dimension():
             self._cylinders_without_increase = 0
 
-        if orbit_closure.dimension() == self._surface.orbit_closure_bound:
+        if orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound:
             self.report()
             return Consumer.COMPLETED
 
@@ -164,6 +164,6 @@ class OrbitClosure(Consumer):
     def report(self):
         if self._resolved != Consumer.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
-            self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_bound or None)
+            self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound or None)
 
 

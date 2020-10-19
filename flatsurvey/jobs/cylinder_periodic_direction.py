@@ -6,7 +6,7 @@ is such a direction but we can never say "no" _all_ directions have a
 non-cylinder.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "cylinder-periodic-direction", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker cylinder-periodic-direction [OPTIONS]
       Determines whether there is a direction for which the surface decomposes
@@ -51,10 +51,9 @@ class CylinderPeriodicDirection(Consumer):
 
     EXAMPLES::
 
-        >>> from flatsurvey.surfaces.ngons import Ngon
-        >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-        >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.surfaces import Ngon
+        >>> from flatsurvey.reporting import Report
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
         >>> CylinderPeriodicDirection(report=Report([]), flow_decompositions=flow_decompositions)
@@ -87,10 +86,9 @@ class CylinderPeriodicDirection(Consumer):
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces.ngons import Ngon
+            >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-            >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))

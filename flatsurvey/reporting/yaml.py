@@ -4,7 +4,7 @@ Writes computation results as machine readable YAML files.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "yaml", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker yaml [OPTIONS]
       Writes results to a YAML file.
@@ -122,6 +122,12 @@ class Yaml(Reporter):
             ret.update(value)
         else:
             ret['value'] = value
+
+            from pickle import dumps
+            try:
+                dumps(value)
+            except Exception as e:
+                ret['value'] = "Failed: " + str(e)
         return ret
     
     def result(self, source, result, **kwargs):
@@ -145,13 +151,29 @@ class Yaml(Reporter):
             >>> flow_decompositions.produce()
             True
 
-            >>> log.flush()
+            >>> log.flush() # doctest: +ELLIPSIS
+            surface:
+            ...
+            flow-decompositions:
+            - orientation: ...
+            - orientation: ...
 
         """
         self._data.setdefault(str(source), [])
         self._data[str(source)].append(self._render(result, **kwargs))
 
     def flush(self):
+        r"""
+        Write out the full YAML document.
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> log = Yaml(surface)
+            >>> log.flush() # doctest: +ELLIPSIS
+            surface:
+            ...
+
+        """
         self._yaml.dump(self._data, self._stream)
         self._stream.flush()
 

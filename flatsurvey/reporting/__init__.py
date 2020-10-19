@@ -21,6 +21,7 @@ A package providing ways to report progress and result of a computation.
 #*********************************************************************
 
 from .report import Report
+from .reporter import Reporter
 
 from .log import Log
 from .yaml import Yaml

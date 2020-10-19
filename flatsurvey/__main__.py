@@ -12,16 +12,32 @@ TESTS::
     >>> from .test.cli import invoke
     >>> invoke(survey) # doctest: +NORMALIZE_WHITESPACE
     Usage: survey [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
-      Main command, runs a survey; specific survey objects and goals are
-      registered automatically as subcommands.
+      Run a survey on the `objects` until all the `goals` are reached.
     Options:
-      --dry-run
+      --dry-run  do not spawn any workers
       --help     Show this message and exit.
-    Commands:
-      completely-cylinder-periodic
-      cylinder-periodic-direction
-      ngons                         Return all n-gons with the given...
-      orbit-closure
+    Goals:
+      completely-cylinder-periodic  Determines whether for all directions given by
+                                    saddle connections, the decomposition of the
+                                    surface is completely cylinder periodic, i.e.,
+                                    the decomposition consists only of cylinders.
+      cylinder-periodic-direction   Determines whether there is a direction for
+                                    which the surface decomposes into cylinders.
+      orbit-closure                 Determine the GL₂(R) orbit closure of
+                                    ``surface``.
+    Intermediates:
+      flow-decompositions             Turns directions coming from saddle
+                                      connections into flow decompositions.
+      saddle-connection-orientations  Orientations of saddle connections on the
+                                      surface, i.e., the vectors of saddle
+                                      connections irrespective of scaling and sign.
+      saddle-connections              Saddle connections on the surface.
+    Reports:
+      dynamodb  Reports results to Amazon's DynamoDB cloud database.
+      log       Writes progress and results as an unstructured log file.
+      yaml      Writes results to a YAML file.
+    Surfaces:
+      ngons  The translation surfaces that come from unfolding n-gons.
 
 """
 #*********************************************************************
@@ -46,11 +62,11 @@ TESTS::
 import asyncio
 import click
 
-from .objects import generators
-from .goals import goals
-from .reports import reporters, Reporter
-from .scheduler import Scheduler
-from .util.click.group import CommandWithGroups
+from flatsurvey.surfaces import generators
+from flatsurvey.jobs import commands as jobs
+from flatsurvey.reporting import commands as reporters, Reporter
+from flatsurvey.worker.scheduler import Scheduler
+from flatsurvey.ui.group import CommandWithGroups
 
 @click.group(chain=True, cls=CommandWithGroups, help="Run a survey on the `objects` until all the `goals` are reached.")
 @click.option('--dry-run', is_flag=True, help="do not spawn any workers")
@@ -62,7 +78,7 @@ def survey(dry_run):
 
 
 # Register objects and goals as subcommans of "survey".
-for kind in [generators, goals, reporters]:
+for kind in [generators, jobs, reporters]:
     for command in kind:
         survey.add_command(command)
 
@@ -77,7 +93,7 @@ def process(commands, **kwargs):
 
     """
     objects = []
-    goals = []
+    jobs = []
     reporters = []
 
     for command in commands:
@@ -87,14 +103,12 @@ def process(commands, **kwargs):
         elif Reporter in command.mro():
             reporters.append(command)
         else:
-            goals.append(command)
+            jobs.append(command)
 
     if kwargs.get('dry_run', False):
         kwargs.setdefault('load', None)
 
-    asyncio.run(Scheduler(objects, goals, reporters, **kwargs).start())
-    # import cProfile
-    # print(cProfile.runctx("asyncio.run(Scheduler(objects, goals, reporters, **kwargs).start())", globals(), locals()))
+    asyncio.run(Scheduler(objects, jobs, reporters, **kwargs).start())
 
 
 if __name__ == "__main__": survey()

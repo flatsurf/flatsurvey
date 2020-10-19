@@ -27,9 +27,9 @@ line interface that is used to generate them.
 #  along with flatsurf. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
 
-from .ngons import ngons, ngon, Ngon
+from .ngons import Ngons, Ngon
 from .pickle import pickle
 
-generators = [ngons]
+generators = [Ngons.click]
 
-commands = [ngon, pickle]
+commands = [Ngon.click, pickle]

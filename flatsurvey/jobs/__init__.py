@@ -24,8 +24,9 @@ entrypoints as subcommands.
 #*********************************************************************
 from .orbit_closure import OrbitClosure
 from .flow_decomposition import FlowDecompositions
-from .saddle_connection import SaddleConnectionOrientations, SaddleConnections
+from .saddle_connections import SaddleConnections
+from .saddle_connection_orientations import SaddleConnectionOrientations
 from .completely_cylinder_periodic import CompletelyCylinderPeriodic
 from .cylinder_periodic_direction import CylinderPeriodicDirection
 
-commands = [OrbitClosure.click, CylinderPeriodicDirection.click, CompletelyCylinderPeriodic.click, FlowDecompositions.click, CompletelyCylinderPeriodic.click]
+commands = [OrbitClosure.click, CylinderPeriodicDirection.click, CompletelyCylinderPeriodic.click, FlowDecompositions.click, CompletelyCylinderPeriodic.click, SaddleConnections.click, SaddleConnectionOrientations.click]

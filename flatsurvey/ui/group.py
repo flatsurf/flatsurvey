@@ -3,6 +3,7 @@ Helpers to organize commands and options in groups.
 
 Note that this was heavily inspired by discussion in
 https://github.com/pallets/click/issues/373.
+
 """
 #*********************************************************************
 #  This file is part of flatsurf.
@@ -53,7 +54,7 @@ class CommandWithGroups(click.Group):
         for command in self.list_commands(ctx):
             cmd = self.get_command(ctx, command)
             group = 'Commands'
-            if isinstance(cmd, GroupedCommand): group = cmd.group
+            if hasattr(cmd, "group"): group = cmd.group
             commands[group].append((command, cmd.get_short_help_str()))
         for group in sorted(commands.keys()):
             with formatter.section(group):

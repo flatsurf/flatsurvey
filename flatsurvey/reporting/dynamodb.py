@@ -5,7 +5,7 @@ Note that you need AWS credentials configured to perform writing operations,
 typically by creating ``~/.aws/credentials``.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "dynamodb", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker dynamodb [OPTIONS]
       Reports results to Amazon's DynamoDB cloud database.

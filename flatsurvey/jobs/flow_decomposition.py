@@ -10,7 +10,7 @@ However, you can still change some of the behaviour of this module through the
 number of Zorich induction steps:
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker import worker
+    >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "flow-decompositions", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker flow-decompositions [OPTIONS]
       Turns directions coming from saddle connections into flow decompositions.
@@ -54,9 +54,9 @@ class FlowDecompositions(Processor):
 
     EXAMPLES::
 
-        >>> from flatsurvey.surfaces.ngons import Ngon
-        >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.surfaces import Ngon
+        >>> from flatsurvey.reporting import Report
+        >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
         flow-decompositions
@@ -80,15 +80,15 @@ class FlowDecompositions(Processor):
             command.append(f"--limit={self._limit}")
         return command
 
-    def consume(self, orientation, cost):
+    def _consume(self, orientation, cost):
         r"""
         Produce the flow decomposition corresponding to ``orientation``.
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces.ngons import Ngon
+            >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.jobs.saddle_connection import SaddleConnectionOrientations, SaddleConnections
+            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> decompositions.produce() # indirect doctest

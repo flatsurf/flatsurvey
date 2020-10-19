@@ -6,8 +6,6 @@ Invoke this providing a source and some goals, e.g., to compute the orbit closur
 python -m survey.worker ngon -a 1 -a 2 -a 3 -a 4 orbit-closure
 ```
 
-# TODO: Improve command layout in usage with https://stackoverflow.com/a/57086581/812379
-
 TESTS::
     
     >>> from ..test.cli import invoke
@@ -18,17 +16,25 @@ TESTS::
       --debug
       --help   Show this message and exit.
     Goals:
-      completely-cylinder-periodic  Determine whether for all directions given by
+      completely-cylinder-periodic  Determines whether for all directions given by
                                     saddle connections, the decomposition of the
                                     surface is completely cylinder periodic, i.e.,
                                     the decomposition consists only of cylinders.
-      cylinder-periodic-direction   Determine whether there is a direction for which
-                                    the surface decomposes into cylinders.
-      orbit-closure                 Determine the GL₂(R) orbit closure.
+      cylinder-periodic-direction   Determines whether there is a direction for
+                                    which the surface decomposes into cylinders.
+      orbit-closure                 Determine the GL₂(R) orbit closure of
+                                    ``surface``.
+    Intermediates:
+      flow-decompositions             Turns directions coming from saddle
+                                      connections into flow decompositions.
+      saddle-connection-orientations  Orientations of saddle connections on the
+                                      surface, i.e., the vectors of saddle
+                                      connections irrespective of scaling and sign.
+      saddle-connections              Saddle connections on the surface.
     Reports:
-      dynamodb  Report results to the DynamoDB cloud database.
-      log       Write results and progress to a log file.
-      yaml      Write results to a YAML file.
+      dynamodb  Reports results to Amazon's DynamoDB cloud database.
+      log       Writes progress and results as an unstructured log file.
+      yaml      Writes results to a YAML file.
     Surfaces:
       ngon    Unfolding of an n-gon with prescribed angles.
       pickle  A base64 encoded pickle.
@@ -73,9 +79,6 @@ def worker(debug):
     Main command to invoke the worker; specific objects and goals are
     registered automatically as subcommands.
 
-    >>> from ..test.cli import invoke
-    >>> invoke(worker)
-
     """
 
 
@@ -83,6 +86,17 @@ def worker(debug):
 for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.reporting.commands]:
     for command in kind:
         worker.add_command(command)
+
+
+def create_object_graph(bindings):
+    binding_specs = list(bindings.values())
+    binding_specs.append(ListBindingSpec("goals",
+        [cls for cls in bindings.keys() if Consumer in cls.mro()]))
+    binding_specs.append(ListBindingSpec("reporters",
+        [cls for cls in bindings.keys() if flatsurvey.reporting.Reporter in cls.mro()] or [flatsurvey.reporting.Log]))
+    binding_specs.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
+
+    return pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=binding_specs)
 
 
 @worker.resultcallback()
@@ -95,9 +109,11 @@ def process(commands, debug):
     We compute the orbit closure of the unfolding of a equilateral triangle,
     i.e., the torus::
 
-    >>> from ..test.cli import invoke
-    >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
-    [Ngon(1, 1, 1)] [OrbitClosure] dimension: 2/2
+        >>> from ..test.cli import invoke
+        >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
+        [Ngon((1, 1, 1))] [FlowDecompositions] FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components (orientation: (0, (c ~ 1.7320508))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+        [Ngon((1, 1, 1))] [OrbitClosure] dimension: 2/2
+        [Ngon((1, 1, 1))] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
 
     """
     if debug:
@@ -105,15 +121,7 @@ def process(commands, debug):
 
     try:
         bindings = dict(collections.ChainMap({}, *commands))
-
-        binding_specs = list(bindings.values())
-        binding_specs.append(ListBindingSpec("goals",
-            [cls for cls in bindings.keys() if Consumer in cls.mro()]))
-        binding_specs.append(ListBindingSpec("reporters",
-            [cls for cls in bindings.keys() if flatsurvey.reporting.report.Reporter in cls.mro()] or [flatsurvey.reporting.Log]))
-        binding_specs.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
-
-        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=binding_specs)
+        objects = create_object_graph(bindings)
 
         worker = objects.provide(Worker)
         worker.start()
@@ -130,9 +138,8 @@ class Worker:
 
     EXAMPLES::
 
-    >>> goals = [flatsurvey.goals.Trivial()]
-    >>> worker = Worker(goals=goals, reporters=[])
-    >>> worker.start()
+        >>> worker = Worker(goals=[], reporters=[])
+        >>> worker.start()
 
     """
     @pinject.copy_args_to_internal_fields
