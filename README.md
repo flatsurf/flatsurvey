@@ -7,3 +7,9 @@ For example, here is a typical survey that collects data about triangles, quadri
 ```
 nice python -m flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure cylinder-periodic-direction log dynamodb
 ```
+
+Dependencies:
+
+- click Python module
+- pinject Python module
+- plumbum Python module
