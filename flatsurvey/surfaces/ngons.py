@@ -102,20 +102,6 @@ class Ngon(Surface):
         """
         from sage.all import gcd
 
-        if len(self.angles) == 3:
-            a, b, c = self.angles
-            if a == b == 1: return "Veech 1989"
-            if a == 1 and b == c: return "(2, b, b) of Veech for b even"
-            if a == 1 and c == b + 1: return "~(2, b, b) of Veech"
-            if a == 2 and c == b + 2: return "Veech 1989"
-            if a == 2 and b == c: return "Veech 1989"
-            if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
-            if a == 4 and b == c: return "~(2, b, b + 2) of Veech"
-            if (a, b, c) in [(3, 3, 4), (2, 3, 4)]: return "Kenyon-Smillie 2000 acute triangle"
-            if (a, b, c) == (3, 4, 5): return "Kenyon-Smillie 2000 acute triangle; first appeared in Veech 1989"
-            if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
-            if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
-
         if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
             return f"{tuple(a for a in self.angles if a != sum(self.angles) / (len(self.angles) - 2))}"
 
@@ -124,6 +110,21 @@ class Ngon(Surface):
 
         if gcd(self.angles) != 1:
             return "Same as %s"%(tuple(a / gcd(self.angles) for a in self.angles),)
+
+        if len(self.angles) == 3:
+            a, b, c = self.angles
+            assert a <= b <= c
+            if a == b == 1: return "Veech 1989"
+            if a == b: return "Same as (%d, %d, %d)"%(2*a, c, 2*a+c)
+            if b == c: return "Same as (%d, %d, %d)"%(2*b, a, 2*b+a)
+            if a == 1 and c == b + 1: return "~(2, b, b) of Veech"
+            if a == 2 and c == b + 2: return "Veech 1989"
+            if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
+            if (a, b, c) == (2, 3, 4): return "Kenyon-Smillie 2000 acute triangle"
+            if (a, b, c) == (3, 4, 5): return "Kenyon-Smillie 2000 acute triangle; first appeared in Veech 1989"
+            if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
+            if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
+            if (a, b, c) in [(1, 3, 6), (1, 3, 8)]: return "Rank-one example (to be checked)"
 
     @property
     def orbit_closure_dimension_upper_bound(self):
