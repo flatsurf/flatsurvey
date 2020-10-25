@@ -1,0 +1,3 @@
+ALTER TABLE flatsurvey.surfaces ALTER COLUMN timestamp SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE flatsurvey.orbit_closure ALTER COLUMN timestamp SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE flatsurvey.flow_decomposition ALTER COLUMN timestamp SET DEFAULT CURRENT_TIMESTAMP;

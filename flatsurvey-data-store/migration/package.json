@@ -13,7 +13,7 @@
     "dotenv": "^6.0.0",
     "pg": "^8.4.1",
     "pg-pool": "^2.0.3",
-    "postgraphile": "^4.0.0-rc.3",
+    "postgraphile": "4.9.2",
     "postgres-migrations": "^5.1.0"
   },
   "devDependencies": {
