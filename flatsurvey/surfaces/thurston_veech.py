@@ -28,16 +28,30 @@ EXAMPLES::
 
 import click
 
-from sage.all import cached_method, IntegerVectors
+from collections import defaultdict
+
+from sage.all import cached_method, IntegerVectors, QQ, libgap
 
 from .surface import Surface
-from flatsurvey.ui.group import GroupedCommand
 
+from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
 
 class ThurstonVeech(Surface):
     r"""
     Thurston-Veech construction
+
+    EXAMPLES::
+
+        sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+        sage: TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
+        sage: TV
+        ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
+        sage: S = TV._surface()
+        sage: S
+        TranslationSurface built from 3 polygons
+        sage: S.base_ring()
+        Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
     def __init__(self, hp, vp, hm, vm):
         self.hp = hp
@@ -47,21 +61,49 @@ class ThurstonVeech(Surface):
 
     @property
     def orbit_closure_dimension_upper_bound(self):
-        # TODO: this does not detect quadratic differential coverings!
-        return self.ambient_stratum().dimension()
+        o = self.origami()
+
+        if self._surface().base_ring() is QQ:
+            # arithmetic Teichmueller curve
+            return 2
+
+        oi = o.inverse()
+        if o.is_isomorphic(oi):
+            raise NotImplemented
+
+        return o.stratum().dimension()
 
     def __repr__(self):
-        return "ThurstonVeech({}, {}, {}, {})" % (self.hp, self.vp, self.hm. self.vm)
+        return "ThurstonVeech({}, {}, {}, {})".format(self.hp, self.vp, self.hm, self.vm)
 
     def reference(self):
-        # TODO: square-tiled
-        # TODO: translation coverings (via the symmetry of the coordinates)
+        r"""
+        EXAMPLES::
+
+            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+
+            sage: hp = (1, 0, 3, 2, 5, 4, 7, 6)
+            sage: vp = (7, 2, 1, 4, 3, 6, 5, 0)
+            sage: ThurstonVeech(hp, vp, (1,1,1,1), (1,1,1,1)).reference()
+            'An origami'
+            sage: ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
+            True
+        """
         # TODO: known exotic loci
-        return
+        if self._surface().base_ring() is QQ:
+            return "An origami"
+
+        # TODO: some of the quotient might come from something else than
+        # automorphisms... Something needs to be done for each block of
+        # the monodromy.
+        A = self.orientable_automorphisms()
+        if not libgap.IsTrivial(A):
+            oo = self.origami().quotient(A)
+            return "Translation covering of {}".format(oo.stratum())
 
     @cached_method
     def origami(self):
-        return self._thurston_veech()
+        return self._thurston_veech()._o
 
     @cached_method
     def _thurston_veech(self):
@@ -71,6 +113,81 @@ class ThurstonVeech(Surface):
     @cached_method
     def _surface(self):
         return self._thurston_veech()(self.hm, self.vm)
+
+    @cached_method
+    def orientable_automorphisms(self):
+        r"""
+        EXAMPLES::
+
+            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+
+            sage: hp = (1,0,3,2)
+            sage: vp = (0,2,1,3)
+            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,1))
+            sage: TV.orientable_automorphisms()
+            Group([ (1,4)(2,3) ])
+
+            sage: TV = ThurstonVeech(hp, vp, (1,2), (1,1,1))
+            sage: TV.orientable_automorphisms()
+            Group(())
+
+            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,2,1))
+            sage: TV.orientable_automorphisms()
+            Group([ (1,4)(2,3) ])
+
+            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
+            sage: TV.orientable_automorphisms()
+            Group(())
+        """
+        o = self.origami()
+        n = o.nb_squares()
+
+        M = libgap.Group([o.r(), o.u()])
+        Sn = libgap.SymmetricGroup(n)
+        A = libgap.Centralizer(Sn, M)
+        if A.Size() == 1:
+            return A
+
+        # 1. compute action of the automorphisms on horiz / vert cylinders
+        from surface_dynamics.misc.permutation import perm_dense_cycles
+        hcyls,hdeg = perm_dense_cycles(o.r_tuple(), n)
+        vcyls,vdeg = perm_dense_cycles(o.u_tuple(), n)
+        hreps = [None] * len(self.hm)
+        vreps = [None] * len(self.vm)
+        for i in range(n):
+            j = hcyls[i]
+            if hreps[j] is None:
+                hreps[j] = i
+            j = vcyls[i]
+            if vreps[j] is None:
+                vreps[j] = i
+
+        hgens = []  # induced action on horizontal cylinders
+        vgens = []  # induced action on vertical cylinders
+        for p in libgap.GeneratorsOfGroup(A):
+            hgens.append( libgap.PermList([hcyls[(hreps[i]+1)**p - 1] + 1 for i in range(len(self.hm))]) )
+            vgens.append( libgap.PermList([vcyls[(vreps[i]+1)**p - 1] + 1 for i in range(len(self.vm))] ))
+        hP = libgap.Group(hgens)
+        vP = libgap.Group(vgens)
+        hH = libgap.GroupHomomorphismByImages(A, hP, hgens)
+        vH = libgap.GroupHomomorphismByImages(A, vP, vgens)
+
+        # 2. compute the subgroup that stabilizes hm / vm
+        hd = defaultdict(list)
+        for i,j in enumerate(self.hm):
+            hd[j].append(i)
+        hd = [[i+1 for i in atom] for atom in hd.values()]
+
+        vd = defaultdict(list)
+        for i,j in enumerate(self.vm):
+            vd[j].append(i)
+        vd = [[i+1 for i in atom] for atom in vd.values()]
+
+        hStab = libgap(hP).Stabilizer(hd, libgap.OnTuplesSets)
+        vStab = libgap(vP).Stabilizer(vd, libgap.OnTuplesSets)
+        hLiftedStab = libgap.PreImage(hH, hStab)
+        vLiftedStab = libgap.PreImage(vH, vStab)
+        return hLiftedStab.Intersection(hLiftedStab, vLiftedStab)
 
     @classmethod
     @click.command(name="thurston-veech", cls=GroupedCommand, group="Surfaces", help=__doc__.split('EXAMPLES')[0])
