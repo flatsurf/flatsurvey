@@ -1,0 +1,22 @@
+{
+  "name": "flatsurvey-data-store-api",
+  "version": "1.0.0",
+  "description": "Expose flatsurvey database with a GraphQL API",
+  "author": "Julian Rüth",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "serverless deploy"
+  },
+  "dependencies": {
+    "dotenv": "^6.0.0",
+    "pg": "^8.4.1",
+    "pg-pool": "^2.0.3",
+    "postgraphile": "^4.0.0-rc.3"
+  },
+  "devDependencies": {
+    "graphile-build-pg": "^4.9.0",
+    "serverless": "^2.8.0",
+    "serverless-dotenv-plugin": "^1.2.0",
+    "serverless-prune-plugin": "^1.3.1"
+  }
+}
