@@ -28,9 +28,10 @@ line interface that is used to generate them.
 #*********************************************************************
 
 from .ngons import Ngons, Ngon
+from .thurston_veech import ThurstonVeechs, ThurstonVeech
 from .pickle import pickle
 from .surface import Surface
 
-generators = [Ngons.click]
+generators = [Ngons.click, ThurstonVeechs.click]
 
-commands = [Ngon.click, pickle]
+commands = [Ngon.click, ThurstonVeech.click, pickle]
