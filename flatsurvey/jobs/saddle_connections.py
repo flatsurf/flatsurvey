@@ -36,7 +36,6 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline import Producer, Processor
 
-
 class SaddleConnections(Producer):
     r"""
     Saddle connections on the surface.
@@ -60,7 +59,7 @@ class SaddleConnections(Producer):
             self._by_length()
         try:
             self._current = next(self._connections)
-            self._current = type(self._current)(self._current)
+            # self._current = type(self._current)(self._current)
             return not Producer.EXHAUSTED
         except StopIteration:
             return Producer.EXHAUSTED

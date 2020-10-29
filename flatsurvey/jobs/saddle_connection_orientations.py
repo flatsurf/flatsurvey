@@ -37,7 +37,6 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline import Producer, Processor
 
-
 class SaddleConnectionOrientations(Processor):
     r"""
     Orientations of saddle connections on the surface, i.e., the vectors of

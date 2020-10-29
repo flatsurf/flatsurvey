@@ -3594,6 +3594,11 @@ postgraphile-core@4.9.2:
     graphile-build-pg "4.9.2"
     tslib "^2.0.1"
 
+postgraphile-plugin-connection-filter@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/postgraphile-plugin-connection-filter/-/postgraphile-plugin-connection-filter-2.1.0.tgz#6ebe47b177b7b6de8b32f65973f85d42419018e9"
+  integrity sha512-/knSX5JFVVDrRrrblaU4KEGwobfvVfW3WvelfB4meewV/io17jl+lYWiiAX5O0b9PLGJfW5grIfia4dtJt72fg==
+
 postgraphile@4.9.2:
   version "4.9.2"
   resolved "https://registry.yarnpkg.com/postgraphile/-/postgraphile-4.9.2.tgz#1216f52877326f424d59fe912ab1d09075bbca04"

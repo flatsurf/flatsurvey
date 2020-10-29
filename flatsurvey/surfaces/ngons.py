@@ -12,7 +12,8 @@ EXAMPLES::
       -a, --angle INTEGER            inner angles of the polygon in multiples of (N
                                      - 2)π/A where N is the number of vertices and A
                                      the sum of all provided angles
-      --length [exact-real|e-antic]  how side lengths are chosen
+      --length [exact-real|e-antic]  how side lengths are chosen [default: e-antic
+                                     for triangles, exact-real otherwise]
       --help                         Show this message and exit.
 
     >>> from flatsurvey.__main__ import survey
@@ -70,13 +71,13 @@ class Ngon(Surface):
     An equilateral triangle::
 
         >>> S = Ngon((1, 1, 1)); S
-        Ngon((1, 1, 1))
+        Ngon([1, 1, 1])
         >>> S.surface()
         TranslationSurface built from 2 polygons
 
     """
     def __init__(self, angles, length='exact-real', lengths=None):
-        self.angles = angles
+        self.angles = list(angles)
         self.length = length
         self._lengths.set_cache(lengths)
 
@@ -245,8 +246,12 @@ class Ngon(Surface):
     @classmethod
     @click.command(name="ngon", cls=GroupedCommand, group="Surfaces", help=__doc__.split('EXAMPLES')[0])
     @click.option("--angle", "-a", multiple=True, type=int, help="inner angles of the polygon in multiples of (N - 2)π/A where N is the number of vertices and A the sum of all provided angles")
-    @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), default="exact-real", help="how side lengths are chosen")
+    @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), required=False, help="how side lengths are chosen [default: e-antic for triangles, exact-real otherwise]")
     def click(angle, length):
+        if length is None:
+            if len(angle) == 3: length = "e-antic"
+            else: length = "exact-real"
+
         return {
             "bindings": [ PartialBindingSpec(Ngon, name="surface")(angles=angle, length=length) ]
         }
@@ -265,10 +270,10 @@ class Ngons:
         []
 
         >>> list(Ngons.click.callback(3, 'e-antic', 3, include_literature=True, family='(1, 1, n)'))
-        [Ngon((1, 1, 1)), Ngon((1, 1, 2)), Ngon((1, 1, 3))]
+        [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3])]
     
         >>> list(Ngons.click.callback(3, 'e-antic', 3, include_literature=True, family='[(1, 1, n), (1, 2, 12*n)]'))
-        [Ngon((1, 1, 1)), Ngon((1, 2, 12)), Ngon((1, 1, 2)), Ngon((1, 2, 24)), Ngon((1, 1, 3)), Ngon((1, 2, 36))]
+        [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2]), Ngon([1, 2, 24]), Ngon([1, 1, 3]), Ngon([1, 2, 36])]
     
     """
     @classmethod

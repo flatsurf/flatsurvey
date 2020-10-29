@@ -51,7 +51,7 @@ class Log(Reporter):
 
         >>> log = Log(surface)
         >>> log.log(source=surface, message="Hello World")
-        [Ngon((1, 1, 1))] [Ngon] Hello World
+        [Ngon([1, 1, 1])] [Ngon] Hello World
 
     """
     @copy_args_to_internal_fields
@@ -77,7 +77,7 @@ class Log(Reporter):
 
             >>> log = Log(surface)
             >>> log.log(source=surface, message="Hello World", extra="data", lot="1337")
-            [Ngon((1, 1, 1))] [Ngon] Hello World (extra: data) (lot: 1337)
+            [Ngon([1, 1, 1])] [Ngon] Hello World (extra: data) (lot: 1337)
 
         """
         message = f"{self._prefix(source)} {message}"
@@ -105,9 +105,9 @@ class Log(Reporter):
 
             >>> log = Log(surface)
             >>> log.progress(source=surface, unit='progress', count=10, total=100)
-            [Ngon((1, 1, 1))] [Ngon] progress: 10/100
+            [Ngon([1, 1, 1])] [Ngon] progress: 10/100
             >>> log.progress(source=surface, unit='dimension', count=10)
-            [Ngon((1, 1, 1))] [Ngon] dimension: 10/?
+            [Ngon([1, 1, 1])] [Ngon] dimension: 10/?
 
         """
         self.log(source, f"{unit}: {count}/{total or '?'}")
@@ -123,9 +123,9 @@ class Log(Reporter):
 
             >>> log = Log(surface)
             >>> log.result(source=surface, result="dense orbit closure", dimension=1337)
-            [Ngon((1, 1, 1))] [Ngon] dense orbit closure (dimension: 1337)
+            [Ngon([1, 1, 1])] [Ngon] dense orbit closure (dimension: 1337)
             >>> log.result(source=surface, result=None)
-            [Ngon((1, 1, 1))] [Ngon] ¯\_(ツ)_/¯
+            [Ngon([1, 1, 1])] [Ngon] ¯\_(ツ)_/¯
 
         """
         shruggie = r'¯\_(ツ)_/¯'

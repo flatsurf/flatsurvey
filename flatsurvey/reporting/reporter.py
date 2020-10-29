@@ -56,7 +56,7 @@ class Reporter:
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
             >>> log.log(source=surface, message="Hello World", additional_data=1337)
-            [Ngon((1, 1, 1))] [Ngon] Hello World (additional_data: 1337)
+            [Ngon([1, 1, 1])] [Ngon] Hello World (additional_data: 1337)
 
         """
         pass
@@ -73,7 +73,7 @@ class Reporter:
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
             >>> log.result(source=surface, result="result", additional_data=1337)
-            [Ngon((1, 1, 1))] [Ngon] result (additional_data: 1337)
+            [Ngon([1, 1, 1])] [Ngon] result (additional_data: 1337)
 
         """
         pass
@@ -92,7 +92,7 @@ class Reporter:
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
             >>> log.progress(source=surface, unit="progress", count=13, total=37)
-            [Ngon((1, 1, 1))] [Ngon] progress: 13/37
+            [Ngon([1, 1, 1])] [Ngon] progress: 13/37
 
         """
         pass

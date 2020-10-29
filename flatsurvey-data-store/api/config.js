@@ -1,3 +1,4 @@
+const ConnectionFilterPlugin = require("postgraphile-plugin-connection-filter");
 require('dotenv').config();
 
 const url = require('url');
@@ -23,6 +24,10 @@ exports.pgConfig = {
 };
 
 exports.graphileConfig = {
+  appendPlugins: [ConnectionFilterPlugin],
+  graphileBuildOptions: {
+    connectionFilterRelations: true,
+  },
   dynamicJson: true,
   graphqlRoute: '/',
   extendedErrors: ['hint', 'detail', 'errcode'],

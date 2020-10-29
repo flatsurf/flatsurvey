@@ -62,10 +62,11 @@ class OrbitClosure(Consumer):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.cache import Cache
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections)
+        >>> OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
         orbit-closure
 
     """
@@ -73,13 +74,18 @@ class OrbitClosure(Consumer):
     DEFAULT_EXPANSIONS = 6
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, flow_decompositions, saddle_connections, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS):
+    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS):
         super().__init__(producers=[flow_decompositions])
 
         self._cylinders_without_increase = 0
         self._directions_with_cylinders = 0
         self._directions = 0
         self._expansions_performed = 0
+
+        results = cache.result(surface=surface, job=self)
+        if results.reduce() is not None:
+            report.log(self, "dense orbit closure (cached)")
+            self._resolved = Consumer.COMPLETED
 
     @classmethod
     @click.command(name="orbit-closure", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
@@ -108,18 +114,19 @@ class OrbitClosure(Consumer):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 3, 5))
             >>> connections = SaddleConnections(surface)
             >>> log = Log(surface=surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections)
+            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
         
         Run until we find the orbit closure, i.e., investigate in two directions::
 
             >>> assert oc.resolve() == Consumer.COMPLETED
-            [Ngon((1, 3, 5))] [OrbitClosure] dimension: 4/6
-            [Ngon((1, 3, 5))] [OrbitClosure] dimension: 6/6
-            [Ngon((1, 3, 5))] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
+            [Ngon([1, 3, 5])] [OrbitClosure] dimension: 4/6
+            [Ngon([1, 3, 5])] [OrbitClosure] dimension: 6/6
+            [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
 
         """
         self._directions += 1
@@ -164,9 +171,24 @@ class OrbitClosure(Consumer):
 
         return not Consumer.COMPLETED
 
+    @classmethod
+    def reduce(self, results):
+        r"""
+        Given a list of historic results, return a final verdict.
+
+        EXAMPLES::
+
+            >>> OrbitClosure.reduce([{}, {}]) is None
+            True
+            >>> OrbitClosure.reduce([{}, {'dense': True}]) is True
+            True
+
+        """
+        results = [result.get('dense', None) for result in results]
+        assert not any([result is False for result in results])
+        return True if any(result == True for result in results) else None
+
     def report(self):
         if self._resolved != Consumer.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
             self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound or None)
-
-

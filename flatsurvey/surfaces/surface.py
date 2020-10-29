@@ -157,7 +157,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 2, 3)).basename()
-            ngon-1-2-3
+            'ngon-1-2-3'
 
         """
         import re

@@ -33,11 +33,13 @@ TESTS::
                                       connections irrespective of scaling and sign.
       saddle-connections              Saddle connections on the surface.
     Reports:
-      dynamodb  Reports results to Amazon's DynamoDB cloud database.
-      log       Writes progress and results as an unstructured log file.
-      yaml      Writes results to a YAML file.
+      graphql  Reports results to our GraphQL cloud database.
+      log      Writes progress and results as an unstructured log file.
+      yaml     Writes results to a YAML file.
     Surfaces:
-      ngons  The translation surfaces that come from unfolding n-gons.
+      ngons           The translation surfaces that come from unfolding n-gons.
+      thurston-veech  The translation surfaces obtained from Thurston-Veech
+                      construction.
 
 """
 #*********************************************************************
@@ -63,6 +65,7 @@ import asyncio
 import click
 import flatsurvey
 
+import flatsurvey.cache
 from flatsurvey.surfaces import generators
 from flatsurvey.jobs import commands as jobs
 from flatsurvey.reporting import commands as reporters, Reporter
@@ -151,32 +154,19 @@ class Scheduler:
             for it in list(iters):
                 try:
                     surface = next(it)
-                    tasks.append(await self._schedule(surface))
+                    command = self._render_command(surface)
+                    if command is None:
+                        continue
+                    tasks.append(await self._enqueue(command))
                 except StopIteration:
                     iters.remove(it)
  
         print("All jobs have been scheduled. Now waiting for jobs to finish.")
         await asyncio.gather(*tasks)
  
-    async def _schedule(self, source):
+    def _render_command(self, surface):
         r"""
-        Schedule a single job, i.e., have all ``goals`` computed for a ``source``.
- 
-        >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.jobs import OrbitClosure
- 
-        >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[], dry_run=True)
-        >>> task = asyncio.run(scheduler._schedule(Ngon([1, 1, 1]))) # doctest: +ELLIPSIS
-        python -m flatsurvey.worker pickle --base64 ... orbit-closure
-        >>> task.result()
- 
-        """
-        command = self._render_command(source)
-        return await self._enqueue(command)
- 
-    def _render_command(self, source):
-        r"""
-        Return the command to invoke a worker to compute the ``goals`` for ``source``.
+        Return the command to invoke a worker to compute the ``goals`` for ``surface``.
  
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import OrbitClosure
@@ -189,20 +179,24 @@ class Scheduler:
         bindings = list(self._bindings)
 
         from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
-        bindings.append(FactoryBindingSpec("surface", lambda: source))
+        bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))
         bindings.append(ListBindingSpec("reporters", self._reporters)) 
         from random import randint
         bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
         import pinject
-        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=bindings)
+        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
 
-        commands = source.command()
+        commands = surface.command()
 
         class Goals:
             def __init__(self, goals): self._goals = goals
-        for goal in objects.provide(Goals)._goals:
+        goals = [goal for goal in objects.provide(Goals)._goals if goal._resolved != goal.COMPLETED]
+        if not goals:
+            print(f"No goals left for {surface}. Skipping.")
+            return None
+        for goal in goals:
             commands.extend(goal.command())
 
         class Reporters:

@@ -94,7 +94,7 @@ class FlowDecompositions(Processor):
             >>> surface = Ngon((1, 1, 1))
             >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> decompositions.produce() # indirect doctest
-            [Ngon((1, 1, 1))] [FlowDecompositions] FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components (orientation: (0, (c ~ 1.7320508))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+            [Ngon([1, 1, 1])] [FlowDecompositions] FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components (orientation: (0, (c ~ 1.7320508))) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
             Flow decomposition with 1 cylinders, 0 minimal components and 0 undetermined components

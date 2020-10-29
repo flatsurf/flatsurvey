@@ -4004,6 +4004,27 @@
       },
       {
         "kind": "class",
+        "id": "282641",
+        "name": "completely_cylinder_periodic",
+        "classKind": "r",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "typeId": "282643",
+        "isSelectable": true,
+        "isDeletable": true,
+        "isInsertable": true,
+        "isUpdatable": true,
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "aclDeletable": true,
+        "comment": null,
+        "tags": {},
+        "isExtensionConfigurationTable": false
+      },
+      {
+        "kind": "class",
         "id": "77867",
         "name": "flow_decomposition",
         "classKind": "r",
@@ -4047,7 +4068,7 @@
       {
         "kind": "class",
         "id": "77846",
-        "name": "surfaces",
+        "name": "surface",
         "classKind": "r",
         "description": null,
         "namespaceId": "73745",
@@ -35551,6 +35572,78 @@
         "columnLevelSelectGrant": false,
         "comment": null,
         "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "282641",
+        "num": 1,
+        "name": "id",
+        "description": null,
+        "typeId": "2950",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": true,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "282641",
+        "num": 2,
+        "name": "timestamp",
+        "description": null,
+        "typeId": "1184",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": true,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "282641",
+        "num": 3,
+        "name": "surface",
+        "description": null,
+        "typeId": "2950",
+        "typeModifier": null,
+        "isNotNull": false,
+        "hasDefault": false,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "282641",
+        "num": 4,
+        "name": "data",
+        "description": null,
+        "typeId": "3802",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": false,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
       }
     ],
     "type": [
@@ -35631,6 +35724,28 @@
         "category": "A",
         "domainIsNotNull": false,
         "arrayItemTypeId": "21",
+        "typeLength": -1,
+        "isPgArray": true,
+        "classId": null,
+        "domainBaseTypeId": null,
+        "domainTypeModifier": null,
+        "domainHasDefault": false,
+        "enumVariants": null,
+        "rangeSubTypeId": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "type",
+        "id": "1007",
+        "name": "_int4",
+        "description": null,
+        "namespaceId": "11",
+        "namespaceName": "pg_catalog",
+        "type": "b",
+        "category": "A",
+        "domainIsNotNull": false,
+        "arrayItemTypeId": "23",
         "typeLength": -1,
         "isPgArray": true,
         "classId": null,
@@ -41672,6 +41787,28 @@
       },
       {
         "kind": "type",
+        "id": "282643",
+        "name": "completely_cylinder_periodic",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "type": "c",
+        "category": "C",
+        "domainIsNotNull": false,
+        "arrayItemTypeId": null,
+        "typeLength": -1,
+        "isPgArray": false,
+        "classId": "282641",
+        "domainBaseTypeId": null,
+        "domainTypeModifier": null,
+        "domainHasDefault": false,
+        "enumVariants": null,
+        "rangeSubTypeId": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "type",
         "id": "77869",
         "name": "flow_decomposition",
         "description": null,
@@ -41717,7 +41854,7 @@
       {
         "kind": "type",
         "id": "77848",
-        "name": "surfaces",
+        "name": "surface",
         "description": null,
         "namespaceId": "73745",
         "namespaceName": "flatsurvey",
@@ -41868,9 +42005,67 @@
         ],
         "comment": null,
         "tags": {}
+      },
+      {
+        "kind": "constraint",
+        "id": "282648",
+        "name": "completely_cylinder_periodic_pkey",
+        "type": "p",
+        "classId": "282641",
+        "foreignClassId": null,
+        "description": null,
+        "keyAttributeNums": [
+          1
+        ],
+        "foreignKeyAttributeNums": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "constraint",
+        "id": "282649",
+        "name": "completely_cylinder_periodic_surface_fkey",
+        "type": "f",
+        "classId": "282641",
+        "foreignClassId": "77846",
+        "description": null,
+        "keyAttributeNums": [
+          3
+        ],
+        "foreignKeyAttributeNums": [
+          1
+        ],
+        "comment": null,
+        "tags": {}
       }
     ],
     "procedure": [
+      {
+        "kind": "procedure",
+        "id": "122916",
+        "name": "orbit_closure_dense",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "16",
+        "argTypeIds": [
+          "77856"
+        ],
+        "argModes": [],
+        "argNames": [
+          "oc"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
       {
         "kind": "procedure",
         "id": "73793",
@@ -41896,6 +42091,84 @@
         "cost": 100,
         "aclExecutable": true,
         "language": "plpgsql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
+        "id": "122918",
+        "name": "surface_angles",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "1007",
+        "argTypeIds": [
+          "77848"
+        ],
+        "argModes": [],
+        "argNames": [
+          "s"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
+        "id": "199469",
+        "name": "surface_name",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "25",
+        "argTypeIds": [
+          "77848"
+        ],
+        "argModes": [],
+        "argNames": [
+          "s"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
+        "id": "122917",
+        "name": "surface_vertices",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "23",
+        "argTypeIds": [
+          "77848"
+        ],
+        "argModes": [],
+        "argNames": [
+          "s"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
         "comment": null,
         "tags": {}
       }
@@ -45440,6 +45713,33 @@
         "name": "flow_decomposition_pkey",
         "namespaceName": "flatsurvey",
         "classId": "77867",
+        "numberOfAttributes": 1,
+        "isUnique": true,
+        "isPrimary": true,
+        "isImmediate": true,
+        "isReplicaIdentity": false,
+        "isValid": true,
+        "isPartial": false,
+        "attributeNums": [
+          1
+        ],
+        "indexType": "btree",
+        "attributePropertiesAsc": [
+          true
+        ],
+        "attributePropertiesNullsFirst": [
+          false
+        ],
+        "description": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "index",
+        "id": "282647",
+        "name": "completely_cylinder_periodic_pkey",
+        "namespaceName": "flatsurvey",
+        "classId": "282641",
         "numberOfAttributes": 1,
         "isUnique": true,
         "isPrimary": true,

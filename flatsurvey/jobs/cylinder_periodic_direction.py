@@ -101,7 +101,7 @@ class CylinderPeriodicDirection(Consumer):
         cylinder periodic::
 
             >>> flow_decompositions.produce()
-            [Ngon((1, 1, 1))] [CylinderPeriodicDirection] True (directions: 1)
+            [Ngon([1, 1, 1])] [CylinderPeriodicDirection] True (directions: 1)
             True
 
         """

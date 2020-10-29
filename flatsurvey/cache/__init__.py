@@ -1,5 +1,5 @@
 r"""
-A package providing ways to report progress and result of a computation.
+Reads caches of previous results.
 """
 #*********************************************************************
 #  This file is part of flatsurvey.
@@ -19,12 +19,7 @@ A package providing ways to report progress and result of a computation.
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 #*********************************************************************
-
-from .report import Report
-from .reporter import Reporter
-
-from .log import Log
-from .yaml import Yaml
+from .cache import Cache
 from .graphql import GraphQL
 
-commands = [Log.click, Yaml.click, GraphQL.click]
+commands = [GraphQL.click]

@@ -67,6 +67,7 @@ import collections
 import flatsurvey.surfaces
 import flatsurvey.jobs
 import flatsurvey.reporting
+import flatsurvey.cache
 
 from flatsurvey.pipeline import Consumer
 from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
@@ -83,7 +84,7 @@ def worker(debug):
 
 
 # Register subcommands
-for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.reporting.commands]:
+for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.reporting.commands, flatsurvey.cache.commands]:
     for command in kind:
         worker.add_command(command)
 
@@ -123,7 +124,7 @@ def process(commands, debug):
         from random import randint
         bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
-        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs], binding_specs=bindings)
+        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
 
         worker = objects.provide(Worker)
         worker.start()

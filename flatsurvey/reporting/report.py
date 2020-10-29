@@ -10,7 +10,7 @@ EXAMPLES::
     >>> log = Log(surface)
     >>> report = Report([log])
     >>> report.log(surface, "Hello World")
-    [Ngon((1, 1, 1))] [Ngon] Hello World
+    [Ngon([1, 1, 1])] [Ngon] Hello World
 
 """
 #*********************************************************************
@@ -58,8 +58,8 @@ class Report:
             >>> log = Log(surface)
             >>> report = Report([log, log])
             >>> report.log(surface, "Hello World printed by two identical reporters")
-            [Ngon((1, 1, 1))] [Ngon] Hello World printed by two identical reporters
-            [Ngon((1, 1, 1))] [Ngon] Hello World printed by two identical reporters
+            [Ngon([1, 1, 1])] [Ngon] Hello World printed by two identical reporters
+            [Ngon([1, 1, 1])] [Ngon] Hello World printed by two identical reporters
 
         """
         for reporter in self._reporters:
@@ -78,8 +78,8 @@ class Report:
             >>> log = Log(surface)
             >>> report = Report([log, log])
             >>> report.result(surface, "Computation completed.")
-            [Ngon((1, 1, 1))] [Ngon] Computation completed.
-            [Ngon((1, 1, 1))] [Ngon] Computation completed.
+            [Ngon([1, 1, 1])] [Ngon] Computation completed.
+            [Ngon([1, 1, 1])] [Ngon] Computation completed.
 
         """
         for reporter in self._reporters:
@@ -100,8 +100,8 @@ class Report:
             >>> log = Log(surface)
             >>> report = Report([log, log])
             >>> report.progress(surface, unit="dimension", count=13, total=37)
-            [Ngon((1, 1, 1))] [Ngon] dimension: 13/37
-            [Ngon((1, 1, 1))] [Ngon] dimension: 13/37
+            [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
+            [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
         for reporter in self._reporters:

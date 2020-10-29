@@ -1,0 +1,1 @@
+DROP TABLE flatsurvey.pickle;

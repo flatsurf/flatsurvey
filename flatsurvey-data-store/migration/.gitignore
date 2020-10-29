@@ -1,12 +1,3 @@
-# package directories
 node_modules
-jspm_packages
-
-# Serverless directories
-.serverless
-
-# Introspection
-introspection.cache
-
-# dotenv environment variables file
 .env
+.serverless

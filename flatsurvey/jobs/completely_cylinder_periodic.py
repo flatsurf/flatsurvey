@@ -125,7 +125,7 @@ class CompletelyCylinderPeriodic(Consumer):
         completely cylinder periodic::
 
             >>> ccp.report()
-            [Ngon((1, 1, 1))] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
+            [Ngon([1, 1, 1])] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
 
         """
         if decomposition.decomposition.minimalComponents():

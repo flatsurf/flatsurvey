@@ -3,9 +3,9 @@ Translation surfaces coming from Thurston-Veech constructions
 
 EXAMPLES::
 
-    >>> from survey.sources.thurston_veech import ThurstonVeech
     >>> ThurstonVeech('(1,2)', '(1,3)', [1,1], [1,1]).surface()
     TranslationSurface built from 3 polygons
+
 """
 #*********************************************************************
 #  This file is part of flatsurf.
@@ -32,7 +32,7 @@ from collections import defaultdict
 
 from sage.all import cached_method, IntegerVectors, QQ, libgap
 
-from .surface import Surface
+from flatsurvey.surfaces.surface import Surface
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
