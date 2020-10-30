@@ -101,6 +101,9 @@ class GraphQL:
         if isinstance(obj, tuple):
             return tuple(cls.resolve(list(obj)))
         if isinstance(obj, dict):
+            if 'timestamp' in obj:
+                import dateutil
+                obj['timestamp'] = dateutil.parser.isoparse(obj['timestamp'])
             if 'pickle' in obj:
                 restored = None
                 url = obj['pickle']
@@ -144,7 +147,10 @@ class GraphQL:
     def __repr__(self):
         return "cache"
 
-    async def query_async(self, job, surface_filter=None, result_filter=None):
+    def query(self, job, surface_filter=None, result_filter=None, limit=None):
+        return self._run(self.query_async(job=job, surface_filter=surface_filter, result_filter=result_filter, limit=limit))
+
+    async def query_async(self, job, surface_filter=None, result_filter=None, limit=None):
         camel = GraphQLReporter._camel(job)
         upper = GraphQLReporter._upper(job)
 
@@ -159,12 +165,22 @@ class GraphQL:
         if result_filter is None:
             result_filter = ''
 
+        filter = ""
+        if surface_filter or result_filter:
+            filter = f"""filter: {{
+                { surface_filter }
+                { result_filter }
+            }}"""
+
+        if limit is not None:
+            filter = f"""{filter} first: {limit} orderBy: TIMESTAMP_DESC"""
+
+        if filter:
+            filter = f"({filter})"
+
         results = await self._query_async(f"""
             query {{
-                results: all{upper}s(filter: {{
-                    { surface_filter }
-                    { result_filter }
-                }}) {{
+                results: all{upper}s{filter} {{
                     nodes {{
                         id
                         timestamp
@@ -208,7 +224,8 @@ class GraphQL:
         try:
             return await GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key).execute_async(query, *args, **kwargs)
         except TransportProtocolError as e:
-            raise Exception(f"Query failed: {query}")
+            from graphql import print_ast
+            raise Exception(f"Query failed: {print_ast(query)}")
 
     @classmethod
     @click.command(name="cache", cls=GroupedCommand, group="Cache", help=__doc__.split('EXAMPLES')[0])
@@ -239,9 +256,13 @@ class CacheNodes:
         return [
             {
                 **node['data'],
-                'surface': node['surface']['data']
+                'surface': node['surface']['data'],
+                'timestamp': node['timestamp'],
             } for node in self._nodes
         ]
+
+    def __repr__(self):
+        return f"Cached {self._job.__name__}s"
 
     def results(self):
         r"""

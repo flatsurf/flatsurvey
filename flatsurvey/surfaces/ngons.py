@@ -79,7 +79,8 @@ class Ngon(Surface):
     def __init__(self, angles, length='exact-real', lengths=None):
         self.angles = list(angles)
         self.length = length
-        self._lengths.set_cache(lengths)
+        if lengths is not None:
+            self._lengths.set_cache(tuple(lengths))
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
             print("Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?")
@@ -181,7 +182,7 @@ class Ngon(Surface):
                         length = R.random_element() if lengths else R.one()
                     lengths += length * ray
 
-            return lengths
+            return tuple(lengths)
 
         for n in range(1024):
             lengths = random_lengths()
@@ -235,7 +236,7 @@ class Ngon(Surface):
         return (Ngon, (self.angles, self.length, self._lengths()))
 
     def __hash__(self):
-        return hash((self.angles, self._lengths()))
+        return hash((tuple(self.angles), self._lengths()))
 
     def __eq__(self, other):
         return isinstance(other, Ngon) and self.angles == other.angles and self._lengths() == other._lengths()

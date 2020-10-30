@@ -23,6 +23,7 @@ plugins:
 functions:
   graphql:
     handler: api.handler
+    timeout: 60
     events:
       - http:
           path: /

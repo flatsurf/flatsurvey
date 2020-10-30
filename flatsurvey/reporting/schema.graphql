@@ -561,6 +561,9 @@ type FlowDecomposition implements Node {
 
   # Reads a single `Surface` that is related to this `FlowDecomposition`.
   surfaceBySurface: Surface
+  cylinders: Int
+  minimal: Int
+  undetermined: Int
 }
 
 # A condition to be used against `FlowDecomposition` object types. All fields are
@@ -592,6 +595,15 @@ input FlowDecompositionFilter {
 
   # Filter by the object’s `data` field.
   data: JSONFilter
+
+  # Filter by the object’s `cylinders` field.
+  cylinders: IntFilter
+
+  # Filter by the object’s `minimal` field.
+  minimal: IntFilter
+
+  # Filter by the object’s `undetermined` field.
+  undetermined: IntFilter
 
   # Filter by the object’s `surfaceBySurface` relation.
   surfaceBySurface: SurfaceFilter

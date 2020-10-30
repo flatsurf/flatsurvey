@@ -42042,6 +42042,84 @@
     "procedure": [
       {
         "kind": "procedure",
+        "id": "327691",
+        "name": "flow_decomposition_cylinders",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "23",
+        "argTypeIds": [
+          "77869"
+        ],
+        "argModes": [],
+        "argNames": [
+          "fd"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
+        "id": "327693",
+        "name": "flow_decomposition_minimal",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "23",
+        "argTypeIds": [
+          "77869"
+        ],
+        "argModes": [],
+        "argNames": [
+          "fd"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
+        "id": "327692",
+        "name": "flow_decomposition_undetermined",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "23",
+        "argTypeIds": [
+          "77869"
+        ],
+        "argModes": [],
+        "argNames": [
+          "fd"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
         "id": "122916",
         "name": "orbit_closure_dense",
         "description": null,
@@ -45726,6 +45804,87 @@
         "indexType": "btree",
         "attributePropertiesAsc": [
           true
+        ],
+        "attributePropertiesNullsFirst": [
+          false
+        ],
+        "description": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "index",
+        "id": "335887",
+        "name": "flow_decomposition_undetermined",
+        "namespaceName": "flatsurvey",
+        "classId": "77867",
+        "numberOfAttributes": 1,
+        "isUnique": false,
+        "isPrimary": false,
+        "isImmediate": true,
+        "isReplicaIdentity": false,
+        "isValid": true,
+        "isPartial": false,
+        "attributeNums": [
+          0
+        ],
+        "indexType": "gin",
+        "attributePropertiesAsc": [
+          false
+        ],
+        "attributePropertiesNullsFirst": [
+          false
+        ],
+        "description": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "index",
+        "id": "335888",
+        "name": "flow_decomposition_minimal",
+        "namespaceName": "flatsurvey",
+        "classId": "77867",
+        "numberOfAttributes": 1,
+        "isUnique": false,
+        "isPrimary": false,
+        "isImmediate": true,
+        "isReplicaIdentity": false,
+        "isValid": true,
+        "isPartial": false,
+        "attributeNums": [
+          0
+        ],
+        "indexType": "gin",
+        "attributePropertiesAsc": [
+          false
+        ],
+        "attributePropertiesNullsFirst": [
+          false
+        ],
+        "description": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "index",
+        "id": "335889",
+        "name": "flow_decomposition_cylinders",
+        "namespaceName": "flatsurvey",
+        "classId": "77867",
+        "numberOfAttributes": 1,
+        "isUnique": false,
+        "isPrimary": false,
+        "isImmediate": true,
+        "isReplicaIdentity": false,
+        "isValid": true,
+        "isPartial": false,
+        "attributeNums": [
+          0
+        ],
+        "indexType": "gin",
+        "attributePropertiesAsc": [
+          false
         ],
         "attributePropertiesNullsFirst": [
           false
