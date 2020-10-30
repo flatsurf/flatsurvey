@@ -45,7 +45,7 @@ class Cache:
     This is the default cache that is used when the user did not ask for an
     actual cache explicitly on the command line.
     """
-    def result(self, surface, job, exact=False):
+    def results(self, surface, job, exact=False):
         r"""
         Return our previous verdicts on running ``job`` for ``surface``.
 
@@ -56,7 +56,7 @@ class Cache:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
-            >>> results = Cache().result(Ngon([1,1,1]), CompletelyCylinderPeriodic)
+            >>> results = Cache().results(Ngon([1,1,1]), CompletelyCylinderPeriodic)
             >>> results.reduce() is None
             True
             

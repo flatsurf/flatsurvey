@@ -62,44 +62,6 @@ class GraphQL:
     def __init__(self, endpoint=GraphQLReporter.DEFAULT_ENDPOINT, key=GraphQLReporter.DEFAULT_API_KEY, region=GraphQLReporter.DEFAULT_REGION):
         pass
 
-    async def result_async(self, surface, job, exact=False):
-        r"""
-        Return the previous results for ``job`` on ``surface``.
-        """
-        camel = GraphQLReporter._camel(job)
-        surfaces = await self.query_async(f"""
-            query($name: String!) {{
-                surfaces: allSurfaces(filter: {{
-                    name: {{
-                        equalTo: $name
-                    }},
-                    {camel}sBySurfaceExist: true, 
-                }}) {{
-                    nodes {{
-                        id,
-                        data,
-                        results: {camel}sBySurface {{
-                            nodes {{
-                                id,
-                                surface: surfaceBySurface {{
-                                    id,
-                                    data
-                                }},
-                                data
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-        """, variable_values={
-            "name": str(surface)
-        })
-        surfaces = Cache.resolve(surfaces, region=self._region)
-        if exact:
-            raise NotImplementedError("exact row filtering")
-        from itertools import chain
-        return CacheNodes(nodes=list(chain(*[surface["results"]["nodes"] for surface in surfaces["surfaces"]["nodes"]])), job=job, surface=surface)
-
     def _run(self, task):
         import threading
         import asyncio
@@ -119,11 +81,11 @@ class GraphQL:
             raise exception
         return result
 
-    def result(self, surface, job, exact=False):
+    def results(self, surface, job, exact=False):
         r"""
         Return the previous results for ``job`` on ``surface``.
         """
-        return self._run(self.result_async(surface=surface, job=job, exact=exact))
+        return self._run(self.results_async(surface=surface, job=job, exact=exact))
 
     @classmethod
     def resolve(cls, obj, region=GraphQLReporter.DEFAULT_REGION):
@@ -182,20 +144,71 @@ class GraphQL:
     def __repr__(self):
         return "cache"
 
-    def query(self, query, *args, **kwargs):
-        r"""
-        Run the GraphQL ``query`` and return the result.
-        """
-        return self._run(self.query_async(query=query, *args, **kwargs))
+    async def query_async(self, job, surface_filter=None, result_filter=None):
+        camel = GraphQLReporter._camel(job)
+        upper = GraphQLReporter._upper(job)
 
-    async def query_async(self, query, *args, **kwargs):
+        if surface_filter is None:
+            surface_filter = ''
+        else:
+            surface_filter = f"""
+            surfaceBySurface: {{
+                { surface_filter }
+            }}"""
+
+        if result_filter is None:
+            result_filter = ''
+
+        results = await self._query_async(f"""
+            query {{
+                results: all{upper}s(filter: {{
+                    { surface_filter }
+                    { result_filter }
+                }}) {{
+                    nodes {{
+                        id
+                        timestamp
+                        data
+                        surface: surfaceBySurface {{
+                            id
+                            data
+                        }}
+                    }}
+                }}
+            }}""")
+
+        results = GraphQL.resolve(results, region=self._region)
+        from itertools import chain
+        return CacheNodes(nodes=results['results']['nodes'], job=job)
+
+    async def results_async(self, surface, job, exact=False):
+        r"""
+        Return the previous results for ``job`` on ``surface``.
+        """
+        if exact:
+            raise NotImplementedError("exact surface filtering")
+        return await self.query_async(job=job, surface_filter=f"""
+            name: {{ equalTo: "{str(surface)}" }}
+        """, result_filter=None)
+
+    def _query(self, query, *args, **kwargs):
         r"""
         Run the GraphQL ``query`` and return the result.
         """
+        return self._run(self._query_async(query=query, *args, **kwargs))
+
+    async def _query_async(self, query, *args, **kwargs):
+        r"""
+        Run the GraphQL ``query`` and return the result.
+        """
+        from gql.transport.exceptions import TransportProtocolError
         if isinstance(query, str):
             from gql import gql
             query = gql(query)
-        return await GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key).execute_async(query, *args, **kwargs)
+        try:
+            return await GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key).execute_async(query, *args, **kwargs)
+        except TransportProtocolError as e:
+            raise Exception(f"Query failed: {query}")
 
     @classmethod
     @click.command(name="cache", cls=GroupedCommand, group="Cache", help=__doc__.split('EXAMPLES')[0])
@@ -212,10 +225,9 @@ class CacheNodes:
     r"""
     Rows returned from calls to ``GraphQL.result``.
     """
-    def __init__(self, nodes, job, surface=None):
+    def __init__(self, nodes, job):
         self._nodes = nodes
         self._job = job
-        self._surface = surface
 
     def nodes(self):
         r"""
@@ -236,9 +248,7 @@ class CacheNodes:
         Return the objects that were registered as previous results in the
         database.
         """
-        return [
-            node['data']['result']() for node in self._nodes
-        ]
+        return [result for result in [node['data']['result']() for node in self._nodes] if result is not None ]
 
     def reduce(self):
         r"""
@@ -247,4 +257,3 @@ class CacheNodes:
         Return ``None`` if the results are inconclusive.
         """
         return self._job.reduce([node['data'] for node in self._nodes])
-

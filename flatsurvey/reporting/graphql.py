@@ -311,7 +311,7 @@ class GraphQL(Reporter):
             ...         mock.post('https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/', payload={"data":{}})
             ...         log.result(job=ccp, result=None)
             ...         mock.post('https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/', payload={"data":{"surfaces": {"nodes": []}}})
-            ...         assert Cache().result(surface=surface, job=ccp).reduce() == None, "expected unconclusive result"
+            ...         assert Cache().results(surface=surface, job=ccp).reduce() == None, "expected unconclusive result"
 
         """
         import sys

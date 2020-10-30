@@ -82,7 +82,7 @@ class OrbitClosure(Consumer):
         self._directions = 0
         self._expansions_performed = 0
 
-        results = cache.result(surface=surface, job=self)
+        results = cache.results(surface=surface, job=self)
         if results.reduce() is not None:
             report.log(self, "dense orbit closure (cached)")
             self._resolved = Consumer.COMPLETED
