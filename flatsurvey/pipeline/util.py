@@ -45,7 +45,8 @@ def ListBindingSpec(name, sequence):
     provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {}, f"provide_{name}")
     provider.__module__ = "__main__"
     binding = type(f"{name}ListBinding", (pinject.BindingSpec,), {
-        f"provide_{name}": provider
+        f"provide_{name}": provider,
+        "__repr__": lambda self: f"{name}->{sequence}"
     })()
 
     return binding
@@ -87,6 +88,7 @@ def PartialBindingSpec(prototype, name=None):
         provider.__module__ = "__main__"
         binding = type(f"Partial{prototype.__name__}Binding", (pinject.BindingSpec,), {
             f"provide_{name}": provider,
+            "__repr__": lambda self: f"{name}->{prototype.__name__}"
         })()
         return binding
     return wrap
@@ -112,7 +114,8 @@ def FactoryBindingSpec(name, prototype):
     provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {'prototype': prototype}, f"provide_{name}")
     provider.__module__ = "__main__"
     binding = type(f"{name}FactoryBinding", (pinject.BindingSpec,), {
-        f"provide_{name}": provider
+        f"provide_{name}": provider,
+        "__repr__": lambda self: f"{name}->{prototype}"
     })()
 
     return binding
