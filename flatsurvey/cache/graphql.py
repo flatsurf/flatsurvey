@@ -102,7 +102,7 @@ class GraphQL:
             return tuple(cls.resolve(list(obj)))
         if isinstance(obj, dict):
             if 'timestamp' in obj:
-                import dateutil
+                import dateutil.parser
                 obj['timestamp'] = dateutil.parser.isoparse(obj['timestamp'])
             if 'pickle' in obj:
                 restored = None
