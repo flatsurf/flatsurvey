@@ -5,7 +5,7 @@ To perform a full survey, use [`python -m flatsurvey`](./flatsurvey/__main__.py)
 For example, here is a typical survey that collects data about triangles, quadrilaterals, and pentagons:
 
 ```
-nice python -m flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure cylinder-periodic-direction log dynamodb
+nice python -m flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure cylinder-periodic-direction log graphql
 ```
 
 Dependencies:
