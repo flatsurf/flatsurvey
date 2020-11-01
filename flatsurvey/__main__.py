@@ -8,7 +8,7 @@ python -m survey ngons -n 4 orbit-closure
 ```
 
 TESTS::
-    
+
     >>> from .test.cli import invoke
     >>> invoke(survey) # doctest: +NORMALIZE_WHITESPACE
     Usage: survey [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
@@ -66,9 +66,10 @@ import click
 import flatsurvey
 
 import flatsurvey.cache
-from flatsurvey.surfaces import generators
-from flatsurvey.jobs import commands as jobs
-from flatsurvey.reporting import commands as reporters, Reporter
+import flatsurvey.jobs
+import flatsurvey.reporting
+import flatsurvey.surfaces
+
 from flatsurvey.ui.group import CommandWithGroups
 
 @click.group(chain=True, cls=CommandWithGroups, help="Run a survey on the `objects` until all the `goals` are reached.")
@@ -81,7 +82,7 @@ def survey(dry_run):
 
 
 # Register objects and goals as subcommans of "survey".
-for kind in [generators, jobs, reporters]:
+for kind in [flatsurvey.surfaces.generators, flatsurvey.jobs.commands, flatsurvey.reporting.commands, flatsurvey.cache.commands]:
     for command in kind:
         survey.add_command(command)
 
@@ -120,10 +121,10 @@ class Scheduler:
     r"""
     A simple scheduler that splits a survey into commands that are run on the local
     machine when the load admits it.
- 
+
     >>> Scheduler(generators=[], bindings=[], goals=[], reporters=[])
     Scheduler
- 
+
     """
     def __init__(self, generators, bindings, goals, reporters, dry_run=False, load=1., quiet=False):
         self._generators = generators
@@ -134,17 +135,17 @@ class Scheduler:
         self._load = load
         self._quiet = quiet
         self._jobs = []
- 
+
     def __repr__(self): return "Scheduler"
- 
+
     async def start(self):
         r"""
         Run the scheduler until it has run out of jobs to schedule.
- 
+
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[])
         >>> asyncio.run(scheduler.start())
         All jobs have been scheduled. Now waiting for jobs to finish.
- 
+
         """
         tasks = []
         nothing = object()
@@ -160,35 +161,40 @@ class Scheduler:
                     tasks.append(await self._enqueue(command))
                 except StopIteration:
                     iters.remove(it)
- 
+
         print("All jobs have been scheduled. Now waiting for jobs to finish.")
         await asyncio.gather(*tasks)
- 
+
     def _render_command(self, surface):
         r"""
         Return the command to invoke a worker to compute the ``goals`` for ``surface``.
- 
+
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import OrbitClosure
- 
+
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[])
         >>> scheduler._render_command(Ngon([1, 1, 1])) # doctest: +ELLIPSIS
         ['python', '-m', 'flatsurvey.worker', 'pickle', '--base64', '...', 'orbit-closure']
- 
+
         """
         bindings = list(self._bindings)
 
         from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
         bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))
-        bindings.append(ListBindingSpec("reporters", self._reporters)) 
+        bindings.append(ListBindingSpec("reporters", self._reporters))
         from random import randint
         bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
         import pinject
         objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
 
-        commands = surface.command()
+        commands = []
+
+        class Reporters:
+            def __init__(self, reporters): self._reporters = reporters
+        for reporter in objects.provide(Reporters)._reporters:
+            commands.extend(reporter.command())
 
         class Goals:
             def __init__(self, goals): self._goals = goals
@@ -199,25 +205,22 @@ class Scheduler:
         for goal in goals:
             commands.extend(goal.command())
 
-        class Reporters:
-            def __init__(self, reporters): self._reporters = reporters
-        for reporter in objects.provide(Reporters)._reporters:
-            commands.extend(reporter.command())
- 
+        commands.extend(surface.command())
+
         import os
         return [os.environ.get("PYTHON", "python"), "-m", "flatsurvey.worker"] + commands
- 
+
     async def _enqueue(self, command):
         r"""
         Run ``command`` once the load admits it.
- 
+
         The result of this coroutine is a task that terminates when the command is completed.
- 
+
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=None)
         >>> asyncio.run(scheduler._enqueue(["true"]))
         spawning true
         <Task ...>
- 
+
         """
         # TODO: This is a bit of a hack: Without it, the _run never actually
         # runs and we just enqueue forever (we do not need 1 for this, 0
@@ -227,13 +230,13 @@ class Scheduler:
         from os import cpu_count, getloadavg
         while self._load is not None and getloadavg()[0] / cpu_count() > self._load:
             await asyncio.sleep(1)
- 
+
         return asyncio.create_task(self._run(command))
- 
+
     async def _run(self, command):
         r"""
         Run ``command``.
- 
+
         # TODO: Currently, pytest fails to test these with a "fileno" error.
         # >>> scheduler = Scheduler(generators=[], goals=[], reporters=[], bindings=[], load=None)
         # >>> asyncio.run(scheduler._run(["echo", "hello world"]))
@@ -246,12 +249,12 @@ class Scheduler:
         # Traceback (most recent call last):
         # ...
         # plumbum.commands.processes.ProcessExecutionError: Unexpected exit code: ...
- 
+
         """
         if self._dry_run:
             print(" ".join(command))
             return
- 
+
         import sys
         import datetime
         import os.path
@@ -259,22 +262,22 @@ class Scheduler:
         from plumbum.commands.processes import ProcessExecutionError
         local.cwd.chdir(os.path.dirname(os.path.dirname(__file__)))
         print("spawning", " ".join(command))
- 
+
         start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG(stdout=sys.stdout, stderr=sys.stderr)
- 
+
         try:
             while not task.ready():
                 await asyncio.sleep(1)
             print("*** completed ", command)
-    
+
             if task.stdout:
                 print("*** task produced output on stdout: ")
                 print(task.stdout)
         except ProcessExecutionError as e:
             print("*** process crashed ", " ".join(command))
             print(e)
-    
+
         print("*** terminated after %s wall time"%(datetime.datetime.now() - start,))
 
 if __name__ == "__main__": survey()
