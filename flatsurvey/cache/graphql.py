@@ -234,7 +234,7 @@ class GraphQL:
     @click.option("--region", type=str, default=GraphQLReporter.DEFAULT_REGION, show_default=True, help="AWS region to connect to")
     def click(endpoint, key, region):
         return {
-            'bindings': [ PartialBindingSpec(GraphQL, name="Cache")(endpoint=endpoint, key=key, region=region) ],
+            'bindings': [ PartialBindingSpec(GraphQL, name="cache")(endpoint=endpoint, key=key, region=region) ],
         }
 
 
