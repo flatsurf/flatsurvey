@@ -8,7 +8,11 @@ For example, here is a typical survey that collects data about triangles, quadri
 nice python -m flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure cylinder-periodic-direction log graphql
 ```
 
-Dependencies:
+# Troubleshooting
+
+* For large surveys, RAM might become the limiting factor. It appears that we are not actually leaking memory but are hit by memory fragmentation during the Boshernitzan criterion. The issue can be fully mitigated by replacing malloc with [Mesh](https://github.com/plasma-umass/Mesh), i.e., setting `LD_PRELOAD=/path/to/libmesh.so`.
+
+# Dependencies:
 
 - click Python module
 - pinject Python module
