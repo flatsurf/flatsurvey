@@ -104,7 +104,19 @@ class GraphQL(Reporter):
         if login is None or password is None:
             transport = AIOHTTPTransport(url=endpoint, headers={
                 'x-api-key': key})
-            return Client(transport=transport, schema=schema)
+            client = Client(transport=transport, schema=schema)
+
+            retry = 5
+            while retry:
+                import concurrent.futures
+                try:
+                    from flatsurvey.cache.graphql import GraphQL
+                    GraphQL._run(client.execute_async(gql(r"query { __typename }")))
+                    break
+                except concurrent.futures.TimeoutError:
+                    retry -= 1
+                    if not retry: raise
+                    print("Query timed out...retrying")
         else:
             client = cls.graphql_client(endpoint=endpoint, key=key)
             authorization = client.execute(gql(r"""
@@ -119,12 +131,35 @@ class GraphQL(Reporter):
             transport = AIOHTTPTransport(url=endpoint, headers={
                 'x-api-key': key,
                 'Authorization': f"Bearer {authorization}"})
-            return Client(transport=transport, schema=schema)
+            client = Client(transport=transport, schema=schema)
+        client.execute_timeout = 60
+        return client
+
+    # TODO: Turn these things into a proper GraphQL wrapper that handles all the typical exceptions.
+    def _execute(self, query, readonly=True, **kwargs):
+        import concurrent.futures
+        from gql.transport.exceptions import TransportQueryError, TransportServerError
+        from gql import gql
+        retry = 5
+        while retry:
+            retry -= 1
+            client = self._graphql(readonly=readonly)
+            try:
+                return client.execute(gql(query), **kwargs)
+            except concurrent.futures.TimeoutError:
+                if retry == 0: raise
+            except TransportQueryError:
+                if retry == 0: raise
+            except TransportServerError:
+                if retry == 0: raise
+
+            print("Query failed. Retrying.")
+
+            self._graphql.clear_cache()
 
     @cached_method
     def _surface_id(self):
-        from gql import gql
-        return self._graphql().execute(gql(r"""
+        return self._execute(r"""
             mutation($data: JSON!) {
                 createSurface(input: {
                     surface: {
@@ -133,7 +168,7 @@ class GraphQL(Reporter):
                 }) {
                     surface { id }
                 }
-            }"""), variable_values={"data": self._serialize(self._surface)})["createSurface"]["surface"]["id"]
+            }""", readonly=False, variable_values={"data": self._serialize(self._surface)})["createSurface"]["surface"]["id"]
 
     def s3(self, raw, directory="pickles"):
         r"""
@@ -318,8 +353,7 @@ class GraphQL(Reporter):
         argv = sys.argv
         if argv and argv[0] == "-m": argv = argv[1:]
 
-        from gql import gql
-        self._graphql().execute(gql(f"""
+        self._execute(f"""
             mutation($data: JSON!, $surface: UUID!) {{
                 create{GraphQL._upper(job)}(input: {{
                     {GraphQL._camel(job)}: {{
@@ -330,7 +364,7 @@ class GraphQL(Reporter):
                     {GraphQL._camel(job)} {{ id }}
                 }}
             }}
-        """), variable_values={
+        """, readonly=False, variable_values={
             "surface": self._surface_id(),
             "data": {
                 "invocation": argv,
@@ -349,7 +383,17 @@ class GraphQL(Reporter):
     @click.option("--bucket", type=str, default=DEFAULT_BUCKET, show_default=True, help="S3 bucket to write to")
     def click(endpoint, key, region, bucket):
         return {
-            'bindings': [ PartialBindingSpec(GraphQL)(endpoint=endpoint, key=key, bucket=bucket, region=region) ],
+            'bindings': GraphQL.bindings(endpoint=endpoint, key=key, region=region, bucket=bucket),
+            'reporters': [ GraphQL ],
+        }
+
+    @classmethod
+    def bindings(cls, endpoint, key, region, bucket):
+        return [ PartialBindingSpec(GraphQL)(endpoint=endpoint, key=key, bucket=bucket, region=region) ]
+
+    def deform(self, deformation):
+        return {
+            'bindings': GraphQL.bindings(endpoint=self._endpoint, key=self._key, region=self._region, bucket=self._bucket),
             'reporters': [ GraphQL ],
         }
 
