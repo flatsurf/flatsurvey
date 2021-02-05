@@ -128,6 +128,22 @@ class Ngon(Surface):
             if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
             if (a, b, c) in [(1, 3, 6), (1, 3, 8)]: return "Rank-one example (to be checked)"
 
+        if len(self.angles) == 4:
+            a, b, c, d = self.angles
+            assert a <= b <= c <= d
+            if (a, b, c, d) == (1, 1, 1, 7): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 1, 9): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 2, 8): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 2, 12): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 2, 2, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 2, 2, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 1, 1): return "Torus"
+            if a == b and c == d:
+                if a % 2 != c % 2:
+                    return "Same as (%d, %d, %d, %d)"%(2 * a, 2 * c, a + c, a + c)
+                else:
+                    return "Same as (%d, %d, %d, %d)"%(a, c, (a + c)/2, (a + c)/2)
+
     @property
     def orbit_closure_dimension_upper_bound(self):
         if not hasattr(self, "_bound"):
