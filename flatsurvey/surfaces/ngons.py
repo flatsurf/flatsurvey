@@ -206,6 +206,8 @@ class Ngon(Surface):
                 E(lengths)
             except ValueError as e:
                 continue
+            while min(lengths) < 1:
+                lengths = tuple(l * 2 for l in lengths)
             return lengths
 
         raise Exception("giving up on", E)
