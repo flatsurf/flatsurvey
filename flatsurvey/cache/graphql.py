@@ -137,7 +137,7 @@ class GraphQL:
     def query(self, job, surface_filter=None, result_filter=None, limit=None):
         return self._run(self.query_async(job=job, surface_filter=surface_filter, result_filter=result_filter, limit=limit))
 
-    async def query_async(self, job, surface_filter=None, result_filter=None, limit=None):
+    def _create_query(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
         camel = GraphQLReporter._camel(job)
         upper = GraphQLReporter._upper(job)
 
@@ -162,28 +162,42 @@ class GraphQL:
         if limit is not None:
             filter = f"""{filter} first: {limit} orderBy: TIMESTAMP_DESC"""
 
+        if after is not None:
+            filter = f"""{filter} after: "{after}" """
+
         if filter:
             filter = f"({filter})"
 
-        query = f"""
+        return f"""
             query {{
                 results: all{upper}s{filter} {{
-                    nodes {{
-                        id
-                        timestamp
-                        data
-                        surface: surfaceBySurface {{
+                    edges {{
+                        cursor,
+                        node {{
                             id
+                            timestamp
                             data
+                            surface: surfaceBySurface {{
+                                id
+                                data
+                            }}
                         }}
                     }}
                 }}
             }}"""
-        results = await self._query_async(query)
+
+
+    async def query_async(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
+        results = await self._query_async(self._create_query(job=job, surface_filter=surface_filter, result_filter=result_filter, limit=limit, after=after))
 
         results = self.resolve(results)
         from itertools import chain
-        return CacheNodes(nodes=results['results']['nodes'], job=job)
+
+        last = None
+        if results['results']['edges']:
+            last = results['results']['edges'][-1]['cursor']
+
+        return CacheNodes(nodes=[edge['node'] for edge in results['results']['edges']], job=job, last=last)
 
     async def results_async(self, surface, job, exact=False):
         r"""
@@ -240,9 +254,10 @@ class CacheNodes:
     r"""
     Rows returned from calls to ``GraphQL.result``.
     """
-    def __init__(self, nodes, job):
+    def __init__(self, nodes, job, last=None):
         self._nodes = nodes
         self._job = job
+        self._last = last
 
     def nodes(self):
         r"""
@@ -327,7 +342,7 @@ class PickleCache:
             self._cache[url] = weakref.ref(cached)
             return cached
         except Exception as e:
-            print(f"Failed to restore {obj}:\n{e}")
+            print(f"Failed to restore {url}:\n{e}")
 
     def _download(self, url):
         self._downloads.schedule(url)
