@@ -117,6 +117,9 @@ class Surface:
             S.delaunay()
             S = from_pyflatsurf(S)
             S = S.erase_marked_points()
+            S = to_pyflatsurf(S)
+            S.delaunay()
+            S = from_pyflatsurf(S)
         return S
 
     def _surface(self):
