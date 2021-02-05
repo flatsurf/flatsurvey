@@ -231,7 +231,7 @@ class Ngon(Surface):
     @cached_method
     def _surface(self):
         from flatsurf import similarity_surfaces
-        S = similarity_surfaces.billiard(self.polygon())
+        S = similarity_surfaces.billiard(self.polygon(), rational=True)
         S = S.minimal_cover(cover_type="translation")
         return S
 
