@@ -272,6 +272,38 @@ type CreateSurfacePayload {
   ): SurfacesEdge
 }
 
+# All input for the create `UndeterminedIntervalExchangeTransformation` mutation.
+input CreateUndeterminedIntervalExchangeTransformationInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The `UndeterminedIntervalExchangeTransformation` to be created by this mutation.
+  undeterminedIntervalExchangeTransformation: UndeterminedIntervalExchangeTransformationInput!
+}
+
+# The output of our create `UndeterminedIntervalExchangeTransformation` mutation.
+type CreateUndeterminedIntervalExchangeTransformationPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `UndeterminedIntervalExchangeTransformation` that was created by this mutation.
+  undeterminedIntervalExchangeTransformation: UndeterminedIntervalExchangeTransformation
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `UndeterminedIntervalExchangeTransformation`.
+  surfaceBySurface: Surface
+
+  # An edge for our `UndeterminedIntervalExchangeTransformation`. May be used by Relay 1.
+  undeterminedIntervalExchangeTransformationEdge(
+    # The method to use when ordering `UndeterminedIntervalExchangeTransformation`.
+    orderBy: [UndeterminedIntervalExchangeTransformationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): UndeterminedIntervalExchangeTransformationsEdge
+}
+
 # All input for the create `User` mutation.
 input CreateUserInput {
   # An arbitrary string value with no semantic meaning. Will be included in the
@@ -503,6 +535,47 @@ type DeleteSurfacePayload {
     # The method to use when ordering `Surface`.
     orderBy: [SurfacesOrderBy!] = [PRIMARY_KEY_ASC]
   ): SurfacesEdge
+}
+
+# All input for the `deleteUndeterminedIntervalExchangeTransformationById` mutation.
+input DeleteUndeterminedIntervalExchangeTransformationByIdInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+  id: UUID!
+}
+
+# All input for the `deleteUndeterminedIntervalExchangeTransformation` mutation.
+input DeleteUndeterminedIntervalExchangeTransformationInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The globally unique `ID` which will identify a single `UndeterminedIntervalExchangeTransformation` to be deleted.
+  nodeId: ID!
+}
+
+# The output of our delete `UndeterminedIntervalExchangeTransformation` mutation.
+type DeleteUndeterminedIntervalExchangeTransformationPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `UndeterminedIntervalExchangeTransformation` that was deleted by this mutation.
+  undeterminedIntervalExchangeTransformation: UndeterminedIntervalExchangeTransformation
+  deletedUndeterminedIntervalExchangeTransformationId: ID
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `UndeterminedIntervalExchangeTransformation`.
+  surfaceBySurface: Surface
+
+  # An edge for our `UndeterminedIntervalExchangeTransformation`. May be used by Relay 1.
+  undeterminedIntervalExchangeTransformationEdge(
+    # The method to use when ordering `UndeterminedIntervalExchangeTransformation`.
+    orderBy: [UndeterminedIntervalExchangeTransformationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): UndeterminedIntervalExchangeTransformationsEdge
 }
 
 # All input for the `deleteUserByEmail` mutation.
@@ -853,6 +926,12 @@ type Mutation {
     input: CreateSurfaceInput!
   ): CreateSurfacePayload
 
+  # Creates a single `UndeterminedIntervalExchangeTransformation`.
+  createUndeterminedIntervalExchangeTransformation(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: CreateUndeterminedIntervalExchangeTransformationInput!
+  ): CreateUndeterminedIntervalExchangeTransformationPayload
+
   # Creates a single `User`.
   createUser(
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
@@ -906,6 +985,18 @@ type Mutation {
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     input: UpdateSurfaceByIdInput!
   ): UpdateSurfacePayload
+
+  # Updates a single `UndeterminedIntervalExchangeTransformation` using its globally unique id and a patch.
+  updateUndeterminedIntervalExchangeTransformation(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: UpdateUndeterminedIntervalExchangeTransformationInput!
+  ): UpdateUndeterminedIntervalExchangeTransformationPayload
+
+  # Updates a single `UndeterminedIntervalExchangeTransformation` using a unique key and a patch.
+  updateUndeterminedIntervalExchangeTransformationById(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: UpdateUndeterminedIntervalExchangeTransformationByIdInput!
+  ): UpdateUndeterminedIntervalExchangeTransformationPayload
 
   # Updates a single `User` using its globally unique id and a patch.
   updateUser(
@@ -972,6 +1063,18 @@ type Mutation {
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     input: DeleteSurfaceByIdInput!
   ): DeleteSurfacePayload
+
+  # Deletes a single `UndeterminedIntervalExchangeTransformation` using its globally unique id.
+  deleteUndeterminedIntervalExchangeTransformation(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: DeleteUndeterminedIntervalExchangeTransformationInput!
+  ): DeleteUndeterminedIntervalExchangeTransformationPayload
+
+  # Deletes a single `UndeterminedIntervalExchangeTransformation` using a unique key.
+  deleteUndeterminedIntervalExchangeTransformationById(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: DeleteUndeterminedIntervalExchangeTransformationByIdInput!
+  ): DeleteUndeterminedIntervalExchangeTransformationPayload
 
   # Deletes a single `User` using its globally unique id.
   deleteUser(
@@ -1261,6 +1364,34 @@ type Query implements Node {
     filter: SurfaceFilter
   ): SurfacesConnection
 
+  # Reads and enables pagination through a set of `UndeterminedIntervalExchangeTransformation`.
+  allUndeterminedIntervalExchangeTransformations(
+    # Only read the first `n` values of the set.
+    first: Int
+
+    # Only read the last `n` values of the set.
+    last: Int
+
+    # Skip the first `n` values from our `after` cursor, an alternative to cursor
+    # based pagination. May not be used with `last`.
+    offset: Int
+
+    # Read all values in the set before (above) this cursor.
+    before: Cursor
+
+    # Read all values in the set after (below) this cursor.
+    after: Cursor
+
+    # The method to use when ordering `UndeterminedIntervalExchangeTransformation`.
+    orderBy: [UndeterminedIntervalExchangeTransformationsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    # A condition to be used in determining which values should be returned by the collection.
+    condition: UndeterminedIntervalExchangeTransformationCondition
+
+    # A filter to be used in determining which values should be returned by the collection.
+    filter: UndeterminedIntervalExchangeTransformationFilter
+  ): UndeterminedIntervalExchangeTransformationsConnection
+
   # Reads and enables pagination through a set of `User`.
   allUsers(
     # Only read the first `n` values of the set.
@@ -1292,6 +1423,7 @@ type Query implements Node {
   flowDecompositionById(id: UUID!): FlowDecomposition
   orbitClosureById(id: UUID!): OrbitClosure
   surfaceById(id: UUID!): Surface
+  undeterminedIntervalExchangeTransformationById(id: UUID!): UndeterminedIntervalExchangeTransformation
   userById(id: Int!): User
   userByEmail(email: String!): User
 
@@ -1318,6 +1450,12 @@ type Query implements Node {
     # The globally unique `ID` to be used in selecting a single `Surface`.
     nodeId: ID!
   ): Surface
+
+  # Reads a single `UndeterminedIntervalExchangeTransformation` using its globally unique `ID`.
+  undeterminedIntervalExchangeTransformation(
+    # The globally unique `ID` to be used in selecting a single `UndeterminedIntervalExchangeTransformation`.
+    nodeId: ID!
+  ): UndeterminedIntervalExchangeTransformation
 
   # Reads a single `User` using its globally unique `ID`.
   user(
@@ -1556,6 +1694,34 @@ type Surface implements Node {
     # A filter to be used in determining which values should be returned by the collection.
     filter: CompletelyCylinderPeriodicFilter
   ): CompletelyCylinderPeriodicsConnection!
+
+  # Reads and enables pagination through a set of `UndeterminedIntervalExchangeTransformation`.
+  undeterminedIntervalExchangeTransformationsBySurface(
+    # Only read the first `n` values of the set.
+    first: Int
+
+    # Only read the last `n` values of the set.
+    last: Int
+
+    # Skip the first `n` values from our `after` cursor, an alternative to cursor
+    # based pagination. May not be used with `last`.
+    offset: Int
+
+    # Read all values in the set before (above) this cursor.
+    before: Cursor
+
+    # Read all values in the set after (below) this cursor.
+    after: Cursor
+
+    # The method to use when ordering `UndeterminedIntervalExchangeTransformation`.
+    orderBy: [UndeterminedIntervalExchangeTransformationsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    # A condition to be used in determining which values should be returned by the collection.
+    condition: UndeterminedIntervalExchangeTransformationCondition
+
+    # A filter to be used in determining which values should be returned by the collection.
+    filter: UndeterminedIntervalExchangeTransformationFilter
+  ): UndeterminedIntervalExchangeTransformationsConnection!
   angles: [Int]
   name: String
   vertices: Int
@@ -1610,6 +1776,12 @@ input SurfaceFilter {
 
   # Some related `completelyCylinderPeriodicsBySurface` exist.
   completelyCylinderPeriodicsBySurfaceExist: Boolean
+
+  # Filter by the object’s `undeterminedIntervalExchangeTransformationsBySurface` relation.
+  undeterminedIntervalExchangeTransformationsBySurface: SurfaceToManyUndeterminedIntervalExchangeTransformationFilter
+
+  # Some related `undeterminedIntervalExchangeTransformationsBySurface` exist.
+  undeterminedIntervalExchangeTransformationsBySurfaceExist: Boolean
 
   # Checks for all expressions in this list.
   and: [SurfaceFilter!]
@@ -1706,6 +1878,144 @@ input SurfaceToManyOrbitClosureFilter {
 
   # No related `OrbitClosure` matches the filter criteria. All fields are combined with a logical ‘and.’
   none: OrbitClosureFilter
+}
+
+# A filter to be used against many `UndeterminedIntervalExchangeTransformation`
+# object types. All fields are combined with a logical ‘and.’
+input SurfaceToManyUndeterminedIntervalExchangeTransformationFilter {
+  # Every related `UndeterminedIntervalExchangeTransformation` matches the filter
+  # criteria. All fields are combined with a logical ‘and.’
+  every: UndeterminedIntervalExchangeTransformationFilter
+
+  # Some related `UndeterminedIntervalExchangeTransformation` matches the filter
+  # criteria. All fields are combined with a logical ‘and.’
+  some: UndeterminedIntervalExchangeTransformationFilter
+
+  # No related `UndeterminedIntervalExchangeTransformation` matches the filter
+  # criteria. All fields are combined with a logical ‘and.’
+  none: UndeterminedIntervalExchangeTransformationFilter
+}
+
+type UndeterminedIntervalExchangeTransformation implements Node {
+  # A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  nodeId: ID!
+  id: UUID!
+  timestamp: Datetime!
+  surface: UUID
+  data: JSON!
+
+  # Reads a single `Surface` that is related to this `UndeterminedIntervalExchangeTransformation`.
+  surfaceBySurface: Surface
+  degree: Int
+  intervals: Int
+}
+
+# A condition to be used against `UndeterminedIntervalExchangeTransformation`
+# object types. All fields are tested for equality and combined with a logical ‘and.’
+input UndeterminedIntervalExchangeTransformationCondition {
+  # Checks for equality with the object’s `id` field.
+  id: UUID
+
+  # Checks for equality with the object’s `timestamp` field.
+  timestamp: Datetime
+
+  # Checks for equality with the object’s `surface` field.
+  surface: UUID
+
+  # Checks for equality with the object’s `data` field.
+  data: JSON
+}
+
+# A filter to be used against `UndeterminedIntervalExchangeTransformation` object
+# types. All fields are combined with a logical ‘and.’
+input UndeterminedIntervalExchangeTransformationFilter {
+  # Filter by the object’s `id` field.
+  id: UUIDFilter
+
+  # Filter by the object’s `timestamp` field.
+  timestamp: DatetimeFilter
+
+  # Filter by the object’s `surface` field.
+  surface: UUIDFilter
+
+  # Filter by the object’s `data` field.
+  data: JSONFilter
+
+  # Filter by the object’s `degree` field.
+  degree: IntFilter
+
+  # Filter by the object’s `intervals` field.
+  intervals: IntFilter
+
+  # Filter by the object’s `surfaceBySurface` relation.
+  surfaceBySurface: SurfaceFilter
+
+  # A related `surfaceBySurface` exists.
+  surfaceBySurfaceExists: Boolean
+
+  # Checks for all expressions in this list.
+  and: [UndeterminedIntervalExchangeTransformationFilter!]
+
+  # Checks for any expressions in this list.
+  or: [UndeterminedIntervalExchangeTransformationFilter!]
+
+  # Negates the expression.
+  not: UndeterminedIntervalExchangeTransformationFilter
+}
+
+# An input for mutations affecting `UndeterminedIntervalExchangeTransformation`
+input UndeterminedIntervalExchangeTransformationInput {
+  id: UUID
+  timestamp: Datetime
+  surface: UUID
+  data: JSON!
+}
+
+# Represents an update to a `UndeterminedIntervalExchangeTransformation`. Fields that are set will be updated.
+input UndeterminedIntervalExchangeTransformationPatch {
+  id: UUID
+  timestamp: Datetime
+  surface: UUID
+  data: JSON
+}
+
+# A connection to a list of `UndeterminedIntervalExchangeTransformation` values.
+type UndeterminedIntervalExchangeTransformationsConnection {
+  # A list of `UndeterminedIntervalExchangeTransformation` objects.
+  nodes: [UndeterminedIntervalExchangeTransformation]!
+
+  # A list of edges which contains the `UndeterminedIntervalExchangeTransformation` and cursor to aid in pagination.
+  edges: [UndeterminedIntervalExchangeTransformationsEdge!]!
+
+  # Information to aid in pagination.
+  pageInfo: PageInfo!
+
+  # The count of *all* `UndeterminedIntervalExchangeTransformation` you could get from the connection.
+  totalCount: Int!
+}
+
+# A `UndeterminedIntervalExchangeTransformation` edge in the connection.
+type UndeterminedIntervalExchangeTransformationsEdge {
+  # A cursor for use in pagination.
+  cursor: Cursor
+
+  # The `UndeterminedIntervalExchangeTransformation` at the end of the edge.
+  node: UndeterminedIntervalExchangeTransformation
+}
+
+# Methods to use when ordering `UndeterminedIntervalExchangeTransformation`.
+enum UndeterminedIntervalExchangeTransformationsOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  TIMESTAMP_ASC
+  TIMESTAMP_DESC
+  SURFACE_ASC
+  SURFACE_DESC
+  DATA_ASC
+  DATA_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
 }
 
 # All input for the `updateCompletelyCylinderPeriodicById` mutation.
@@ -1887,6 +2197,52 @@ type UpdateSurfacePayload {
     # The method to use when ordering `Surface`.
     orderBy: [SurfacesOrderBy!] = [PRIMARY_KEY_ASC]
   ): SurfacesEdge
+}
+
+# All input for the `updateUndeterminedIntervalExchangeTransformationById` mutation.
+input UpdateUndeterminedIntervalExchangeTransformationByIdInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # An object where the defined keys will be set on the `UndeterminedIntervalExchangeTransformation` being updated.
+  undeterminedIntervalExchangeTransformationPatch: UndeterminedIntervalExchangeTransformationPatch!
+  id: UUID!
+}
+
+# All input for the `updateUndeterminedIntervalExchangeTransformation` mutation.
+input UpdateUndeterminedIntervalExchangeTransformationInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The globally unique `ID` which will identify a single `UndeterminedIntervalExchangeTransformation` to be updated.
+  nodeId: ID!
+
+  # An object where the defined keys will be set on the `UndeterminedIntervalExchangeTransformation` being updated.
+  undeterminedIntervalExchangeTransformationPatch: UndeterminedIntervalExchangeTransformationPatch!
+}
+
+# The output of our update `UndeterminedIntervalExchangeTransformation` mutation.
+type UpdateUndeterminedIntervalExchangeTransformationPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `UndeterminedIntervalExchangeTransformation` that was updated by this mutation.
+  undeterminedIntervalExchangeTransformation: UndeterminedIntervalExchangeTransformation
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `UndeterminedIntervalExchangeTransformation`.
+  surfaceBySurface: Surface
+
+  # An edge for our `UndeterminedIntervalExchangeTransformation`. May be used by Relay 1.
+  undeterminedIntervalExchangeTransformationEdge(
+    # The method to use when ordering `UndeterminedIntervalExchangeTransformation`.
+    orderBy: [UndeterminedIntervalExchangeTransformationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): UndeterminedIntervalExchangeTransformationsEdge
 }
 
 # All input for the `updateUserByEmail` mutation.
