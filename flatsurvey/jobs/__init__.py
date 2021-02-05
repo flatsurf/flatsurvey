@@ -28,5 +28,6 @@ from .saddle_connections import SaddleConnections
 from .saddle_connection_orientations import SaddleConnectionOrientations
 from .completely_cylinder_periodic import CompletelyCylinderPeriodic
 from .cylinder_periodic_direction import CylinderPeriodicDirection
+from .undetermined_interval_exchange_transformation import UndeterminedIntervalExchangeTransformation
 
-commands = [OrbitClosure.click, CylinderPeriodicDirection.click, CompletelyCylinderPeriodic.click, FlowDecompositions.click, CompletelyCylinderPeriodic.click, SaddleConnections.click, SaddleConnectionOrientations.click]
+commands = [OrbitClosure.click, CylinderPeriodicDirection.click, CompletelyCylinderPeriodic.click, FlowDecompositions.click, CompletelyCylinderPeriodic.click, SaddleConnections.click, SaddleConnectionOrientations.click, UndeterminedIntervalExchangeTransformation.click]
