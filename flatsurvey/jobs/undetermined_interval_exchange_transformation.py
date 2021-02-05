@@ -65,13 +65,22 @@ cppyy.cppdef(r'''
 template <typename T> std::tuple<std::vector<eantic::renf_elem_class>, std::vector<int> > construction(T& iet) {
     std::vector<eantic::renf_elem_class> lengths;
     std::vector<int> permutation;
+    const auto top = iet.top();
     const auto bottom = iet.bottom();
-    for (auto& label : iet.top()) {
+    for (auto& label : top) {
         lengths.push_back(boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label)));
-        permutation.push_back(std::find(std::begin(bottom), std::end(bottom), label) - std::begin(bottom));
+    }
+    for (auto& label : bottom) {
+        permutation.push_back(std::find(std::begin(top), std::end(top), label) - std::begin(top));
     }
 
     return std::make_tuple(lengths, permutation);
+}
+
+template <typename T> int degree(T& iet) {
+    auto label = *std::begin(iet.top());
+    auto length = boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label));
+    return length.parent().degree();
 }
 ''')
 
@@ -133,7 +142,9 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
             if (component.cylinder()):
                 continue
 
-            iet = component.intervalExchangeTransformation().intervalExchangeTransformation()
+            iet = component.dynamicalComponent().iet()
+            assert(not iet.boshernitzanNoPeriodicTrajectory())
+
             # We cannot pickle the original iet because its lengths reference back to the flow decomposition and we cannot pickle that yet.
             # So we forget that connection and create a new IET from scratch.
             # That is also (unfortunately) important so pyintervalxt learn
@@ -142,7 +153,9 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
             iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
-            self._report.result(self, iet, degree=degree, intervals=len(construction[0]))
+            assert(not iet.boshernitzanNoPeriodicTrajectory())
+
+            self._report.result(self, iet, degree=cppyy.gbl.degree(iet), intervals=iet.size())
 
         return not Consumer.COMPLETED
 
