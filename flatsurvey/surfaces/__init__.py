@@ -31,6 +31,7 @@ from .ngons import Ngons, Ngon
 from .thurston_veech import ThurstonVeechs, ThurstonVeech
 from .pickle import pickle
 from .surface import Surface
+from .deformation import Deformation
 
 generators = [Ngons.click, ThurstonVeechs.click]
 

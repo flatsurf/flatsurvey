@@ -119,3 +119,16 @@ def FactoryBindingSpec(name, prototype):
     })()
 
     return binding
+
+
+def provide(name, objects):
+    src = compile(f"""
+class Provider:
+    def __init__(self, { name }): self.value = { name }
+    """, "<string>", "exec")
+    scope = {}
+    exec(src, scope)
+    provider = scope['Provider']
+    # pinject expects a module on the __init__ (probably for no good reason)
+    provider.__init__.__module__ = provide.__module__
+    return objects.provide(provider).value

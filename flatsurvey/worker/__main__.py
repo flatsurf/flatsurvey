@@ -72,6 +72,7 @@ import flatsurvey.cache
 from flatsurvey.pipeline import Consumer
 from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
 from flatsurvey.ui.group import CommandWithGroups
+from flatsurvey.worker.restart import Restart
 
 @click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
 @click.option("--debug", is_flag=True)
@@ -110,25 +111,16 @@ def process(commands, debug):
         import pdb
 
     try:
-        bindings = []
-        goals = []
-        reporters = []
+        while True:
+            objects = Worker.make_object_graph(commands)
 
-        for command in commands:
-            bindings.extend(command.get('bindings', []))
-            goals.extend(command.get('goals', []))
-            reporters.extend(command.get('reporters', []))
+            try:
+                objects.provide(Worker).start()
+            except Restart as restart:
+                commands = [ restart.rewrite_command(command, objects=objects) for command in commands ]
+                continue
 
-        bindings.append(ListBindingSpec("goals", goals))
-        bindings.append(ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log]))
-        from random import randint
-        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
-
-        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
-
-        worker = objects.provide(Worker)
-        worker.start()
-
+            break
     except:
         if debug:
             pdb.post_mortem()
@@ -147,6 +139,24 @@ class Worker:
     """
     @pinject.copy_args_to_internal_fields
     def __init__(self, goals, reporters): pass
+
+    @classmethod
+    def make_object_graph(cls, commands):
+        bindings = []
+        goals = []
+        reporters = []
+
+        for command in commands:
+            bindings.extend(command.get('bindings', []))
+            goals.extend(command.get('goals', []))
+            reporters.extend(command.get('reporters', []))
+
+        bindings.append(ListBindingSpec("goals", goals))
+        bindings.append(ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log]))
+        from random import randint
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
+
+        return pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
 
     def start(self):
         r"""

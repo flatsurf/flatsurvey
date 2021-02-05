@@ -72,15 +72,21 @@ class OrbitClosure(Consumer):
     """
     DEFAULT_LIMIT = 64
     DEFAULT_EXPANSIONS = 6
+    DEFAULT_DEFORM = False
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS):
+    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS, deform=DEFAULT_DEFORM):
         super().__init__(producers=[flow_decompositions])
 
         self._cylinders_without_increase = 0
         self._directions_with_cylinders = 0
         self._directions = 0
         self._expansions_performed = 0
+        self._deformed = not deform
+
+        import pyflatsurf
+        self._lower_bound = pyflatsurf.flatsurf.Bound(0)
+        self._upper_bound = pyflatsurf.flatsurf.Bound(0)
 
         results = cache.results(surface=surface, job=self)
         if results.reduce() is not None:
@@ -91,10 +97,21 @@ class OrbitClosure(Consumer):
     @click.command(name="orbit-closure", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="abort search after processing that many flow decompositions with cylinders without an increase in dimension")
     @click.option("--expansions", type=int, default=DEFAULT_EXPANSIONS, show_default=True, help="when the --limit has been reached, restart the search with random saddle connections that are twice as long as the ones used previously; repeat this doubling process EXPANSIONS many times")
-    def click(limit, expansions):
+    @click.option("--deform/--no-deform", default=DEFAULT_DEFORM, help="When set, we deform the input surface as soon as we found a third dimension in the tangent space and restart. This is often beneficial if the input surface has lots of symmetries and also when the Boshernitzan criterion can rarely be applied due to SAF=0.")
+    def click(limit, expansions, deform):
         return {
             "goals": [OrbitClosure],
-            "bindings": [PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions)],
+            "bindings": OrbitClosure.bindings(limit=limit, expansions=expansions, deform=deform)
+        }
+
+    @classmethod
+    def bindings(cls, limit, expansions, deform):
+        return [PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions, deform=deform)]
+
+    def deform(self, deformation):
+        return {
+            "goals": [OrbitClosure],
+            "bindings": OrbitClosure.bindings(limit=self._limit, expansions=self._expansions, deform=False),
         }
 
     def command(self):
@@ -131,6 +148,9 @@ class OrbitClosure(Consumer):
         """
         self._directions += 1
 
+        import pyflatsurf
+        self._upper_bound = max(pyflatsurf.flatsurf.Bound.upper(self._saddle_connections._current.vector()), self._upper_bound)
+
         if decomposition.decomposition.cylinders() and not decomposition.decomposition.undeterminedComponents():
             self._cylinders_without_increase += 1
             self._directions_with_cylinders += 1
@@ -152,22 +172,61 @@ class OrbitClosure(Consumer):
             return Consumer.COMPLETED
 
         if self._cylinders_without_increase >= self._limit:
-            if self._expansions_performed < self._expansions:
-                import pyflatsurf
+            self.report()
 
+            if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
 
-                longest = self._saddle_connections._current.vector()
-                lower_bound = pyflatsurf.flatsurf.Bound.upper(longest)
-                lower_bound *= 2
+                self._report.log(self, f"Found too many cylinders without improvements.")
 
-                self._report.log(self, f"Found too many cylinders without improvements. Now considering directions coming from saddle connections of length more than {lower_bound}")
-                self._saddle_connections.randomize(lower_bound)
+                if self._lower_bound == 0:
+                    self._lower_bound = self._upper_bound
+                else:
+                    self._lower_bound *= 4
+
+                if self._upper_bound > self._lower_bound:
+                    self._report.log(self, f"Continuing search since connections seem to be increasing in length quickly.")
+                else:
+                    self._saddle_connections.randomize(self._lower_bound)
+                    self._report.log(self, f"Now considering directions coming from saddle connections of length more than {self._lower_bound}")
                 self._cylinders_without_increase = 0
                 return not Consumer.COMPLETED
 
-            self.report()
             return Consumer.COMPLETED
+
+        if not self._deformed and orbit_closure.dimension() != 2:
+            self._deformed = True
+
+            tangent = orbit_closure.lift(orbit_closure.tangent_space_basis()[-1])
+
+            length = sum(tangent) / len(tangent)
+            length = (abs(length.parent().number_field(length))).round()
+
+            n = length
+            if n == 0:
+                n = 1
+
+            while True:
+                import cppyy
+                # TODO: Try x / (2*n) instead of 0
+                deformation = [orbit_closure.V2(x / n, 0).vector for x in tangent]
+                try:
+                    deformed = orbit_closure._surface + deformation
+                    break
+                except cppyy.gbl.std.invalid_argument:
+                    n *= 2
+                    continue
+
+            self._report.log(self, f"Deformed surface with {1/n} * tangent vector {tangent}.")
+            
+            surface = deformed.surface()
+            from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
+            surface = from_pyflatsurf(surface)
+
+            self._report.log(self, f"Restarting OrbitClosure search with deformed surface.")
+
+            from flatsurvey.surfaces import Deformation
+            raise Deformation.Restart(surface, old=self._surface)
 
         return not Consumer.COMPLETED
 
