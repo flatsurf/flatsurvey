@@ -60,9 +60,11 @@ class GraphQL:
     """
     @copy_args_to_internal_fields
     def __init__(self, endpoint=GraphQLReporter.DEFAULT_ENDPOINT, key=GraphQLReporter.DEFAULT_API_KEY, region=GraphQLReporter.DEFAULT_REGION):
-        pass
+        self._pickle_cache = PickleCache(region=region)
+        self._graphql_connection_pool = pool(lambda: GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key))
 
-    def _run(self, task):
+    @classmethod
+    def _run(cls, task):
         import threading
         import asyncio
         result = None
@@ -87,8 +89,7 @@ class GraphQL:
         """
         return self._run(self.results_async(surface=surface, job=job, exact=exact))
 
-    @classmethod
-    def resolve(cls, obj, region=GraphQLReporter.DEFAULT_REGION):
+    def resolve(self, obj):
         r"""
         Restore pickles in ``obj``.
 
@@ -97,9 +98,9 @@ class GraphQL:
         pickles into callables that restore from S3 when needed.
         """
         if isinstance(obj, list):
-            return [cls.resolve(o) for o in obj]
+            return [self.resolve(o) for o in obj]
         if isinstance(obj, tuple):
-            return tuple(cls.resolve(list(obj)))
+            return tuple(self.resolve(list(obj)))
         if isinstance(obj, dict):
             if 'timestamp' in obj:
                 import dateutil.parser
@@ -110,27 +111,13 @@ class GraphQL:
                 def restore():
                     nonlocal restored
                     if restored is None:
-                        from zlib import decompress
-                        from pickle import loads
-                        from io import BytesIO
-                        import boto3
-                        s3 = boto3.client("s3", region_name=region)
-                        prefix = 's3://'
-                        assert url.startswith(prefix)
-                        bucket, key = url[len(prefix):].split('/', 1)
-                        with BytesIO() as buffer:
-                            s3.download_fileobj(bucket, key, buffer)
-                            buffer.seek(0)
-                            pickle = decompress(buffer.read())
-                            try:
-                                restored = loads(pickle)
-                            except Exception as e:
-                                print(f"Failed to restore {obj}:\n{e}")
+                        restored = self._pickle_cache[url]
                     return restored
                 restore.__doc__ = obj['description']
+                restore.download = lambda: self._pickle_cache.download(url)
                 return restore
             else:
-                return {cls.resolve(key): cls.resolve(value) for (key, value) in obj.items()}
+                return {self.resolve(key): self.resolve(value) for (key, value) in obj.items()}
 
         return obj
 
@@ -178,7 +165,7 @@ class GraphQL:
         if filter:
             filter = f"({filter})"
 
-        results = await self._query_async(f"""
+        query = f"""
             query {{
                 results: all{upper}s{filter} {{
                     nodes {{
@@ -191,9 +178,10 @@ class GraphQL:
                         }}
                     }}
                 }}
-            }}""")
+            }}"""
+        results = await self._query_async(query)
 
-        results = GraphQL.resolve(results, region=self._region)
+        results = self.resolve(results)
         from itertools import chain
         return CacheNodes(nodes=results['results']['nodes'], job=job)
 
@@ -222,7 +210,8 @@ class GraphQL:
             from gql import gql
             query = gql(query)
         try:
-            return await GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key).execute_async(query, *args, **kwargs)
+            with self._graphql_connection_pool() as connection:
+                return await connection.execute_async(query, *args, **kwargs)
         except TransportProtocolError as e:
             from graphql import print_ast
             raise Exception(f"Query failed: {print_ast(query)}")
@@ -234,7 +223,16 @@ class GraphQL:
     @click.option("--region", type=str, default=GraphQLReporter.DEFAULT_REGION, show_default=True, help="AWS region to connect to")
     def click(endpoint, key, region):
         return {
-            'bindings': [ PartialBindingSpec(GraphQL, name="cache")(endpoint=endpoint, key=key, region=region) ],
+            'bindings': GraphQL.bindings(endpoint=endpoint, key=key, region=region),
+        }
+
+    @classmethod
+    def bindings(cls, endpoint, key, region):
+        return [ PartialBindingSpec(GraphQL, name="cache")(endpoint=endpoint, key=key, region=region) ]
+
+    def deform(self, deformation):
+        return {
+            'bindings': GraphQL.bindings(endpoint=self._endpoint, key=self._key, region=self._region)
         }
 
 
@@ -278,3 +276,75 @@ class CacheNodes:
         Return ``None`` if the results are inconclusive.
         """
         return self._job.reduce([node['data'] for node in self._nodes])
+
+
+class S3Cache:
+    def __init__(self, region):
+        self._downloads = {}
+        self._s3_client_pool = pool(lambda: GraphQLReporter.s3_client(region=region))
+
+    def __getitem__(self, url):
+        self.download(url)
+        ret = self._downloads[url]
+        del self._downloads[url]
+        return ret
+
+    def schedule(self, url):
+        pass
+
+    def download(self, url):
+        from io import BytesIO
+        if url not in self._downloads:
+            with self._s3_client_pool() as s3:
+                prefix = 's3://'
+                assert url.startswith(prefix)
+                bucket, key = url[len(prefix):].split('/', 1)
+                buffer = self._downloads[url] = BytesIO()
+                s3.download_fileobj(bucket, key, buffer)
+                buffer.seek(0)
+
+
+class PickleCache:
+    def __init__(self, region):
+        self._cache = {}
+        self._downloads = S3Cache(region=region)
+
+    def __getitem__(self, url):
+        if url in self._cache:
+            cached = self._cache[url]()
+            if cached is None:
+                del self._cache[url]
+            else:
+                return cached
+
+        import weakref
+        from zlib import decompress
+        from pickle import loads
+        buffer = self._downloads[url]
+        pickle = decompress(buffer.read())
+        try:
+            cached = loads(pickle)
+            self._cache[url] = weakref.ref(cached)
+            return cached
+        except Exception as e:
+            print(f"Failed to restore {obj}:\n{e}")
+
+    def _download(self, url):
+        self._downloads.schedule(url)
+            
+
+def pool(constructor):
+    import queue
+    import contextlib
+
+    pool = queue.Queue()
+
+    @contextlib.contextmanager
+    def connect(constructor=constructor, pool=pool):
+        try:
+            connection = pool.get(block=False)
+        except queue.Empty:
+            connection = constructor()
+        yield connection
+        pool.put(connection)
+    return connect
