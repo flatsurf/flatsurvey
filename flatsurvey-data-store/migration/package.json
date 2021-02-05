@@ -7,7 +7,7 @@
   "scripts": {
     "deploy": "serverless deploy",
     "migrate": "serverless invoke -f migrate",
-    "dump-schema": "serverless invoke -f dump-schema | grep -Ev '^Serverless' | jq -r '.body' | jq > ../api/schema.json"
+    "dump-schema": "(echo '{'; serverless invoke -f dump-schema | grep body; echo '}') | jq -r '.body' | jq > ../api/schema.json"
   },
   "dependencies": {
     "dotenv": "^6.0.0",
