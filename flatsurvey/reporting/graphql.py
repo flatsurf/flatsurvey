@@ -110,8 +110,8 @@ class GraphQL(Reporter):
             while retry:
                 import concurrent.futures
                 try:
-                    from flatsurvey.cache.graphql import GraphQL
-                    GraphQL._run(client.execute_async(gql(r"query { __typename }")))
+                    from flatsurvey.cache.graphql import _run
+                    _run(client.execute_async(gql(r"query { __typename }")))
                     break
                 except concurrent.futures.TimeoutError:
                     retry -= 1

@@ -48,6 +48,28 @@ from pinject import copy_args_to_internal_fields
 
 from flatsurvey.reporting import GraphQL as GraphQLReporter
 
+def _run(task):
+    r"""
+    Run ``task`` on a separate thread and block until it is complete.
+    """
+    import threading
+    import asyncio
+    result = None
+    exception = None
+    def run():
+        nonlocal result
+        nonlocal exception
+        try:
+            result = asyncio.run(task)
+        except Exception as e:
+            exception = e
+    thread = threading.Thread(target=run)
+    thread.start()
+    thread.join()
+    if exception is not None:
+        raise exception
+    return result
+
 class GraphQL:
     r"""
     A cache of previous results stored behind a GraphQL API in the cloud.
@@ -63,79 +85,19 @@ class GraphQL:
         self._pickle_cache = PickleCache(region=region)
         self._graphql_connection_pool = pool(lambda: GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key))
 
-    @classmethod
-    def _run(cls, task):
-        import threading
-        import asyncio
-        result = None
-        exception = None
-        def run():
-            nonlocal result
-            nonlocal exception
-            try:
-                result = asyncio.run(task)
-            except Exception as e:
-                exception = e
-        thread = threading.Thread(target=run)
-        thread.start()
-        thread.join()
-        if exception is not None:
-            raise exception
-        return result
-
-    def results(self, surface, job, exact=False):
+    def results(self, job, surface=None, filter=None, exact=False, page_size=16):
         r"""
         Return the previous results for ``job`` on ``surface``.
         """
-        return self._run(self.results_async(surface=surface, job=job, exact=exact))
+        if exact:
+            raise NotImplementedError("exact surface filtering")
 
-    def resolve(self, obj):
-        r"""
-        Restore pickles in ``obj``.
+        query = lambda after: self._create_query(job=job, surface_filter=surface, result_filter=filter)
 
-        Objects stored in the GraphQL database, might contain some pickled
-        parts that are stored as binary blobs on S3. This method turns these
-        pickles into callables that restore from S3 when needed.
-        """
-        if isinstance(obj, list):
-            return [self.resolve(o) for o in obj]
-        if isinstance(obj, tuple):
-            return tuple(self.resolve(list(obj)))
-        if isinstance(obj, dict):
-            if 'timestamp' in obj:
-                import dateutil.parser
-                obj['timestamp'] = dateutil.parser.isoparse(obj['timestamp'])
-            if 'pickle' in obj:
-                restored = None
-                url = obj['pickle']
-                def restore():
-                    nonlocal restored
-                    if restored is None:
-                        restored = self._pickle_cache[url]
-                    return restored
-                restore.__doc__ = obj['description']
-                restore.download = lambda: self._pickle_cache.download(url)
-                return restore
-            else:
-                return {self.resolve(key): self.resolve(value) for (key, value) in obj.items()}
-
-        return obj
-
-    def _get(self, action, **kwargs):
-        response = action(**kwargs)
-        rows = response['Items']
-
-        while response.get('LastEvaluatedKey'):
-            response = action(**kwargs, ExclusiveStartKey=response['LastEvaluatedKey'])
-            rows.extend(response['Items'])
-
-        return rows
+        return Results(job=job, nodes=Nodes(query=query, connection=self._graphql_connection_pool), pickle_cache=self._pickle_cache)
 
     def __repr__(self):
         return "cache"
-
-    def query(self, job, surface_filter=None, result_filter=None, limit=None):
-        return self._run(self.query_async(job=job, surface_filter=surface_filter, result_filter=result_filter, limit=limit))
 
     def _create_query(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
         camel = GraphQLReporter._camel(job)
@@ -187,49 +149,6 @@ class GraphQL:
             }}"""
 
 
-    async def query_async(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
-        results = await self._query_async(self._create_query(job=job, surface_filter=surface_filter, result_filter=result_filter, limit=limit, after=after))
-
-        results = self.resolve(results)
-        from itertools import chain
-
-        last = None
-        if results['results']['edges']:
-            last = results['results']['edges'][-1]['cursor']
-
-        return CacheNodes(nodes=[edge['node'] for edge in results['results']['edges']], job=job, last=last)
-
-    async def results_async(self, surface, job, exact=False):
-        r"""
-        Return the previous results for ``job`` on ``surface``.
-        """
-        if exact:
-            raise NotImplementedError("exact surface filtering")
-        return await self.query_async(job=job, surface_filter=f"""
-            name: {{ equalTo: "{str(surface)}" }}
-        """, result_filter=None)
-
-    def _query(self, query, *args, **kwargs):
-        r"""
-        Run the GraphQL ``query`` and return the result.
-        """
-        return self._run(self._query_async(query=query, *args, **kwargs))
-
-    async def _query_async(self, query, *args, **kwargs):
-        r"""
-        Run the GraphQL ``query`` and return the result.
-        """
-        from gql.transport.exceptions import TransportProtocolError
-        if isinstance(query, str):
-            from gql import gql
-            query = gql(query)
-        try:
-            with self._graphql_connection_pool() as connection:
-                return await connection.execute_async(query, *args, **kwargs)
-        except TransportProtocolError as e:
-            from graphql import print_ast
-            raise Exception(f"Query failed: {print_ast(query)}")
-
     @classmethod
     @click.command(name="cache", cls=GroupedCommand, group="Cache", help=__doc__.split('EXAMPLES')[0])
     @click.option("--endpoint", type=str, default=GraphQLReporter.DEFAULT_ENDPOINT, show_default=True, help="GraphQL HTTP endpoint to connect to")
@@ -250,14 +169,52 @@ class GraphQL:
         }
 
 
-class CacheNodes:
+class Nodes:
     r"""
-    Rows returned from calls to ``GraphQL.result``.
+    A (internally paginated) list of raw nodes as returned by a GraphQL ``query``.
     """
-    def __init__(self, nodes, job, last=None):
-        self._nodes = nodes
+    def __init__(self, query, connection):
+        self._make_query = query
+        self._connection = connection
+
+    def __iter__(self):
+        after = None
+        while True:
+            results = _run(self._query(self._make_query(after)))['results']
+
+            if len(results) == 0:
+                break
+
+            for edge in results['edges']:
+                after = edge['cursor']
+                node = edge['node']
+                yield node
+
+    async def _query(self, query, *args, **kwargs):
+        r"""
+        Run the GraphQL ``query`` and return the result.
+        """
+        from gql.transport.exceptions import TransportProtocolError
+        if isinstance(query, str):
+            from gql import gql
+            query = gql(query)
+        try:
+            with self._connection() as connection:
+                return await connection.execute_async(query, *args, **kwargs)
+        except TransportProtocolError as e:
+            from graphql import print_ast
+            raise Exception(f"Query failed: {print_ast(query)}")
+
+
+class Results:
+    def __init__(self, job, nodes, pickle_cache):
         self._job = job
-        self._last = last
+        self._pickle_cache = pickle_cache
+        self._nodes = nodes
+
+    def __iter__(self):
+        for node in self._nodes:
+            yield self._resolve(node)
 
     def nodes(self):
         r"""
@@ -266,23 +223,22 @@ class CacheNodes:
         Use ``results`` for a more condensed version that is stripped of
         additional metadata.
         """
-        return [
-            {
+        for node in self:
+            yield {
                 **node['data'],
                 'surface': node['surface']['data'],
                 'timestamp': node['timestamp'],
-            } for node in self._nodes
-        ]
-
-    def __repr__(self):
-        return f"Cached {self._job.__name__}s"
+            }
 
     def results(self):
         r"""
         Return the objects that were registered as previous results in the
         database.
         """
-        return [result for result in [node['data']['result']() for node in self._nodes] if result is not None ]
+        for node in self:
+            result = node['data']['result']
+            if result is not None:
+                yield node['data']['result']()
 
     def reduce(self):
         r"""
@@ -290,7 +246,39 @@ class CacheNodes:
 
         Return ``None`` if the results are inconclusive.
         """
-        return self._job.reduce([node['data'] for node in self._nodes])
+        return self._job.reduce([node for node in self])
+
+    def _resolve(self, obj):
+        r"""
+        Restore pickles in ``obj``.
+
+        Objects stored in the GraphQL database, might contain some pickled
+        parts that are stored as binary blobs on S3. This method turns these
+        pickles into callables that restore from S3 when needed.
+        """
+        if isinstance(obj, list):
+            return [self._resolve(o) for o in obj]
+        if isinstance(obj, tuple):
+            return tuple(self._resolve(list(obj)))
+        if isinstance(obj, dict):
+            if 'timestamp' in obj:
+                import dateutil.parser
+                obj['timestamp'] = dateutil.parser.isoparse(obj['timestamp'])
+            if 'pickle' in obj:
+                restored = None
+                url = obj['pickle']
+                def restore():
+                    nonlocal restored
+                    if restored is None:
+                        restored = self._pickle_cache[url]
+                    return restored
+                restore.__doc__ = obj['description']
+                restore.download = lambda: self._pickle_cache.download(url)
+                return restore
+            else:
+                return {self._resolve(key): self._resolve(value) for (key, value) in obj.items()}
+
+        return obj
 
 
 class S3Cache:
