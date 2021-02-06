@@ -92,7 +92,7 @@ class GraphQL:
         if exact:
             raise NotImplementedError("exact surface filtering")
 
-        query = lambda after: self._create_query(job=job, surface_filter=surface, result_filter=filter)
+        query = lambda after: self._create_query(job=job, surface_filter=surface, result_filter=filter, limit=page_size)
 
         return Results(job=job, nodes=Nodes(query=query, connection=self._graphql_connection_pool), pickle_cache=self._pickle_cache)
 
