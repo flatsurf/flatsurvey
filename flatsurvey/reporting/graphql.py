@@ -97,7 +97,9 @@ class GraphQL(Reporter):
 
     @classmethod
     def graphql_client(cls, endpoint, key, login=None, password=None):
-        from gql import AIOHTTPTransport, gql, Client
+        from gql.transport.exceptions import TransportProtocolError
+        from gql import gql, Client
+        from gql.transport.aiohttp import AIOHTTPTransport
         import os.path
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.graphql")) as source:
             schema = source.read()
@@ -117,6 +119,12 @@ class GraphQL(Reporter):
                     retry -= 1
                     if not retry: raise
                     print("Query timed out...retrying")
+                except TransportProtocolError as e:
+                    if "Endpoint request timed out" in str(e):
+                        retry -= 1
+                        print(f"Query failed {e}...retrying")
+                        continue
+                    raise
         else:
             client = cls.graphql_client(endpoint=endpoint, key=key)
             authorization = client.execute(gql(r"""
