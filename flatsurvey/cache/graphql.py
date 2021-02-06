@@ -284,7 +284,13 @@ class Results:
 class S3Cache:
     def __init__(self, region):
         self._downloads = {}
-        self._s3_client_pool = pool(lambda: GraphQLReporter.s3_client(region=region))
+        def connect():
+            client = GraphQLReporter.s3_client(region=region)
+            # https://stackoverflow.com/a/56607118/812379
+            client._request_signer.sign = lambda *args, **kwargs: None
+            return client
+
+        self._s3_client_pool = pool(connect)
 
     def __getitem__(self, url):
         self.download(url)
