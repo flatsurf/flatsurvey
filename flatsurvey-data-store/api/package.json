@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "deploy": "serverless deploy",
-    "dump-schema": "gq https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/ -H x-api-key:ZLonPeaT0M71epvWLGNbua2XMA6wQOiq5HHfO72I --introspect > ../../flatsurvey/reporting/schema.graphql"
+    "dump-schema": "gq https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/ -H x-api-key:ZLonPeaT0M71epvWLGNbua2XMA6wQOiq5HHfO72I --introspect > ../../flatsurvey/aws/schema.graphql"
   },
   "dependencies": {
     "dotenv": "^6.0.0",

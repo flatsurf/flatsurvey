@@ -52,6 +52,7 @@ from sage.misc.cachefunc import cached_method
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.aws.graphql import Client as GraphQLClient
 
 class GraphQL(Reporter):
     r"""
@@ -73,7 +74,7 @@ class GraphQL(Reporter):
 
     @copy_args_to_internal_fields
     def __init__(self, surface, lot, endpoint=DEFAULT_ENDPOINT, key=DEFAULT_API_KEY, bucket=DEFAULT_BUCKET, region=DEFAULT_REGION):
-        pass
+        self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
     @cached_method
     def _s3(self):
@@ -88,86 +89,8 @@ class GraphQL(Reporter):
         return boto3.client("s3", region_name=region)
 
     @cached_method
-    def _graphql(self, readonly=False):
-        if readonly:
-            return GraphQL.graphql_client(endpoint=self._endpoint, key=self._key)
-        else:
-            import os
-            return GraphQL.graphql_client(endpoint=self._endpoint, key=self._key, login=os.environ.get('FLATSURVEY_GRAPHQL_LOGIN'), password=os.environ.get('FLATSURVEY_GRAPHQL_PASSWORD'))
-
-    @classmethod
-    def graphql_client(cls, endpoint, key, login=None, password=None):
-        from gql.transport.exceptions import TransportProtocolError
-        from gql import gql, Client
-        from gql.transport.aiohttp import AIOHTTPTransport
-        import os.path
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.graphql")) as source:
-            schema = source.read()
-        if login is None or password is None:
-            transport = AIOHTTPTransport(url=endpoint, headers={
-                'x-api-key': key})
-            client = Client(transport=transport, schema=schema)
-
-            retry = 5
-            while retry:
-                import concurrent.futures
-                try:
-                    from flatsurvey.cache.graphql import _run
-                    _run(client.execute_async(gql(r"query { __typename }")))
-                    break
-                except concurrent.futures.TimeoutError:
-                    retry -= 1
-                    if not retry: raise
-                    print("Query timed out...retrying")
-                except TransportProtocolError as e:
-                    if "Endpoint request timed out" in str(e):
-                        retry -= 1
-                        print(f"Query failed {e}...retrying")
-                        continue
-                    raise
-        else:
-            client = cls.graphql_client(endpoint=endpoint, key=key)
-            authorization = client.execute(gql(r"""
-                mutation($mail: String!, $password: String!) {
-                    signin(input: {mail:$mail, password:$password}){
-                        jwtToken
-                    }
-                }"""), variable_values={
-                "mail": login,
-                "password": password,
-            })['signin']['jwtToken']
-            transport = AIOHTTPTransport(url=endpoint, headers={
-                'x-api-key': key,
-                'Authorization': f"Bearer {authorization}"})
-            client = Client(transport=transport, schema=schema)
-        client.execute_timeout = 60
-        return client
-
-    # TODO: Turn these things into a proper GraphQL wrapper that handles all the typical exceptions.
-    def _execute(self, query, readonly=True, **kwargs):
-        import concurrent.futures
-        from gql.transport.exceptions import TransportQueryError, TransportServerError
-        from gql import gql
-        retry = 5
-        while retry:
-            retry -= 1
-            client = self._graphql(readonly=readonly)
-            try:
-                return client.execute(gql(query), **kwargs)
-            except concurrent.futures.TimeoutError:
-                if retry == 0: raise
-            except TransportQueryError:
-                if retry == 0: raise
-            except TransportServerError:
-                if retry == 0: raise
-
-            print("Query failed. Retrying.")
-
-            self._graphql.clear_cache()
-
-    @cached_method
     def _surface_id(self):
-        return self._execute(r"""
+        return self._graphql.mutate(r"""
             mutation($data: JSON!) {
                 createSurface(input: {
                     surface: {
@@ -176,7 +99,9 @@ class GraphQL(Reporter):
                 }) {
                     surface { id }
                 }
-            }""", readonly=False, variable_values={"data": self._serialize(self._surface)})["createSurface"]["surface"]["id"]
+            }""",
+            variable_values={"data": self._serialize(self._surface)},
+            description="create surface")["createSurface"]["surface"]["id"]
 
     def s3(self, raw, directory="pickles"):
         r"""
@@ -361,7 +286,7 @@ class GraphQL(Reporter):
         argv = sys.argv
         if argv and argv[0] == "-m": argv = argv[1:]
 
-        self._execute(f"""
+        self._graphql.mutate(f"""
             mutation($data: JSON!, $surface: UUID!) {{
                 create{GraphQL._upper(job)}(input: {{
                     {GraphQL._camel(job)}: {{
@@ -372,7 +297,7 @@ class GraphQL(Reporter):
                     {GraphQL._camel(job)} {{ id }}
                 }}
             }}
-        """, readonly=False, variable_values={
+        """, variable_values={
             "surface": self._surface_id(),
             "data": {
                 "invocation": argv,
@@ -381,7 +306,7 @@ class GraphQL(Reporter):
                 "result": self._serialize(result),
                 **{key: self._serialize(value) for (key, value) in kwargs.items() if value is not None}
             }
-        })
+        }, description=f"create {job}")
 
     @classmethod
     @click.command(name="graphql", cls=GroupedCommand, group="Reports", help=__doc__.split('EXAMPLES')[0])

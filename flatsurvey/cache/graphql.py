@@ -43,32 +43,11 @@ import click
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.aws.graphql import Client as GraphQLClient
+from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
 
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.reporting import GraphQL as GraphQLReporter
-
-def _run(task):
-    r"""
-    Run ``task`` on a separate thread and block until it is complete.
-    """
-    import threading
-    import asyncio
-    result = None
-    exception = None
-    def run():
-        nonlocal result
-        nonlocal exception
-        try:
-            result = asyncio.run(task)
-        except Exception as e:
-            exception = e
-    thread = threading.Thread(target=run)
-    thread.start()
-    thread.join()
-    if exception is not None:
-        raise exception
-    return result
 
 class GraphQL:
     r"""
@@ -83,7 +62,7 @@ class GraphQL:
     @copy_args_to_internal_fields
     def __init__(self, endpoint=GraphQLReporter.DEFAULT_ENDPOINT, key=GraphQLReporter.DEFAULT_API_KEY, region=GraphQLReporter.DEFAULT_REGION):
         self._pickle_cache = PickleCache(region=region)
-        self._graphql_connection_pool = pool(lambda: GraphQLReporter.graphql_client(endpoint=self._endpoint, key=self._key))
+        self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
     def results(self, job, surface=None, filter=None, exact=False, page_size=16):
         r"""
@@ -93,14 +72,14 @@ class GraphQL:
             raise NotImplementedError("exact surface filtering")
 
         query = lambda after: self._create_query(job=job, surface_filter=surface, result_filter=filter, limit=page_size)
+        delete = lambda node: self._create_delete(job=job, id=node['id'])
 
-        return Results(job=job, nodes=Nodes(query=query, connection=self._graphql_connection_pool), pickle_cache=self._pickle_cache)
+        return Results(job=job, nodes=Nodes(query=query, delete=delete, graphql_client=self._graphql), pickle_cache=self._pickle_cache)
 
     def __repr__(self):
         return "cache"
 
     def _create_query(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
-        camel = GraphQLReporter._camel(job)
         upper = GraphQLReporter._upper(job)
 
         if surface_filter is None:
@@ -148,6 +127,16 @@ class GraphQL:
                 }}
             }}"""
 
+    def _create_delete(self, job, id):
+        upper = GraphQLReporter._upper(job)
+
+        return f"""
+        mutation {{
+            delete{upper}ById(input: {{ id: "{id}" }}) {{
+                clientMutationId
+            }}
+        }}
+        """
 
     @classmethod
     @click.command(name="cache", cls=GroupedCommand, group="Cache", help=__doc__.split('EXAMPLES')[0])
@@ -173,14 +162,15 @@ class Nodes:
     r"""
     A (internally paginated) list of raw nodes as returned by a GraphQL ``query``.
     """
-    def __init__(self, query, connection):
+    def __init__(self, query, delete, graphql_client):
         self._make_query = query
-        self._connection = connection
+        self._make_delete = delete
+        self._graphql_client = graphql_client
 
     def __iter__(self):
         after = None
         while True:
-            results = _run(self._query(self._make_query(after)))['results']
+            results = self._graphql_client.query(self._make_query(after))['results']
 
             if len(results) == 0:
                 break
@@ -190,20 +180,11 @@ class Nodes:
                 node = edge['node']
                 yield node
 
-    async def _query(self, query, *args, **kwargs):
+    def erase(self, node):
         r"""
-        Run the GraphQL ``query`` and return the result.
+        Delete this node from the database.
         """
-        from gql.transport.exceptions import TransportProtocolError
-        if isinstance(query, str):
-            from gql import gql
-            query = gql(query)
-        try:
-            with self._connection() as connection:
-                return await connection.execute_async(query, *args, **kwargs)
-        except TransportProtocolError as e:
-            from graphql import print_ast
-            raise Exception(f"Query failed: {print_ast(query)}")
+        self._graphql_client.mutate(self._make_delete(node))
 
 
 class Results:
@@ -238,7 +219,9 @@ class Results:
         for node in self:
             result = node['data']['result']
             if result is not None:
-                yield node['data']['result']()
+                result = node['data']['result']()
+                setattr(result, 'erase', lambda: self._nodes.erase(node))
+                yield result
 
     def reduce(self):
         r"""
