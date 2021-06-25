@@ -90,7 +90,7 @@ for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.
         worker.add_command(command)
 
 
-@worker.resultcallback()
+@worker.result_callback()
 def process(commands, debug):
     r"""
     Run the specified subcommands of ``worker``.

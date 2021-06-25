@@ -87,7 +87,7 @@ for kind in [flatsurvey.surfaces.generators, flatsurvey.jobs.commands, flatsurve
         survey.add_command(command)
 
 
-@survey.resultcallback()
+@survey.result_callback()
 def process(commands, **kwargs):
     r"""
     Run the specified subcommands of ``survey``.
