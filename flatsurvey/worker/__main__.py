@@ -163,10 +163,13 @@ class Worker:
         Run until all our goals are resolved.
 
         """
-        for goal in self._goals:
-            goal.resolve()
-        for goal in self._goals:
-            goal.report()
+        try:
+            for goal in self._goals:
+                goal.resolve()
+        finally:
+            # TODO: Should we make this configurable?
+            for goal in self._goals:
+                goal.report()
         for reporter in self._reporters:
             reporter.flush()
 

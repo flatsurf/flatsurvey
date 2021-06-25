@@ -35,23 +35,37 @@ from pinject import copy_args_to_internal_fields
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline import Producer, Processor
+from flatsurvey.pipeline.util import PartialBindingSpec
 
 class SaddleConnections(Producer):
     r"""
     Saddle connections on the surface.
     """
+    DEFAULT_BOUND = None
+    DEFAULT_LIMIT = None
+
     @copy_args_to_internal_fields
-    def __init__(self, surface):
+    def __init__(self, surface, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
         super().__init__()
 
         self._connections = None
 
     def _by_length(self):
         self.__connections = self._surface.orbit_closure()._surface.connections().byLength()
+        if self._bound is not None:
+            self.__connections = self.__connections.bound(self._bound)
+        if self._limit is not None:
+            from itertools import islice
+            self.__connections = islice(self.__connections, 0, self._limit)
         self._connections = iter(self.__connections)
 
     def randomize(self, lower_bound):
         self.__connections = self._surface.orbit_closure()._surface.connections().sample().lowerBound(lower_bound)
+        if self._bound is not None:
+            raise NotImplementedError("Cannot randomize saddle connections with --bound yet.")
+        if self._limit is not None:
+            from itertools import islice
+            self.__connections = islice(self.__connections, 0, self._limit)
         self._connections = iter(self.__connections)
 
     def _produce(self):
@@ -59,17 +73,23 @@ class SaddleConnections(Producer):
             self._by_length()
         try:
             self._current = next(self._connections)
-            # self._current = type(self._current)(self._current)
             return not Producer.EXHAUSTED
         except StopIteration:
             return Producer.EXHAUSTED
 
     @classmethod
     @click.command(name="saddle-connections", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES')[0])
-    def click():
+    @click.option("--bound", type=int, default=DEFAULT_BOUND, help="stop search after all saddle connections up to that length have been processed  [default: no bound]")
+    @click.option("--limit", type=int, default=DEFAULT_LIMIT, help="stop search after that many saddle connections have been considered  [default: no limit]")
+    def click(bound, limit):
         return {
-            'bindings': SaddleConnections
+            'bindings': [ PartialBindingSpec(SaddleConnections)(bound=bound, limit=limit) ]
         }
 
     def command(self):
-        return ["saddle-connections"]
+        command = ["saddle-connections"]
+        if self._bound != self.DEFAULT_BOUND:
+            command.append(f"--bound={self._bound}")
+        if self._limit != self.DEFAULT_LIMIT:
+            command.append(f"--limit={self._limit}")
+        return command
