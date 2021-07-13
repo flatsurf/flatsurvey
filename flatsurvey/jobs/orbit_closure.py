@@ -204,9 +204,11 @@ class OrbitClosure(Consumer):
             length = sum(tangent) / len(tangent)
             length = (abs(length.parent().number_field(length))).round()
 
-            n = length
-            if n == 0:
-                n = 1
+            run = 0
+
+            n = 1
+            while n < length:
+                n *= 2
 
             while True:
                 import cppyy
