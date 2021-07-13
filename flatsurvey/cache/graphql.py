@@ -71,7 +71,7 @@ class GraphQL:
         if exact:
             raise NotImplementedError("exact surface filtering")
 
-        query = lambda after: self._create_query(job=job, surface_filter=surface, result_filter=filter, limit=page_size)
+        query = lambda after: self._create_query(job=job, surface_filter=f'name: {{ equalTo: "{str(surface)}" }}' if surface else None, result_filter=filter, limit=page_size, after=after)
         delete = lambda node: self._create_delete(job=job, id=node['id'])
 
         return Results(job=job, nodes=Nodes(query=query, delete=delete, graphql_client=self._graphql), pickle_cache=self._pickle_cache)
@@ -172,7 +172,7 @@ class Nodes:
         while True:
             results = self._graphql_client.query(self._make_query(after))['results']
 
-            if len(results) == 0:
+            if len(results) == 0 or len(results['edges']) == 0:
                 break
 
             for edge in results['edges']:
@@ -229,7 +229,7 @@ class Results:
 
         Return ``None`` if the results are inconclusive.
         """
-        return self._job.reduce([node for node in self])
+        return self._job.reduce([node["data"] for node in self])
 
     def _resolve(self, obj):
         r"""

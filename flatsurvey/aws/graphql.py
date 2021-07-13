@@ -30,19 +30,19 @@ class Client:
             create=lambda: _connect_readwrite(endpoint, key),
             is_alive=_is_alive)
 
-    def query(self, query, *args, description="query", **kwargs):
+    def query(self, query, description="query", **kwargs):
         r"""
         Run a query with a read-only connection.
         """
         with self._readonly.connect() as connection:
-            return _execute(connection, query, *args, description=description, **kwargs)
+            return _execute(connection, query, description=description, **kwargs)
     
-    def mutate(self, query, *args, description="query", **kwargs):
+    def mutate(self, query, description="mutation", **kwargs):
         r"""
         Run a query with a read-write connection.
         """
         with self._readwrite.connect() as connection:
-            return _execute(connection, query, *args, description=description, **kwargs)
+            return _execute(connection, query, description=description, **kwargs)
 
 
 def _connect_with_headers(endpoint, headers):
@@ -70,17 +70,17 @@ def _is_alive(connection):
 
 
 def _connect_readwrite(endpoint, api_key):
-    connection = _connect(api_key)
-    token = _execute(client, r"""
+    connection = _connect(endpoint, api_key)
+    token = _execute(connection, r"""
         mutation($mail: String!, $password: String!) {
             signin(input: {mail:$mail, password:$password}){
                 jwtToken
             }
         }""",
         variable_values={
-            "mail": login,
-            "password": password,
-    }, description="login")['signin']['jwtToken']
+            'mail': os.environ['FLATSURVEY_GRAPHQL_LOGIN'],
+            'password': os.environ['FLATSURVEY_GRAPHQL_PASSWORD']},
+        description="login")['signin']['jwtToken']
 
     return _connect_with_headers(endpoint=endpoint, headers={
         'x-api-key': api_key,
@@ -111,10 +111,13 @@ def _run(task):
     return result
 
 
-def _execute(connection, query, *args, description="query", **kwargs):
+def _execute(connection, query, description="query", **kwargs):
     if isinstance(query, str):
         from gql import gql
-        query = gql(query)
+        try:
+           query = gql(query)
+        except Exception as e:
+            raise Exception(f"Error in query: {query}", e)
 
     LIMIT = 10
     for retry in range(LIMIT):
@@ -123,7 +126,7 @@ def _execute(connection, query, *args, description="query", **kwargs):
         if retry:
             print(f"Retrying {description} ({retry}/{LIMIT}) …")
         try:
-            return _run(connection.execute_async(query))
+            return _run(connection.execute_async(query, **kwargs))
         except TimeoutError:
             print(f"A {description} timed out waiting for the database server. Maybe the database is still booting?")
         except TransportQueryError as e:
