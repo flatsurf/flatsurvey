@@ -155,7 +155,7 @@ class Scheduler:
             for it in list(iters):
                 try:
                     surface = next(it)
-                    command = self._render_command(surface)
+                    command = await self._render_command(surface)
                     if command is None:
                         continue
                     tasks.append(await self._enqueue(command))
@@ -165,7 +165,7 @@ class Scheduler:
         print("All jobs have been scheduled. Now waiting for jobs to finish.")
         await asyncio.gather(*tasks)
 
-    def _render_command(self, surface):
+    async def _render_command(self, surface):
         r"""
         Return the command to invoke a worker to compute the ``goals`` for ``surface``.
 
