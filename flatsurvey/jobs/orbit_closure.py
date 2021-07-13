@@ -120,6 +120,8 @@ class OrbitClosure(Consumer):
             command.append(f"--limit={self._limit}")
         if self._expansions != self.DEFAULT_EXPANSIONS:
             command.append(f"--expansions={self._expansions}")
+        if self._deform != self.DEFAULT_DEFORM:
+            command.append(f"--deform")
         return command
 
     def _consume(self, decomposition, cost):
