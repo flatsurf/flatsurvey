@@ -16,15 +16,23 @@ TESTS::
     Options:
       --dry-run  do not spawn any workers
       --help     Show this message and exit.
+    Cache:
+      cache  A cache of previous results stored behind a GraphQL API in the cloud.
     Goals:
-      completely-cylinder-periodic  Determines whether for all directions given by
-                                    saddle connections, the decomposition of the
-                                    surface is completely cylinder periodic, i.e.,
-                                    the decomposition consists only of cylinders.
-      cylinder-periodic-direction   Determines whether there is a direction for
-                                    which the surface decomposes into cylinders.
-      orbit-closure                 Determine the GL₂(R) orbit closure of
-                                    ``surface``.
+      completely-cylinder-periodic    Determines whether for all directions given by
+                                      saddle connections, the decomposition of the
+                                      surface is completely cylinder periodic, i.e.,
+                                      the decomposition consists only of cylinders.
+      completely-cylinder-periodic-asymptotics
+                                      Determine the maximum circumference of all
+                                      cylinders of length at most `R` in each
+                                      completely cylinder periodic direction.
+      cylinder-periodic-direction     Determines whether there is a direction for
+                                      which the surface decomposes into cylinders.
+      orbit-closure                   Determine the GL₂(R) orbit closure of
+                                      ``surface``.
+      undetermined-iet                Track undetermined Interval Exchang
+                                      Transformations.
     Intermediates:
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
@@ -174,7 +182,7 @@ class Scheduler:
 
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[])
         >>> scheduler._render_command(Ngon([1, 1, 1])) # doctest: +ELLIPSIS
-        ['python', '-m', 'flatsurvey.worker', 'pickle', '--base64', '...', 'orbit-closure']
+        ['python', '-m', 'flatsurvey.worker', 'orbit-closure', 'pickle', '--base64', '...']
 
         """
         bindings = list(self._bindings)
