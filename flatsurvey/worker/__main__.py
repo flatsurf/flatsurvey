@@ -109,6 +109,8 @@ def process(commands, debug):
     """
     if debug:
         import pdb
+        import signal
+        signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
 
     try:
         while True:
