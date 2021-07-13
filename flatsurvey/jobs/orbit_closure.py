@@ -70,8 +70,8 @@ class OrbitClosure(Consumer):
         orbit-closure
 
     """
-    DEFAULT_LIMIT = 64
-    DEFAULT_EXPANSIONS = 6
+    DEFAULT_LIMIT = 32
+    DEFAULT_EXPANSIONS = 4
     DEFAULT_DEFORM = False
 
     @copy_args_to_internal_fields
