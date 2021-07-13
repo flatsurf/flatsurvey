@@ -299,17 +299,18 @@ class Ngons:
     @click.command(name="ngons", cls=GroupedCommand, group="Surfaces", help=__doc__.split('EXAMPLES')[0])
     @click.option("--vertices", "-n", type=int, required=True, help="number of vertices")
     @click.option("--length", type=click.Choice(["exact-real", "e-antic"]), required=False, help="how side lengths are chosen  [default: e-antic for triangles, exact-real otherwise]")
+    @click.option("--min", type=int, default=0, help="minimum sum of angles  [default: 0]")
     @click.option("--limit", type=int, default=None, help="maximum sum of angles  [default: unlimited]")
     @click.option("--count", type=int, default=None, help="number of n-gons to produce  [default: unlimited]")
     @click.option("--include-literature", default=False, is_flag=True, help="also include ngons described in literature", show_default=True)
     @click.option("--family", type=str, default=None, help="instead of producing all n-gons up to a limited total angle, produce the family given by this expression for n = 1, …, limit, e.g., '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2, 14), …")
-    def click(vertices, length, limit, count, include_literature, family):
+    def click(vertices, length, min, limit, count, include_literature, family):
         if length is None:
             if vertices == 3: length = "e-antic"
             else: length = "exact-real"
 
         import itertools
-        for n in itertools.count(start=vertices):
+        for n in itertools.count(start=max(min, vertices)):
             print(f"Sum of {vertices} angles {n}")
             if limit is not None and n > limit:
                 break
