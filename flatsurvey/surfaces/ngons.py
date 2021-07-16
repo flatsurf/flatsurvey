@@ -122,6 +122,8 @@ class Ngon(Surface):
             if a == 1 and c == b + 1: return "~(2, b, b) of Veech"
             if a == 2 and c == b + 2: return "Veech 1989"
             if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
+            if (a, b, c) == (1, 4, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c) == (1, 4, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c) == (2, 3, 4): return "Kenyon-Smillie 2000 acute triangle"
             if (a, b, c) == (3, 4, 5): return "Kenyon-Smillie 2000 acute triangle; first appeared in Veech 1989"
             if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
