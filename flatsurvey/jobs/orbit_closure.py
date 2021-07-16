@@ -196,41 +196,60 @@ class OrbitClosure(Consumer):
 
             return Consumer.COMPLETED
 
-        if not self._deformed and orbit_closure.dimension() != 2:
-            self._deformed = True
+        if dimension != orbit_closure.dimension() and not self._deformed and orbit_closure.dimension() > 2:
+            tangents = [orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]]
 
-            tangent = orbit_closure.lift(orbit_closure.tangent_space_basis()[-1])
+            def upper_bound(v):
+                length = sum(abs(x.parent().number_field(x)) for x in v) / len(v)
 
-            length = sum(tangent) / len(tangent)
-            length = (abs(length.parent().number_field(length))).round()
-
-            run = 0
-
-            n = 1
-            while n < length:
-                n *= 2
-
-            while True:
-                import cppyy
-                # TODO: Try x / (2*n) instead of 0
-                deformation = [orbit_closure.V2(x / n, 0).vector for x in tangent]
-                try:
-                    deformed = orbit_closure._surface + deformation
-                    break
-                except cppyy.gbl.std.invalid_argument:
+                n = 1
+                while n < length:
                     n *= 2
-                    continue
-
-            self._report.log(self, f"Deformed surface with {1/n} * tangent vector {tangent}.")
+                return n
             
-            surface = deformed.surface()
-            from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
-            surface = from_pyflatsurf(surface)
+            tangents.sort(key=upper_bound)
 
-            self._report.log(self, f"Restarting OrbitClosure search with deformed surface.")
+            scale = 1
+            while True:
+                eligibles = False
 
-            from flatsurvey.surfaces import Deformation
-            raise Deformation.Restart(surface, old=self._surface)
+                for tangent in tangents:
+                    import cppyy
+                    # TODO: What is a good vector to use to deform?
+                    n = upper_bound(tangent) * scale
+
+                    # TODO: What is a good bound here?
+                    if n > 1e20:
+                        continue
+                    
+                    eligibles = True
+
+                    print("Deforming with factor ", n)
+                    deformation = [orbit_closure.V2(x / n, x / (2*n)).vector for x in tangent]
+                    try:
+                        # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient.
+                        deformed = orbit_closure._surface + deformation
+
+                        self._report.log(self, f"Deformed surface with {1/n} * tangent vector {tangent}.")
+
+                        surface = deformed.surface()
+                        from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
+                        surface = from_pyflatsurf(surface)
+
+                        self._deformed = True
+
+                        self._report.log(self, f"Restarting OrbitClosure search with deformed surface.")
+
+                        from flatsurvey.surfaces import Deformation
+                        raise Deformation.Restart(surface, old=self._surface)
+                    except cppyy.gbl.std.invalid_argument as e:
+                        print(e)
+                        continue
+
+                scale *= 2
+
+                if not eligibles:
+                    break
 
         return not Consumer.COMPLETED
 
