@@ -88,15 +88,24 @@ class Log(Reporter):
     @classmethod
     @click.command(name="log", cls=GroupedCommand, group="Reports", help=__doc__.split('EXAMPLES')[0])
     @click.option("--output", type=click.File("w"), default=None, help="[default: stdout]")
-    def click(output):
+    @click.option("--prefix", type=click.Path(exists=True, file_okay=False, dir_okay=True, allow_dash=False), default=None)
+    def click(output, prefix):
         return {
-            "bindings": Log.bindings(output=output),
+            "bindings": Log.bindings(output=output, prefix=prefix),
             "reporters": [ Log ],
         }
 
     @classmethod
-    def bindings(cls, output):
-        return [ FactoryBindingSpec("log", lambda surface: Log(surface, output or open(f"{surface.basename()}.log", "w"))) ]
+    def bindings(cls, output, prefix=None):
+        def logfile(surface):
+            if output is None:
+                path = f"{surface.basename()}.log"
+                if prefix:
+                    import os.path
+                    path = os.path.join(prefix, path)
+                return open(path, "w")
+            return output
+        return [ FactoryBindingSpec("log", lambda surface: Log(surface, logfile(surface))) ]
 
     def deform(self, deformation):
         return {
