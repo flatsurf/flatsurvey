@@ -95,34 +95,76 @@ class Ngon(Surface):
         r"""
         Return information about this surface if it has already been studied.
 
-        EXAMPLES::
+        EXAMPLES:
+
+        Trivial simplifications::
+
+            >>> Ngon((1, 1, 1, 3)).reference()
+            Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?
+            Ngon([1, 1, 1])
+
+            >>> Ngon((2, 1, 1)).reference()
+            Ngon([1, 1, 2])
+
+            >>> Ngon((2, 2, 2)).reference()
+            Ngon([1, 1, 1])
+
+        Well known cases::
+
+            >>> Ngon((1, 1, 2)).reference()
+            'Torus'
+
+            >>> Ngon((1, 1, 1, 1)).reference()
+            'Torus'
+
+        Instances from the literature::
 
             >>> Ngon((1, 1, 12)).reference()
             'Veech 1989'
 
-            >>> Ngon((1, 1, 1, 3)).reference()
-            Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?
-            '(1, 1, 1)'
+        More complicated simplifications::
+
+            >>> Ngon((2, 3, 5)).reference()
+            Ngon([1, 1, 3])
+
+            >>> Ngon((3, 4, 7)).reference()
+            Ngon([2, 2, 3])
+
+            >>> Ngon((2, 3, 3)).reference()
+            Ngon([1, 3, 4])
+
+            >>> Ngon((4, 5, 5, 6)).reference()
+            Ngon([2, 2, 3, 3])
+
+            >>> Ngon((1, 2, 2, 3)).reference()
+            Ngon([1, 1, 2, 2])
 
         """
-        from sage.all import gcd
+        def ngon(angles):
+            angles = tuple(sorted(angles))
+            if self._lengths.cache:
+                raise NotImplementedError("Cannot translate explicit lengths when constructing equivalent surface.")
+            assert sum(angles) <= sum(self.angles)
+            return Ngon(angles, length=self.length)
 
         if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
-            return f"{tuple(a for a in self.angles if a != sum(self.angles) / (len(self.angles) - 2))}"
+            return ngon(a for a in self.angles if a != sum(self.angles) / (len(self.angles) - 2))
 
-        if list(sorted(self.angles)) != list(self.angles):
-            return "Same orbit closure as %s"%(tuple(sorted(self.angles)),)
+        if list(sorted(self.angles)) != self.angles:
+            return ngon(self.angles)
 
+        from sage.all import gcd
         if gcd(self.angles) != 1:
-            return "Same as %s"%(tuple(a / gcd(self.angles) for a in self.angles),)
+            return ngon(tuple(a / gcd(self.angles) for a in self.angles))
 
         if len(self.angles) == 3:
             a, b, c = self.angles
             assert a <= b <= c
+            if (a, b, c) == (1, 1, 2): return "Torus"
             if a == b == 1: return "Veech 1989"
-            if a == b: return "Same as (%d, %d, %d)"%(2*a, c, 2*a+c)
-            if b == c: return "Same as (%d, %d, %d)"%(2*b, a, 2*b+a)
-            if a == 1 and c == b + 1: return "~(2, b, b) of Veech"
+            if a % 2 == 0 and b % 2 == 1 and c == a + b: return ngon((a//2, a//2, b))
+            if a % 2 == 1 and b % 2 == 0 and c == a + b: return ngon((b//2, b//2, a))
+            if a == 2 and b == c: return ngon((1, b, b + 1))
             if a == 2 and c == b + 2: return "Veech 1989"
             if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
             if (a, b, c) == (1, 4, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
@@ -136,18 +178,20 @@ class Ngon(Surface):
         if len(self.angles) == 4:
             a, b, c, d = self.angles
             assert a <= b <= c <= d
+            if (a, b, c, d) == (1, 1, 1, 1): return "Torus"
             if (a, b, c, d) == (1, 1, 1, 7): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 1, 1, 9): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 1, 2, 8): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 1, 2, 12): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 2, 2, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 2, 2, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 1, 1, 1): return "Torus"
-            if a == b and c == d:
-                if a % 2 != c % 2:
-                    return "Same as (%d, %d, %d, %d)"%(2 * a, 2 * c, a + c, a + c)
-                else:
-                    return "Same as (%d, %d, %d, %d)"%(a, c, (a + c)/2, (a + c)/2)
+            
+            from itertools import permutations
+            for a, b, c, d in permutations(self.angles):
+                if a % 2 == 0 and b % 2 == 0 and c == a//2 + b//2 and d == c and (a // 2] % 2 != (b // 2) % 2:
+                    return ngon((a//2, a//2, b//2, b//2))
+                if a % 2 == b % 2 and c == (a + b) // 2 and d == c:
+                    return ngon((a, a, b, b))
 
     @property
     def orbit_closure_dimension_upper_bound(self):

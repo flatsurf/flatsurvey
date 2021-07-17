@@ -42,7 +42,7 @@ class Surface:
     """
     def reference(self):
         r"""
-        Return a literature reference where this surface has been studied or ``None``.
+        Return a literature reference where this surface has been studied, a practically identical (but simpler) surface, or ``None``.
 
         EXAMPLES::
 
