@@ -137,7 +137,7 @@ class Ngon(Surface):
             Ngon([2, 2, 3, 3])
 
             >>> Ngon((1, 2, 2, 3)).reference()
-            Ngon([1, 1, 2, 2])
+            Ngon([1, 1, 3, 3])
 
         """
         def ngon(angles):
