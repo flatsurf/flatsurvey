@@ -260,7 +260,8 @@ class Scheduler:
 
         """
         if self._dry_run:
-            print(" ".join(command))
+            if not self._quiet:
+                print(" ".join(command))
             return
 
         import sys
