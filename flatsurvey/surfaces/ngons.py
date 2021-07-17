@@ -287,17 +287,17 @@ class Ngons:
     
     EXAMPLES::
     
-        >>> list(Ngons.click.callback(3, 'e-antic', 6, include_literature=True, family=None))
-        [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3]), Ngon([2, 2, 2])]
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, include_literature=True, family=None))
+        [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', 6, include_literature=False, family=None))
-        []
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, include_literature=False, family=None))
+        [Ngon([1, 2, 2]), Ngon([1, 2, 4]), Ngon([1, 3, 3]), Ngon([2, 2, 3]), Ngon([1, 3, 4]), Ngon([1, 2, 6])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', 3, include_literature=True, family='(1, 1, n)'))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, include_literature=True, family='(1, 1, n)'))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3])]
     
-        >>> list(Ngons.click.callback(3, 'e-antic', 3, include_literature=True, family='[(1, 1, n), (1, 2, 12*n)]'))
-        [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2]), Ngon([1, 2, 24]), Ngon([1, 1, 3]), Ngon([1, 2, 36])]
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, include_literature=True, family='[(1, 1, n), (1, 2, 12*n)]'))
+        [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2])]
     
     """
     @classmethod
@@ -315,8 +315,7 @@ class Ngons:
             else: length = "exact-real"
 
         import itertools
-        for n in itertools.count(start=max(min, vertices)):
-            print(f"Sum of {vertices} angles {n}")
+        for n in itertools.count(start=min):
             if limit is not None and n > limit:
                 break
     
