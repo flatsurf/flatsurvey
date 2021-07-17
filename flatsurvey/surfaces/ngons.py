@@ -329,12 +329,19 @@ class Ngons:
     
     
             for angles in pool:
+                if any(a <= 0 for a in angles):
+                    continue
+
                 if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
                     # angles contains an angle of 2π (or more.)
                     continue
     
                 if any(a == sum(angles) / (len(angles) - 2) for a in angles):
                     # an angle is π
+                    continue
+
+                from sage.all import gcd
+                if gcd(angles) != 1:
                     continue
     
                 ngon = Ngon(angles, length=length)
