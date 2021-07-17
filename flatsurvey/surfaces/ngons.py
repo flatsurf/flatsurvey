@@ -24,7 +24,10 @@ EXAMPLES::
       -n, --vertices INTEGER         number of vertices  [required]
       --length [exact-real|e-antic]  how side lengths are chosen  [default: e-antic
                                      for triangles, exact-real otherwise]
+      --min INTEGER                  minimum sum of angles  [default: 0]
       --limit INTEGER                maximum sum of angles  [default: unlimited]
+      --count INTEGER                number of n-gons to produce  [default:
+                                     unlimited]
       --include-literature           also include ngons described in literature
                                      [default: False]
       --family TEXT                  instead of producing all n-gons up to a limited
