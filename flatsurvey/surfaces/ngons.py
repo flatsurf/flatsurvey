@@ -188,7 +188,7 @@ class Ngon(Surface):
             
             from itertools import permutations
             for a, b, c, d in permutations(self.angles):
-                if a % 2 == 0 and b % 2 == 0 and c == a//2 + b//2 and d == c and (a // 2] % 2 != (b // 2) % 2:
+                if a % 2 == 0 and b % 2 == 0 and c == a//2 + b//2 and d == c and (a // 2) % 2 != (b // 2) % 2:
                     return ngon((a//2, a//2, b//2, b//2))
                 if a % 2 == b % 2 and c == (a + b) // 2 and d == c:
                     return ngon((a, a, b, b))
