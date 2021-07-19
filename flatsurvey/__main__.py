@@ -159,16 +159,19 @@ class Scheduler:
         nothing = object()
         from itertools import zip_longest, chain
         iters = [iter(generator) for generator in self._generators]
-        while iters:
-            for it in list(iters):
-                try:
-                    surface = next(it)
-                    command = await self._render_command(surface)
-                    if command is None:
-                        continue
-                    tasks.append(await self._enqueue(command))
-                except StopIteration:
-                    iters.remove(it)
+        try:
+            while iters:
+                for it in list(iters):
+                    try:
+                        surface = next(it)
+                        command = await self._render_command(surface)
+                        if command is None:
+                            continue
+                        tasks.append(await self._enqueue(command))
+                    except StopIteration:
+                        iters.remove(it)
+        except KeyboardInterrupt:
+            print("Stopped scheduling of new jobs.")
 
         print("All jobs have been scheduled. Now waiting for jobs to finish.")
         await asyncio.gather(*tasks)
