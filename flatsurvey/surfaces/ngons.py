@@ -144,7 +144,7 @@ class Ngon(Surface):
             angles = tuple(sorted(angles))
             if self._lengths.cache:
                 raise NotImplementedError("Cannot translate explicit lengths when constructing equivalent surface.")
-            assert sum(angles) <= sum(self.angles)
+            assert sum(angles) < sum(self.angles) or (sum(angles) == sum(self.angles) and angles < tuple(self.angles)), f"{angles} < {self.angles}"
             return Ngon(angles, length=self.length)
 
         if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
@@ -160,11 +160,8 @@ class Ngon(Surface):
         if len(self.angles) == 3:
             a, b, c = self.angles
             assert a <= b <= c
-            if (a, b, c) == (1, 1, 2): return "Torus"
             if a == b == 1: return "Veech 1989"
-            if a % 2 == 0 and b % 2 == 1 and c == a + b: return ngon((a//2, a//2, b))
-            if a % 2 == 1 and b % 2 == 0 and c == a + b: return ngon((b//2, b//2, a))
-            if a == 2 and b == c: return ngon((1, b, b + 1))
+            if a == 1 and c == b + 1: return f"Regular {2*(b + 1)}-gon"
             if a == 2 and c == b + 2: return "Veech 1989"
             if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
             if (a, b, c) == (1, 4, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
@@ -174,6 +171,64 @@ class Ngon(Surface):
             if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
             if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
             if (a, b, c) in [(1, 3, 6), (1, 3, 8)]: return "Rank-one example (to be checked)"
+            if (a, b, c) == (3, 4, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
+            if a == b or b == c:
+                # (a, b, a + b) has a right angle at a + b. Adding a reflected
+                # copy, we either get (b, b, 2a) or (a, a, 2b)
+                if a == b:
+                    if c % 2 == 0:
+                        a_, b_ = c // 2, b
+                    else:
+                        # The sum of the angles does not go down, but we get a
+                        # lexicographically smaller ngon.
+                        a_, b_ = c, 2*b
+                else:
+                    # Same as above just with swapped variables.
+                    if a % 2 == 0:
+                        a_, b_ = a // 2, b
+                    else:
+                        # The sum of the angles does not go down, but we get a
+                        # lexicographically smaller ngon.
+                        a_, b_ = a, 2*b
+                # Ignoring the marked points, the isosceles triangles may or
+                # may not unfold to the same translation surface.
+                # Let us assume that we unfold by turning around the vertex at
+                # a. Then we need k copies such that ka ≡ 0 mod 4(a+b) which
+                # corresponds to 2π. Also k must be even for the pieces to fit
+                # together. If k is not divisible by 4, we must also unfold the
+                # same triangle when flipped across the edge opposite to a.
+                k = 4*(a_ + b_) // gcd(a_, 4*(a_ + b_))
+                if k % 2 == 1: k *= 2
+                # We compare this to the unfolding of (b, b, 2a) to see whether
+                # we get the same surface. Again, we unfold around the vertex
+                # at 2a. We need l copies such that 2la ≡ 0 mod 4(a+b). Again l
+                # must be even and again we distinguish whether l is divisible
+                # by 4 or not.
+                l = 4*(a_ + b_) // gcd(2*a_, 4*(a_ + b_))
+                if l % 2 == 1: l *= 2
+
+                # So (a, b, a+b) and (b, b, 2a) give the same surface if k = 2l
+                # and k and l are the same mod 4.
+                if k == 2*l and k % 4 == l % 4:
+                    angles = (a_, b_, a_ + b_)
+                    if sum(angles) < sum(self.angles) or tuple(sorted(angles)) < tuple(self.angles):
+                        return ngon(angles)
+            if c == a + b:
+                # As above, we can go from (a, b, a + b) to (a, a, 2b)
+                k = 4*(a + b) // gcd(a, 4*(a + b))
+                if k % 2 == 1: k *= 2
+
+                l = 4*(a + b) // gcd(2*a, 4*(a + b))
+                if l % 2 == 1: l *= 2
+
+                if k == 2*l and k % 4 == l % 4:
+                    angles = (a, a, 2*b)
+
+                    if sum(angles) < sum(self.angles) or tuple(sorted(angles)) < tuple(self.angles):
+                        return ngon(angles)
+
+            if a == b: print("%s is (%d, %d, %d) which is %s"%(self, 2*a, c, 2*a+c, ngon((2*a, c, 2*a+c)).reference()))
+            if b == c: print("%s is (%d, %d, %d) which is %s"%(self, 2*b, a, 2*b+a, ngon((2*b, a, 2*b+a)).reference()))
 
         if len(self.angles) == 4:
             a, b, c, d = self.angles
@@ -185,13 +240,13 @@ class Ngon(Surface):
             if (a, b, c, d) == (1, 1, 2, 12): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 2, 2, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
             if (a, b, c, d) == (1, 2, 2, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (2, 2, 3, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
             
             from itertools import permutations
             for a, b, c, d in permutations(self.angles):
-                if a % 2 == 0 and b % 2 == 0 and c == a//2 + b//2 and d == c and (a // 2) % 2 != (b // 2) % 2:
-                    return ngon((a//2, a//2, b//2, b//2))
-                if a % 2 == b % 2 and c == (a + b) // 2 and d == c:
-                    return ngon((a, a, b, b))
+                if c == sum(self.angles) / 4 and d == c:
+                    # The quadrilateral contains two angles pi/2. Unfold at the edge connecting them.
+                    return ngon((a, a, b, b,))
 
     @property
     def orbit_closure_dimension_upper_bound(self):
