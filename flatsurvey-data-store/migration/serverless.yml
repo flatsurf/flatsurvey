@@ -5,7 +5,7 @@ provider:
   runtime: nodejs10.x
   region: eu-central-1
   memorySize: 2048
-  timeout: 120
+  timeout: 900
   versionFunctions: true
   apiKeys:
     - flatsurvey-data-store-migration-api-key
