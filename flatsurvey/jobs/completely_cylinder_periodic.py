@@ -21,7 +21,7 @@ _all_ directions are cylinder periodic.
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ class CompletelyCylinderPeriodic(Consumer):
         assert not any(results)
         return False if any(result == False for result in results) else None
 
-    def _consume(self, decomposition, cost):
+    async def _consume(self, decomposition, cost):
         r"""
         Determine wheter ``decomposition`` is cylinder periodic.
 
@@ -117,14 +117,17 @@ class CompletelyCylinderPeriodic(Consumer):
 
         Investigate in a single direction::
 
-            >>> flow_decompositions.produce()
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
             True
 
         Since we have not found any direction that is not cylinder periodic
         (since there are none), we cannot tell whether the surface is
         completely cylinder periodic::
 
-            >>> ccp.report()
+            >>> report = ccp.report()
+            >>> asyncio.run(report)
             [Ngon([1, 1, 1])] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
 
         """
@@ -143,6 +146,6 @@ class CompletelyCylinderPeriodic(Consumer):
 
         return not Consumer.COMPLETED
 
-    def report(self, result=None, **kwargs):
+    async def report(self, result=None, **kwargs):
         if self._resolved != Consumer.COMPLETED:
-            self._report.result(self, result, cylinder_periodic_directions=self._cylinder_periodic_directions, undetermined_directions=self._undetermined_directions, **kwargs)
+            await self._report.result(self, result, cylinder_periodic_directions=self._cylinder_periodic_directions, undetermined_directions=self._undetermined_directions, **kwargs)

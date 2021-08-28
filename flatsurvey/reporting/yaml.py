@@ -16,7 +16,7 @@ EXAMPLES::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -64,17 +64,19 @@ class Yaml(Reporter):
         >>> surface = Ngon((1, 1, 1))
         >>> log = Yaml(surface)
 
+        >>> import asyncio
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
         >>> from flatsurvey.reporting import Report
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
         >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions)
-        >>> ccp.report()
+        >>> report = ccp.report()
+        >>> asyncio.run(report)
 
         >>> log.flush() # doctest: +ELLIPSIS
         surface:
         ...
         completely-cylinder-periodic:
-        - {cylinder_periodic_directions: 0, undetermined_directions: 0, value: !!null ''}
+        - {cylinder_periodic_directions: 0, undetermined_directions: 0, value: null}
 
     """
     @copy_args_to_internal_fields
@@ -130,7 +132,7 @@ class Yaml(Reporter):
                 ret['value'] = "Failed: " + str(e)
         return ret
     
-    def result(self, source, result, **kwargs):
+    async def result(self, source, result, **kwargs):
         r"""
         Report that computation ``source`` concluded with ``result``.
 
@@ -146,9 +148,12 @@ class Yaml(Reporter):
 
         Write the first two flow decompositions to the YAML output:
 
-            >>> flow_decompositions.produce()
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
             True
-            >>> flow_decompositions.produce()
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
             True
 
             >>> log.flush() # doctest: +ELLIPSIS

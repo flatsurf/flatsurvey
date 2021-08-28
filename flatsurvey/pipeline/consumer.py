@@ -13,7 +13,7 @@ Any goal of a computation implements the Consumer interface::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ class Consumer:
         for producer in producers:
             producer.register_consumer(self)
 
-    def consume(self, product, cost):
+    async def consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and
         return whether we are willing to consumer further data or whether we
@@ -94,23 +94,26 @@ class Consumer:
             >>> connections = SaddleConnections(surface=surface)
             >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
 
-            >>> orientations.consume(next(iter(surface.flat_triangulation().connections())), cost=0)
+            >>> import asyncio
+            >>> consume = orientations.consume(next(iter(surface.flat_triangulation().connections())), cost=0)
+            >>> asyncio.run(consume)
             True
 
         Note that you should actually never call this explicitly. It gets
         called whenever a producer produces something new::
 
-            >>> connections.produce()
+            >>> produce = connections.produce()
+            >>> asyncio.run(produce)
             True
 
         """
         assert self._resolved != Consumer.COMPLETED
 
-        self._resolved = self._consume(product, cost)
+        self._resolved = await self._consume(product, cost)
 
         return self._resolved
 
-    def _consume(self, product, cost):
+    async def _consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and
         return whether we are willing to consumer further data or whether we
@@ -120,7 +123,7 @@ class Consumer:
         """
         raise NotImplementedError
 
-    def resolve(self):
+    async def resolve(self):
         r"""
         Make our producers generate objects until this consumer marks itself as
         resolved. Return whether we could resolve or our producers were exhausted.
@@ -136,14 +139,16 @@ class Consumer:
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
             >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
             
-            >>> oc.resolve() == Consumer.COMPLETED
+            >>> import asyncio
+            >>> resolve = oc.resolve()
+            >>> asyncio.run(resolve) == Consumer.COMPLETED
             True
 
         """
         while self._resolved != Consumer.COMPLETED:
             for producer in self._producers:
                 from flatsurvey.pipeline.producer import Producer
-                if producer.produce() != Producer.EXHAUSTED:
+                if await producer.produce() != Producer.EXHAUSTED:
                     break
             else:
                 return not Consumer.COMPLETED
@@ -194,7 +199,7 @@ class Consumer:
     def __repr__(self):
         return " ".join(self.command())
 
-    def report(self):
+    async def report(self):
         r"""
         Report the current state of this consumer to the reporter. Typically
         called at the very end to make sure that this consumer has reported its
@@ -212,7 +217,9 @@ class Consumer:
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
             >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
 
-            >>> oc.report()
+            >>> import asyncio
+            >>> report = oc.report()
+            >>> asyncio.run(report)
             [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_3(4) (ambient dimension 6) (dimension: 2) (directions: 0) (directions_with_cylinders: 0) (dense: None)
 
         """

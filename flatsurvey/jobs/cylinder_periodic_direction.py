@@ -20,7 +20,7 @@ non-cylinder.
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ class CylinderPeriodicDirection(Consumer):
             command.append(f"--limit={self._limit}")
         return command
 
-    def _consume(self, decomposition, cost):
+    async def _consume(self, decomposition, cost):
         r"""
         Determine wheter ``decomposition`` is cylinder periodic.
 
@@ -100,7 +100,9 @@ class CylinderPeriodicDirection(Consumer):
         Investigate in a single direction. We find that this direction is
         cylinder periodic::
 
-            >>> flow_decompositions.produce()
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
             [Ngon([1, 1, 1])] [CylinderPeriodicDirection] True (directions: 1)
             True
 
@@ -108,15 +110,15 @@ class CylinderPeriodicDirection(Consumer):
         self._directions += 1
 
         if all([component.cylinder() == True for component in decomposition.decomposition.components()]):
-            self.report(True, decomposition=decomposition)
+            await self.report(True, decomposition=decomposition)
             return Consumer.COMPLETED
 
         if self._directions >= limit:
-            self.report()
+            await self.report()
             return Consumer.COMPLETED
 
         return not Consumer.COMPLETED
 
-    def report(self, result=None, **kwargs):
+    async def report(self, result=None, **kwargs):
         if self._resolved != Consumer.COMPLETED:
-            self._report.result(self, result, directions=self._directions)
+            await self._report.result(self, result, directions=self._directions)

@@ -7,13 +7,17 @@ The saddle connections on a translation surface.
     Usage: worker saddle-connections [OPTIONS]
       Saddle connections on the surface.
     Options:
-      --help  Show this message and exit.
+      --bound INTEGER  stop search after all saddle connections up to that length
+                       have been processed  [default: no bound]
+      --limit INTEGER  stop search after that many saddle connections have been
+                       considered  [default: no limit]
+      --help           Show this message and exit.
 
 """
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by

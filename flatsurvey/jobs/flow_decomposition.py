@@ -22,7 +22,7 @@ number of Zorich induction steps:
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -85,19 +85,21 @@ class FlowDecompositions(Processor):
             command.append(f"--limit={self._limit}")
         return command
 
-    def _consume(self, orientation, cost):
+    async def _consume(self, orientation, cost):
         r"""
         Produce the flow decomposition corresponding to ``orientation``.
 
         EXAMPLES::
 
+            >>> import asyncio
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> decompositions.produce() # indirect doctest
-            [Ngon([1, 1, 1])] [FlowDecompositions] FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components (orientation: (0, (c ~ 1.7320508))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+            >>> produce = decompositions.produce() # indirect doctest
+            >>> asyncio.run(produce)
+            [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, -(2*c ~ 3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
             Flow decomposition with 1 cylinders, 0 minimal components and 0 undetermined components
@@ -107,8 +109,15 @@ class FlowDecompositions(Processor):
         self._current = self._surface.orbit_closure().decomposition(orientation, self._limit)
         cost += time.perf_counter() - start
 
-        self._report.result(self, self._current.decomposition, orientation=orientation, cylinders=len(self._current.decomposition.cylinders()), minimal=len(self._current.decomposition.minimalComponents()), undetermined=len(self._current.decomposition.undeterminedComponents()))
+        await self._report.result(self,
+            # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274
+            # self._current.decomposition,
+            None,
+            orientation=orientation,
+            cylinders=len(self._current.decomposition.cylinders()),
+            minimal=len(self._current.decomposition.minimalComponents()),
+            undetermined=len(self._current.decomposition.undeterminedComponents()))
 
-        self._notify_consumers(cost)
+        await self._notify_consumers(cost)
 
         return not Processor.EXHAUSTED

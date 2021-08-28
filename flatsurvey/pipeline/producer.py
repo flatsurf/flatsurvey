@@ -11,7 +11,7 @@ EXAMPLES::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class Producer:
         self._consumers = set()
         self._current = None
 
-    def produce(self):
+    async def produce(self):
         r"""
         Produce new data and notify all attached consumers of it. Return
         whether nothing more can be produced because this producer is
@@ -64,11 +64,13 @@ class Producer:
             >>> surface = Ngon((1, 1, 1))
             >>> connections = SaddleConnections(surface=surface)
 
-            >>> connections.produce() != Producer.EXHAUSTED
+            >>> import asyncio
+            >>> produce = connections.produce()
+            >>> asyncio.run(produce) != Producer.EXHAUSTED
             True
 
             >>> connections._current
-            (0, (c ~ 1.7320508)) from -3 to 3
+            -3
 
         """
         start = time.perf_counter()
@@ -76,17 +78,17 @@ class Producer:
             return Producer.EXHAUSTED
         cost = time.perf_counter() - start
 
-        self._notify_consumers(cost)
+        await self._notify_consumers(cost)
 
         return not Producer.EXHAUSTED
 
-    def _notify_consumers(self, cost):
+    async def _notify_consumers(self, cost):
         r"""
         Notify all attached consumers that something new has been produced.
         """
         for consumer in list(self._consumers):
             from flatsurvey.pipeline.consumer import Consumer
-            if consumer.consume(self._current, cost) == Consumer.COMPLETED:
+            if await consumer.consume(self._current, cost) == Consumer.COMPLETED:
                 self._consumers.remove(consumer)
 
     def register_consumer(self, consumer):

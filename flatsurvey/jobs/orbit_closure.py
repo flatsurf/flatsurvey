@@ -11,22 +11,28 @@ EXAMPLES::
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "orbit-closure", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker orbit-closure [OPTIONS]
-      Determine the GL₂(R) orbit closure of ``surface``.
+      Determines the GL₂(R) orbit closure of ``surface``.
     Options:
-      --limit INTEGER       abort search after processing that many flow
-                            decompositions with cylinders without an increase in
-                            dimension  [default: 64]
-      --expansions INTEGER  when the --limit has been reached, restart the search
-                            with random saddle connections that are twice as long as
-                            the ones used previously; repeat this doubling process
-                            EXPANSIONS many times  [default: 6]
-      --help                Show this message and exit.
+      --limit INTEGER         abort search after processing that many flow
+                              decompositions with cylinders without an increase in
+                              dimension  [default: 32]
+      --expansions INTEGER    when the --limit has been reached, restart the search
+                              with random saddle connections that are twice as long
+                              as the ones used previously; repeat this doubling
+                              process EXPANSIONS many times  [default: 4]
+      --deform / --no-deform  When set, we deform the input surface as soon as we
+                              found a third dimension in the tangent space and
+                              restart. This is often beneficial if the input surface
+                              has lots of symmetries and also when the Boshernitzan
+                              criterion can rarely be applied due to SAF=0.
+      --cache-only            Do not perform any computation. Only query the cache.
+      --help                  Show this message and exit.
 
 """
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -55,7 +61,7 @@ from flatsurvey.pipeline.util import PartialBindingSpec
 
 class OrbitClosure(Consumer):
     r"""
-    Determine the GL₂(R) orbit closure of ``surface``.
+    Determines the GL₂(R) orbit closure of ``surface``.
 
     EXAMPLES::
 
@@ -73,9 +79,10 @@ class OrbitClosure(Consumer):
     DEFAULT_LIMIT = 32
     DEFAULT_EXPANSIONS = 4
     DEFAULT_DEFORM = False
+    DEFAULT_CACHE_ONLY = False
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS, deform=DEFAULT_DEFORM):
+    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache, limit=DEFAULT_LIMIT, expansions=DEFAULT_EXPANSIONS, deform=DEFAULT_DEFORM, cache_only=DEFAULT_CACHE_ONLY):
         super().__init__(producers=[flow_decompositions])
 
         self._cylinders_without_increase = 0
@@ -92,26 +99,33 @@ class OrbitClosure(Consumer):
         if results.reduce() is not None:
             report.log(self, "dense orbit closure (cached)")
             self._resolved = Consumer.COMPLETED
+            return
+
+        if self._cache_only:
+            report.log(self, "probably non-dense orbit closure (cached)")
+            self._resolved = Consumer.COMPLETED
+            return
 
     @classmethod
     @click.command(name="orbit-closure", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="abort search after processing that many flow decompositions with cylinders without an increase in dimension")
     @click.option("--expansions", type=int, default=DEFAULT_EXPANSIONS, show_default=True, help="when the --limit has been reached, restart the search with random saddle connections that are twice as long as the ones used previously; repeat this doubling process EXPANSIONS many times")
     @click.option("--deform/--no-deform", default=DEFAULT_DEFORM, help="When set, we deform the input surface as soon as we found a third dimension in the tangent space and restart. This is often beneficial if the input surface has lots of symmetries and also when the Boshernitzan criterion can rarely be applied due to SAF=0.")
-    def click(limit, expansions, deform):
+    @click.option("--cache-only", default=DEFAULT_CACHE_ONLY, is_flag=True, help="Do not perform any computation. Only query the cache.")
+    def click(limit, expansions, deform, cache_only):
         return {
             "goals": [OrbitClosure],
-            "bindings": OrbitClosure.bindings(limit=limit, expansions=expansions, deform=deform)
+            "bindings": OrbitClosure.bindings(limit=limit, expansions=expansions, deform=deform, cache_only=cache_only)
         }
 
     @classmethod
-    def bindings(cls, limit, expansions, deform):
-        return [PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions, deform=deform)]
+    def bindings(cls, limit, expansions, deform, cache_only):
+        return [PartialBindingSpec(OrbitClosure)(limit=limit, expansions=expansions, deform=deform, cache_only=cache_only)]
 
     def deform(self, deformation):
         return {
             "goals": [OrbitClosure],
-            "bindings": OrbitClosure.bindings(limit=self._limit, expansions=self._expansions, deform=False),
+            "bindings": OrbitClosure.bindings(limit=self._limit, expansions=self._expansions, deform=False, cache_only=self._cache_only),
         }
 
     def command(self):
@@ -122,9 +136,11 @@ class OrbitClosure(Consumer):
             command.append(f"--expansions={self._expansions}")
         if self._deform != self.DEFAULT_DEFORM:
             command.append(f"--deform")
+        if self._cache_only != self.DEFAULT_CACHE_ONLY:
+            command.append(f"--cache-only")
         return command
 
-    def _consume(self, decomposition, cost):
+    async def _consume(self, decomposition, cost):
         r"""
         Enlarge the orbit closure from the cylinders in ``decomposition``.
 
@@ -142,7 +158,9 @@ class OrbitClosure(Consumer):
         
         Run until we find the orbit closure, i.e., investigate in two directions::
 
-            >>> assert oc.resolve() == Consumer.COMPLETED
+            >>> import asyncio
+            >>> resolve = oc.resolve()
+            >>> assert asyncio.run(resolve) == Consumer.COMPLETED
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 4/6
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 6/6
             [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
@@ -170,11 +188,11 @@ class OrbitClosure(Consumer):
             self._cylinders_without_increase = 0
 
         if orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound:
-            self.report()
+            await self.report()
             return Consumer.COMPLETED
 
         if self._cylinders_without_increase >= self._limit:
-            self.report()
+            await self.report()
 
             if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
@@ -197,7 +215,7 @@ class OrbitClosure(Consumer):
             return Consumer.COMPLETED
 
         if dimension != orbit_closure.dimension() and not self._deformed and orbit_closure.dimension() > 2:
-            tangents = [orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]]
+            tangents = [orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[dimension:]]
 
             def upper_bound(v):
                 length = sum(abs(x.parent().number_field(x)) for x in v) / len(v)
@@ -209,7 +227,7 @@ class OrbitClosure(Consumer):
             
             tangents.sort(key=upper_bound)
 
-            scale = 1
+            scale = 2
             while True:
                 eligibles = False
 
@@ -224,7 +242,6 @@ class OrbitClosure(Consumer):
                     
                     eligibles = True
 
-                    print("Deforming with factor ", n)
                     deformation = [orbit_closure.V2(x / n, x / (2*n)).vector for x in tangent]
                     try:
                         # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient.
@@ -270,7 +287,7 @@ class OrbitClosure(Consumer):
         assert not any([result is False for result in results])
         return True if any(result == True for result in results) else None
 
-    def report(self):
+    async def report(self):
         if self._resolved != Consumer.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
-            self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound or None)
+            await self._report.result(self, orbit_closure, dimension=orbit_closure.dimension(), directions=self._directions, directions_with_cylinders=self._directions_with_cylinders, dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound or None)

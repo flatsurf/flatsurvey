@@ -11,6 +11,7 @@ EXAMPLES::
 #  This file is part of flatsurf.
 #
 #        Copyright (C) 2020 Vincent Delecroix
+#        Copyright (C) 2021 Julian Rüth
 #
 #  Flatsurf is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -58,6 +59,7 @@ class ThurstonVeech(Surface):
         self.vp = vp
         self.hm = hm
         self.vm = vm
+        self._eliminate_marked_points = False
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -108,7 +110,7 @@ class ThurstonVeech(Surface):
     @cached_method
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
-        return ThurstonVeech(self.hp, self.vp, as_tuple=True)
+        return ThurstonVeech(self.hp, self.vp)
 
     @cached_method
     def _surface(self):

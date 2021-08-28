@@ -48,6 +48,7 @@ def ListBindingSpec(name, sequence):
         f"provide_{name}": provider,
         "__repr__": lambda self: f"{name}->{sequence}"
     })()
+    binding.name = name
 
     return binding
 
@@ -90,6 +91,7 @@ def PartialBindingSpec(prototype, name=None):
             f"provide_{name}": provider,
             "__repr__": lambda self: f"{name}->{prototype.__name__}"
         })()
+        binding.name = name
         return binding
     return wrap
 
@@ -117,6 +119,7 @@ def FactoryBindingSpec(name, prototype):
         f"provide_{name}": provider,
         "__repr__": lambda self: f"{name}->{prototype}"
     })()
+    binding.name = name
 
     return binding
 

@@ -27,4 +27,4 @@ from .log import Log
 from .yaml import Yaml
 from .graphql import GraphQL
 
-commands = [Log.click, Yaml.click, GraphQL.click]
+commands = [Log.click, Yaml.click, GraphQL.click, Report.click]

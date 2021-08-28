@@ -10,13 +10,14 @@ EXAMPLES::
       Writes progress and results as an unstructured log file.
     Options:
       --output FILENAME  [default: stdout]
+      --prefix DIRECTORY
       --help             Show this message and exit.
 
 """
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -131,7 +132,7 @@ class Log(Reporter):
         """
         self.log(source, f"{unit}: {count}/{total or '?'}")
 
-    def result(self, source, result, **kwargs):
+    async def result(self, source, result, **kwargs):
         r"""
         Report a result to the log.
 
@@ -140,10 +141,13 @@ class Log(Reporter):
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
 
+            >>> import asyncio
             >>> log = Log(surface)
-            >>> log.result(source=surface, result="dense orbit closure", dimension=1337)
+            >>> result = log.result(source=surface, result="dense orbit closure", dimension=1337)
+            >>> asyncio.run(result)
             [Ngon([1, 1, 1])] [Ngon] dense orbit closure (dimension: 1337)
-            >>> log.result(source=surface, result=None)
+            >>> result = log.result(source=surface, result=None)
+            >>> asyncio.run(result)
             [Ngon([1, 1, 1])] [Ngon] ¯\_(ツ)_/¯
 
         """

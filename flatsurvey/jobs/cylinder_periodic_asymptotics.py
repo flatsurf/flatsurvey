@@ -1,14 +1,18 @@
 r"""
-Determines the growth rate of completely cylinder asymptotic decompositions.
+Determines the growth rate of cylinder periodic decompositions.
 
-Typically, you would want to see the distribution of completely cylinder
-asymptotic directions such that all circumferences are shorter than some `R`.
-For this, you should limit the length of saddle connections considered.
+Typically, you would want to determine the distribution of cylinder asymptotic
+directions such that all circumferences are shorter than some `R`.  For this,
+you should limit the length of saddle connections considered.
 
     >>> from flatsurvey.test.cli import invoke
     >>> from flatsurvey.worker.__main__ import worker
-    >>> invoke(worker, "completely-cylinder-periodic-asymptotic", "--help") # doctest: +NORMALIZE_WHITESPACE
-    Usage: worker completely-cylinder-periodic-asymptotic [OPTIONS]
+    >>> invoke(worker, "cylinder-periodic-asymptotics", "--help") # doctest: +NORMALIZE_WHITESPACE
+    Usage: worker cylinder-periodic-asymptotics [OPTIONS]
+    Determines the maximum circumference of all cylinders in each cylinder
+    periodic direction.
+    Options:
+      --help   Show this message and exit.
 
 """
 #*********************************************************************
@@ -38,10 +42,10 @@ from flatsurvey.pipeline import Consumer
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
 
-class CompletelyCylinderPeriodicAsymptotics(Consumer):
+class CylinderPeriodicAsymptotics(Consumer):
     r"""
-    Determine the maximum circumference of all cylinders of length at most `R`
-    in each completely cylinder periodic direction.
+    Determines the maximum circumference of all cylinders in each cylinder
+    periodic direction.
 
     EXAMPLES::
 
@@ -50,8 +54,8 @@ class CompletelyCylinderPeriodicAsymptotics(Consumer):
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CompletelyCylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions)
-        completely-cylinder-periodic
+        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions)
+        cylinder-periodic-asymptotics
 
     """
     @copy_args_to_internal_fields
@@ -61,15 +65,15 @@ class CompletelyCylinderPeriodicAsymptotics(Consumer):
         self._results = []
 
     @classmethod
-    @click.command(name="completely-cylinder-periodic-asymptotics", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
+    @click.command(name="cylinder-periodic-asymptotics", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
     def click():
         return {
-            'bindings': [ PartialBindingSpec(CompletelyCylinderPeriodicAsymptotics)() ],
-            'goals': [ CompletelyCylinderPeriodicAsymptotics ],
+            'bindings': [ PartialBindingSpec(CylinderPeriodicAsymptotics)() ],
+            'goals': [ CylinderPeriodicAsymptotics ],
         }
 
     def command(self):
-        return ["completely-cylinder-periodic-asymptotics"]
+        return ["cylinder-periodic-asymptotics"]
 
     @classmethod
     def reduce(self, results):
@@ -78,18 +82,21 @@ class CompletelyCylinderPeriodicAsymptotics(Consumer):
 
         EXAMPLES::
 
-            >>> CompletelyCylinderPeriodic.reduce([False, 2, 1])
+            >>> CylinderPeriodicAsymptotics.reduce([False, 2, 1])
             [1, 2]
-            >>> CompletelyCylinderPeriodic.reduce([None, 2, 1])
-            warning: 1 undetermined component most likely minimal but might be a very long cylinder.
+            >>> CylinderPeriodicAsymptotics.reduce([None, 2, 1])
+            warning: 1 undetermined components most likely minimal but might be very long cylinders.
             [1, 2]
 
         """
+        undetermineds = len([r for r in results if r is None])
+        if undetermineds:
+            print(f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders.")
         return sorted([r for r in results if r])
 
-    def _consume(self, decomposition, cost):
+    async def _consume(self, decomposition, cost):
         r"""
-        Determine the maximum length of the cylinders.
+        Record the circumference of the cylinders in `decomposition`.
 
         EXAMPLES::
 
@@ -99,17 +106,20 @@ class CompletelyCylinderPeriodicAsymptotics(Consumer):
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CompletelyCylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions)
+            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions)
 
         Investigate in a single direction::
 
-            >>> flow_decompositions.produce()
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
             True
 
-        TODO: Explain result
+        ::
 
-            >>> ccp.report()
-            [Ngon([1, 1, 1])] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
+            >>> report = ccp.report()
+            >>> asyncio.run(report)
+            [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distribution: [6.92820323027551])
 
         """
         if decomposition.decomposition.minimalComponents():
@@ -128,6 +138,6 @@ class CompletelyCylinderPeriodicAsymptotics(Consumer):
 
         return not Consumer.COMPLETED
 
-    def report(self, result=None, **kwargs):
+    async def report(self, result=None, **kwargs):
         if self._resolved != Consumer.COMPLETED:
-            self._report.result(self, result, distribution=CompletelyCylinderPeriodicAsymptotics.reduce(self._results))
+            await self._report.result(self, result, distribution=CylinderPeriodicAsymptotics.reduce(self._results))

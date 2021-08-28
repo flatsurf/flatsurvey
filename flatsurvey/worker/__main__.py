@@ -15,15 +15,21 @@ TESTS::
     Options:
       --debug
       --help   Show this message and exit.
+    Cache:
+      cache  A cache of previous results stored behind a GraphQL API in the cloud.
     Goals:
-      completely-cylinder-periodic  Determines whether for all directions given by
-                                    saddle connections, the decomposition of the
-                                    surface is completely cylinder periodic, i.e.,
-                                    the decomposition consists only of cylinders.
-      cylinder-periodic-direction   Determines whether there is a direction for
-                                    which the surface decomposes into cylinders.
-      orbit-closure                 Determine the GL₂(R) orbit closure of
-                                    ``surface``.
+      completely-cylinder-periodic   Determines whether for all directions given by
+                                     saddle connections, the decomposition of the
+                                     surface is completely cylinder periodic, i.e.,
+                                     the decomposition consists only of cylinders.
+      cylinder-periodic-asymptotics  Determines the maximum circumference of all
+                                     cylinders in each cylinder periodic direction.
+      cylinder-periodic-direction    Determines whether there is a direction for
+                                     which the surface decomposes into cylinders.
+      orbit-closure                  Determines the GL₂(R) orbit closure of
+                                     ``surface``.
+      undetermined-iet               Tracks undetermined Interval Exchange
+                                     Transformations.
     Intermediates:
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
@@ -32,18 +38,20 @@ TESTS::
                                       connections irrespective of scaling and sign.
       saddle-connections              Saddle connections on the surface.
     Reports:
-      dynamodb  Reports results to Amazon's DynamoDB cloud database.
-      log       Writes progress and results as an unstructured log file.
-      yaml      Writes results to a YAML file.
+      graphql  Reports results to our GraphQL cloud database.
+      log      Writes progress and results as an unstructured log file.
+      report   Generic reporting of results.
+      yaml     Writes results to a YAML file.
     Surfaces:
-      ngon    Unfolding of an n-gon with prescribed angles.
-      pickle  A base64 encoded pickle.
+      ngon            Unfolding of an n-gon with prescribed angles.
+      pickle          A base64 encoded pickle.
+      thurston-veech  Thurston-Veech construction
 
 """
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurf is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -102,9 +110,9 @@ def process(commands, debug):
 
         >>> from ..test.cli import invoke
         >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
-        [Ngon((1, 1, 1))] [FlowDecompositions] FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components (orientation: (0, (c ~ 1.7320508))) (cylinders: 1) (minimal: 0) (undetermined: 0)
-        [Ngon((1, 1, 1))] [OrbitClosure] dimension: 2/2
-        [Ngon((1, 1, 1))] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
+        [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+        [Ngon([1, 1, 1])] [OrbitClosure] dimension: 2/2
+        [Ngon([1, 1, 1])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
 
     """
     if debug:
@@ -117,7 +125,8 @@ def process(commands, debug):
             objects = Worker.make_object_graph(commands)
 
             try:
-                objects.provide(Worker).start()
+                import asyncio
+                asyncio.run(objects.provide(Worker).start())
             except Restart as restart:
                 commands = [ restart.rewrite_command(command, objects=objects) for command in commands ]
                 continue
@@ -135,8 +144,10 @@ class Worker:
 
     EXAMPLES::
 
+        >>> import asyncio
         >>> worker = Worker(goals=[], reporters=[])
-        >>> worker.start()
+        >>> start = worker.start()
+        >>> asyncio.run(start)
 
     """
     @pinject.copy_args_to_internal_fields
@@ -160,18 +171,18 @@ class Worker:
 
         return pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
 
-    def start(self):
+    async def start(self):
         r"""
         Run until all our goals are resolved.
 
         """
         try:
             for goal in self._goals:
-                goal.resolve()
+                await goal.resolve()
         finally:
             # TODO: Should we make this configurable?
             for goal in self._goals:
-                goal.report()
+                await goal.report()
         for reporter in self._reporters:
             reporter.flush()
 

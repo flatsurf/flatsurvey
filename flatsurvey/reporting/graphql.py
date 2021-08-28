@@ -27,7 +27,7 @@ actually write to the real AWS.
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -88,20 +88,21 @@ class GraphQL(Reporter):
         import boto3
         return boto3.client("s3", region_name=region)
 
-    @cached_method
-    def _surface_id(self):
-        return self._graphql.mutate(r"""
-            mutation($data: JSON!) {
-                createSurface(input: {
-                    surface: {
-                        data: $data
+    async def _surface_id(self):
+        if not hasattr(self, "_surface_id_cache"):
+            self._surface_id_cache = (await self._graphql.mutate(r"""
+                mutation($data: JSON!) {
+                    createSurface(input: {
+                        surface: {
+                            data: $data
+                        }
+                    }) {
+                        surface { id }
                     }
-                }) {
-                    surface { id }
-                }
-            }""",
-            variable_values={"data": self._serialize(self._surface)},
-            description="create surface")["createSurface"]["surface"]["id"]
+                }""",
+                variable_values={"data": self._serialize(self._surface)},
+                description="create surface"))["createSurface"]["surface"]["id"]
+        return self._surface_id_cache
 
     def s3(self, raw, directory="pickles"):
         r"""
@@ -123,7 +124,7 @@ class GraphQL(Reporter):
             ...     assert log.s3(dumps(surface)) == url
             
             >>> url
-            's3://flatsurvey/pickles/3cf75b5beabe3cb719441891d22ebe8fe1abd41a2c81bc1b023461aa5e5b5141.pickle.gz'
+            's3://flatsurvey/pickles/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz'
 
         """
         from zlib import compress
@@ -172,8 +173,8 @@ class GraphQL(Reporter):
             ...     assert log._serialize(surface) == {
             ...         "angles": [1, 1, 1],
             ...         "description": "Ngon([1, 1, 1])",
-            ...         "pickle": "s3://flatsurvey/Ngon/3cf75b5beabe3cb719441891d22ebe8fe1abd41a2c81bc1b023461aa5e5b5141.pickle.gz"
-            ...     }, log._serialize(surface)
+            ...         "pickle": "s3://flatsurvey/Ngon/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz"
+            ...     }, f"Unexpected serialization: {log._serialize(surface)}"
 
         """
         if type(item).__name__ == 'Integer':
@@ -188,14 +189,10 @@ class GraphQL(Reporter):
         characteristics = item._flatsurvey_characteristics() if hasattr(item, "_flatsurvey_characteristics") else {}
 
         from pickle import dumps
-        try:
-            dump = dumps(item)
-        except Exception as e:
-            return {
-                **characteristics,
-                "description": str(item),
-                "error": str(e),
-            }
+        dump = dumps(item)
+
+        from pickle import loads
+        assert loads(dump) == item, f"{item} failed to deserialize: {item} != {loads(dump)}"
 
         return {
             **characteristics,
@@ -251,7 +248,7 @@ class GraphQL(Reporter):
         import re
         return re.sub(r'(?<!^)(?=[A-Z])', '_', job.__name__).lower()
 
-    def result(self, job, result, **kwargs):
+    async def result(self, job, result, **kwargs):
         r"""
         Write the ``result`` of ``job`` to the database.
 
@@ -269,16 +266,24 @@ class GraphQL(Reporter):
         We use a mock for GraphQL/S3 in this example so we do not actually talk
         to AWS::
 
+            >>> import asyncio
             >>> from moto import mock_s3
             >>> from aioresponses import aioresponses
             >>> with mock_s3():
             ...     with aioresponses() as mock:
+            ...         import os
+            ...         os.environ['FLATSURVEY_GRAPHQL_LOGIN'] = 'doctest'
+            ...         os.environ['FLATSURVEY_GRAPHQL_PASSWORD'] = 'doctest'
             ...         log = GraphQL(surface=surface, lot=1337)
             ...         # We log that a run to resolve ccp has been inconclusive and get that result back from the cache.
-            ...         mock.post('https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/', payload={"data":{"createSurface":{"surface":{"id":"1337"}}}})
-            ...         mock.post('https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/', payload={"data":{}})
-            ...         log.result(job=ccp, result=None)
-            ...         mock.post('https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/', payload={"data":{"surfaces": {"nodes": []}}})
+            ...         endpoint = 'https://m1by93q54i.execute-api.eu-central-1.amazonaws.com/dev/'
+            ...         mock.post(endpoint, payload={"data":{"signin":{"jwtToken":"doctest"}}})
+            ...         mock.post(endpoint, payload={"data":{}})
+            ...         mock.post(endpoint, payload={"data":{"createSurface":{"surface":{"id":"1337"}}}})
+            ...         mock.post(endpoint, payload={"data":{"signin":{"jwtToken":"doctest"}}})
+            ...         mock.post(endpoint, payload={"data":{}})
+            ...         asyncio.run(log.result(job=ccp, result=None))
+            ...         mock.post(endpoint, payload={"data":{"surfaces": {"nodes": []}}})
             ...         assert Cache().results(surface=surface, job=ccp).reduce() == None, "expected unconclusive result"
 
         """
@@ -286,7 +291,7 @@ class GraphQL(Reporter):
         argv = sys.argv
         if argv and argv[0] == "-m": argv = argv[1:]
 
-        self._graphql.mutate(f"""
+        await self._graphql.mutate(f"""
             mutation($data: JSON!, $surface: UUID!) {{
                 create{GraphQL._upper(job)}(input: {{
                     {GraphQL._camel(job)}: {{
@@ -298,7 +303,7 @@ class GraphQL(Reporter):
                 }}
             }}
         """, variable_values={
-            "surface": self._surface_id(),
+            "surface": await self._surface_id(),
             "data": {
                 "invocation": argv,
                 "command": job.command(),

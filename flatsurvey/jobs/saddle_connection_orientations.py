@@ -14,7 +14,7 @@ The saddle connections on a translation surface.
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class SaddleConnectionOrientations(Processor):
         super().__init__(producers=[saddle_connections])
         self._seen = None
 
-    def _consume(self, connection, cost):
+    async def _consume(self, connection, cost):
         vector = connection.vector()
         if self._seen == None:
             import cppyy
@@ -70,7 +70,7 @@ class SaddleConnectionOrientations(Processor):
             self._seen.insert(vector)
             self._current = connection.vector()
             self._current = type(self._current)(self._current)
-            self._notify_consumers(cost)
+            await self._notify_consumers(cost)
 
         return not Processor.COMPLETED
 

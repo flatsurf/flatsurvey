@@ -28,14 +28,14 @@ class ConnectionPool:
         self._create_connection = create
         self._is_alive = is_alive
 
-    @contextlib.contextmanager
-    def connect(self):
+    @contextlib.asynccontextmanager
+    async def connect(self):
         while True:
             try:
                 connection = self._pool.get(block=False)
             except queue.Empty:
-                connection = self._create_connection()
-            if self._is_alive(connection):
+                connection = await self._create_connection()
+            if await self._is_alive(connection):
                 break
             
             print("Discarding old connection. Retrying.")

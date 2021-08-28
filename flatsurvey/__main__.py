@@ -19,20 +19,18 @@ TESTS::
     Cache:
       cache  A cache of previous results stored behind a GraphQL API in the cloud.
     Goals:
-      completely-cylinder-periodic    Determines whether for all directions given by
-                                      saddle connections, the decomposition of the
-                                      surface is completely cylinder periodic, i.e.,
-                                      the decomposition consists only of cylinders.
-      completely-cylinder-periodic-asymptotics
-                                      Determine the maximum circumference of all
-                                      cylinders of length at most `R` in each
-                                      completely cylinder periodic direction.
-      cylinder-periodic-direction     Determines whether there is a direction for
-                                      which the surface decomposes into cylinders.
-      orbit-closure                   Determine the GL₂(R) orbit closure of
-                                      ``surface``.
-      undetermined-iet                Track undetermined Interval Exchang
-                                      Transformations.
+      completely-cylinder-periodic   Determines whether for all directions given by
+                                     saddle connections, the decomposition of the
+                                     surface is completely cylinder periodic, i.e.,
+                                     the decomposition consists only of cylinders.
+      cylinder-periodic-asymptotics  Determines the maximum circumference of all
+                                     cylinders in each cylinder periodic direction.
+      cylinder-periodic-direction    Determines whether there is a direction for
+                                     which the surface decomposes into cylinders.
+      orbit-closure                  Determines the GL₂(R) orbit closure of
+                                     ``surface``.
+      undetermined-iet               Tracks undetermined Interval Exchange
+                                     Transformations.
     Intermediates:
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
@@ -43,6 +41,7 @@ TESTS::
     Reports:
       graphql  Reports results to our GraphQL cloud database.
       log      Writes progress and results as an unstructured log file.
+      report   Generic reporting of results.
       yaml     Writes results to a YAML file.
     Surfaces:
       ngons           The translation surfaces that come from unfolding n-gons.
@@ -53,7 +52,7 @@ TESTS::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurf is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -79,6 +78,7 @@ import flatsurvey.reporting
 import flatsurvey.surfaces
 
 from flatsurvey.ui.group import CommandWithGroups
+from flatsurvey.pipeline.util import provide
 
 @click.group(chain=True, cls=CommandWithGroups, help="Run a survey on the `objects` until all the `goals` are reached.")
 @click.option('--dry-run', is_flag=True, help="do not spawn any workers")
@@ -184,7 +184,8 @@ class Scheduler:
         >>> from flatsurvey.jobs import OrbitClosure
 
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[])
-        >>> scheduler._render_command(Ngon([1, 1, 1])) # doctest: +ELLIPSIS
+        >>> command = scheduler._render_command(Ngon([1, 1, 1]))
+        >>> asyncio.run(command) # doctest: +ELLIPSIS
         ['python', '-m', 'flatsurvey.worker', 'orbit-closure', 'pickle', '--base64', '...']
 
         """
@@ -204,20 +205,33 @@ class Scheduler:
 
         class Reporters:
             def __init__(self, reporters): self._reporters = reporters
-        for reporter in objects.provide(Reporters)._reporters:
+        reporters = objects.provide(Reporters)._reporters
+        for reporter in reporters:
             commands.extend(reporter.command())
 
         class Goals:
             def __init__(self, goals): self._goals = goals
         goals = [goal for goal in objects.provide(Goals)._goals if goal._resolved != goal.COMPLETED]
+
         if not goals:
-            print(f"No goals left for {surface}. Skipping.")
             return None
+
         for goal in goals:
             commands.extend(goal.command())
 
-        commands.extend(surface.command())
+        for binding in self._bindings:
+            binding = provide(binding.name, objects)
+            if binding in reporters:
+                continue
+            if binding in goals:
+                continue
+            if binding == surface:
+                continue
 
+            commands.extend(binding.command())
+
+        commands.extend(surface.command())
+        
         import os
         return [os.environ.get("PYTHON", "python"), "-m", "flatsurvey.worker"] + commands
 
@@ -229,7 +243,6 @@ class Scheduler:
 
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=None)
         >>> asyncio.run(scheduler._enqueue(["true"]))
-        spawning true
         <Task ...>
 
         """
@@ -273,7 +286,6 @@ class Scheduler:
         from plumbum import local, BG
         from plumbum.commands.processes import ProcessExecutionError
         local.cwd.chdir(os.path.dirname(os.path.dirname(__file__)))
-        print("spawning", " ".join(command))
 
         start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG(stdout=sys.stdout, stderr=sys.stderr)

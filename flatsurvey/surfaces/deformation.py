@@ -29,7 +29,7 @@ class Deformation(Surface):
         self._old = old
 
     def __repr__(self):
-        return repr(self._old)
+        return f"Deformation of {self._old}"
 
     @property
     def _eliminate_marked_points(self):
@@ -41,6 +41,15 @@ class Deformation(Surface):
 
     def _surface(self):
         return self._deformed
+
+    def __hash__(self):
+        return hash((self._deformed, self._old))
+
+    def __eq__(self, other):
+        return isinstance(other, Deformation) and self._deformed == other._deformed and self._old == other._old
+
+    def __ne__(self, other):
+        return not (self == other)
 
     class Restart(flatsurvey.worker.restart.Restart):
         def __init__(self, deformed, old):

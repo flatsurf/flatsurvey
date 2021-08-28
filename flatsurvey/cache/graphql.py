@@ -22,7 +22,7 @@ fairly trivial to change that and allow for other similar systems as well.
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -64,17 +64,17 @@ class GraphQL:
         self._pickle_cache = PickleCache(region=region)
         self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
-    def results(self, job, surface=None, filter=None, exact=False, page_size=16):
+    def results(self, job, surface=None, filter=None, exact=False, page_size=16, after=None):
         r"""
         Return the previous results for ``job`` on ``surface``.
         """
         if exact:
             raise NotImplementedError("exact surface filtering")
 
-        query = lambda after: self._create_query(job=job, surface_filter=f'name: {{ equalTo: "{str(surface)}" }}' if surface else None, result_filter=filter, limit=page_size, after=after)
+        query = lambda after_: self._create_query(job=job, surface_filter=f'name: {{ equalTo: "{str(surface)}" }}' if surface else None, result_filter=filter, limit=page_size, after=after_)
         delete = lambda node: self._create_delete(job=job, id=node['id'])
 
-        return Results(job=job, nodes=Nodes(query=query, delete=delete, graphql_client=self._graphql), pickle_cache=self._pickle_cache)
+        return Results(job=job, nodes=Nodes(query=query, delete=delete, graphql_client=self._graphql, after=after), pickle_cache=self._pickle_cache)
 
     def __repr__(self):
         return "cache"
@@ -162,21 +162,22 @@ class Nodes:
     r"""
     A (internally paginated) list of raw nodes as returned by a GraphQL ``query``.
     """
-    def __init__(self, query, delete, graphql_client):
+    def __init__(self, query, delete, graphql_client, after=None):
         self._make_query = query
         self._make_delete = delete
         self._graphql_client = graphql_client
+        self._after = after
 
-    def __iter__(self):
-        after = None
+    async def __aiter__(self):
+        # TODO: Using a stateful _after is completely broken.
         while True:
-            results = self._graphql_client.query(self._make_query(after))['results']
+            results = (await self._graphql_client.query(self._make_query(self._after)))['results']
 
             if len(results) == 0 or len(results['edges']) == 0:
                 break
 
             for edge in results['edges']:
-                after = edge['cursor']
+                self._after = edge['cursor']
                 node = edge['node']
                 yield node
 
@@ -193,35 +194,36 @@ class Results:
         self._pickle_cache = pickle_cache
         self._nodes = nodes
 
-    def __iter__(self):
-        for node in self._nodes:
+    async def __aiter__(self):
+        async for node in self._nodes:
             yield self._resolve(node)
 
-    def nodes(self):
+    async def nodes(self):
         r"""
         Return the nodes stored in the GraphQL database for these results.
 
         Use ``results`` for a more condensed version that is stripped of
         additional metadata.
         """
-        for node in self:
+        async for node in self:
             yield {
                 **node['data'],
                 'surface': node['surface']['data'],
                 'timestamp': node['timestamp'],
             }
 
-    def results(self):
+    async def results(self):
         r"""
         Return the objects that were registered as previous results in the
         database.
         """
-        for node in self:
+        async for node in self:
             result = node['data']['result']
             if result is not None:
                 result = node['data']['result']()
-                setattr(result, 'erase', lambda: self._nodes.erase(node))
-                yield result
+                if result is not None: # TODO: why is this needed?
+                    setattr(result, 'erase', lambda: self._nodes.erase(node))
+                    yield result
 
     def reduce(self):
         r"""
@@ -313,10 +315,12 @@ class PickleCache:
         from zlib import decompress
         from pickle import loads
         buffer = self._downloads[url]
-        pickle = decompress(buffer.read())
+        buffer = buffer.read()
+        pickle = decompress(buffer)
         try:
             cached = loads(pickle)
-            self._cache[url] = weakref.ref(cached)
+            if cached is not None:
+                self._cache[url] = weakref.ref(cached)
             return cached
         except Exception as e:
             print(f"Failed to restore {url}:\n{e}")

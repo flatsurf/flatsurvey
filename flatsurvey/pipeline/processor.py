@@ -16,7 +16,7 @@ decompositions::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ class Processor(Producer, Consumer):
 
         self._produced = False
 
-    def produce(self):
+    async def produce(self):
         r"""
         Ask our producers to produce until our own ``consume`` gets called so
         we actually produce. Return whether all our producers have been
@@ -75,11 +75,13 @@ class Processor(Producer, Consumer):
             >>> connections = SaddleConnections(surface=surface)
             >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
 
-            >>> orientations.produce() != Producer.EXHAUSTED
+            >>> import asyncio
+            >>> produce = orientations.produce()
+            >>> asyncio.run(produce) != Producer.EXHAUSTED
             True
 
             >>> orientations._current
-            (0, (c ~ 1.7320508))
+            (-6, -(2*c ~ 3.4641016))
 
         """
         self._current = None
@@ -88,7 +90,7 @@ class Processor(Producer, Consumer):
         # have, we might need a better strategy here.
         while self._current is None:
             for source in self._producers:
-                if source.produce() != Producer.EXHAUSTED:
+                if await source.produce() != Producer.EXHAUSTED:
                     break
             else:
                 return Producer.EXHAUSTED

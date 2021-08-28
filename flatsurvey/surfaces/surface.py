@@ -11,7 +11,7 @@ EXAMPLES::
 #*********************************************************************
 #  This file is part of flatsurf.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurf is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1), 'exact-real').reference()
-            'Veech 1989'
+            >>> Ngon((1, 1, 3), 'exact-real').reference()
+            'Veech 1989 via Ngon([2, 3, 5])'
             >>> Ngon((10, 11, 82), 'exact-real').reference() is None
             True
 
@@ -92,7 +92,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).flat_triangulation()
-            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors 1: ((3/2 ~ 1.5000000), (1/2*c ~ 0.86602540)), 2: (-(3/2 ~ 1.5000000), (1/2*c ~ 0.86602540)), 3: (0, -(c ~ 1.7320508))
+            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (-6, (2*c ~ 3.4641016)), 2: (0, -(4*c ~ 6.9282032)), 3: (6, (2*c ~ 3.4641016))}
 
         """
         from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf

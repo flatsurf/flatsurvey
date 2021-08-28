@@ -6,17 +6,12 @@ EXAMPLES::
     >>> from flatsurvey.test.cli import invoke
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "undetermined-iet", "--help") # doctest: +NORMALIZE_WHITESPACE
-    Usage: worker orbit-closure [OPTIONS]
-      Determine the GL₂(R) orbit closure of ``surface``.
+    Usage: worker undetermined-iet [OPTIONS]
+      Tracks undetermined Interval Exchange Transformations.
     Options:
-      --limit INTEGER       abort search after processing that many flow
-                            decompositions with cylinders without an increase in
-                            dimension  [default: 64]
-      --expansions INTEGER  when the --limit has been reached, restart the search
-                            with random saddle connections that are twice as long as
-                            the ones used previously; repeat this doubling process
-                            EXPANSIONS many times  [default: 6]
-      --help                Show this message and exit.
+      --limit INTEGER  Zorich induction steps to perform before giving up  [default:
+                       256]
+      --help           Show this message and exit.
 
 """
 #*********************************************************************
@@ -39,6 +34,7 @@ EXAMPLES::
 #*********************************************************************
 
 import click
+import time
 
 from pinject import copy_args_to_internal_fields
 
@@ -86,54 +82,46 @@ template <typename T> int degree(T& iet) {
 
 class UndeterminedIntervalExchangeTransformation(Consumer):
     r"""
-    Track undetermined Interval Exchang Transformations.
+    Tracks undetermined Interval Exchange Transformations.
 
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting import Report
-        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, SaddleConnectionOrientations
         >>> from flatsurvey.cache import Cache
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+        >>> orientations = SaddleConnectionOrientations(connections)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=orientations)
+        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=Cache())
         undetermined-iet
 
     """
+    DEFAULT_LIMIT = 256
+
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, flow_decompositions, saddle_connections, cache):
+    def __init__(self, surface, report, flow_decompositions, saddle_connection_orientations, cache, limit=DEFAULT_LIMIT):
         super().__init__(producers=[flow_decompositions])
-
-    # def resolve(self):
-    #     r"""
-    #     This job can never resolve, so return immediately but
-    #     never mark it as resolved.
-
-    #     EXAMPLES::
-
-    #         >>> TODO
-
-    #     """
-    #     return not Consumer.COMPLETED
 
     @classmethod
     @click.command(name="undetermined-iet", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
-    def click():
+    @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="Zorich induction steps to perform before giving up")
+    def click(limit):
         return {
             "goals": [UndeterminedIntervalExchangeTransformation],
+            'bindings': [ PartialBindingSpec(UndeterminedIntervalExchangeTransformation)(limit=limit) ],
         }
 
     def command(self):
-        return ["undetermined-iet"]
+        command =["undetermined-iet"]
+        if self._limit != UndeterminedIntervalExchangeTransformation.DEFAULT_LIMIT:
+            command += ["--limit", str(self._limit)]
+        return command
 
-    def _consume(self, decomposition, cost):
+    async def _consume(self, decomposition, cost):
         r"""
         Track any undetermined IETs in this ``decomposition``.
-
-        EXAMPLES::
-
-            >>> TODO
 
         """
         for component in decomposition.decomposition.components():
@@ -143,35 +131,31 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
                 continue
 
             iet = component.dynamicalComponent().iet()
-            assert(not iet.boshernitzanNoPeriodicTrajectory())
 
-            # We cannot pickle the original iet because its lengths reference back to the flow decomposition and we cannot pickle that yet.
-            # So we forget that connection and create a new IET from scratch.
-            # That is also (unfortunately) important so pyintervalxt learn
-            # about the lengths involved and registers the serialization code
-            # correctly.
+            # Forget the surface structure of this IET
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
             iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
+
+            start = time.perf_counter()
+            induction = iet.induce(self._limit)
+            cost += time.perf_counter() - start
+
+            if str(induction) != 'LIMIT_REACHED':
+                continue
+
             assert(not iet.boshernitzanNoPeriodicTrajectory())
 
-            self._report.result(self, iet, degree=cppyy.gbl.degree(iet), intervals=iet.size())
+            iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
+            # TODO: pyintervalxt fails to serialize IETs
+            await self._report.result(self, str(iet), surface=self._surface, degree=degree, intervals=iet.size(), orientation=self._saddle_connection_orientations._current)
 
         return not Consumer.COMPLETED
-
-    def deform(self, deformation):
-        return {
-            "goals": [UndeterminedIntervalExchangeTransformation],
-        }
 
     @classmethod
     def reduce(self, results):
         r"""
         Given a list of historic results, return a final verdict.
-
-        EXAMPLES::
-
-            >>> TODO
 
         """
         return None

@@ -1,7 +1,7 @@
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 import os
 
-
 class Client:
     def __init__(self, endpoint, key):
         from flatsurvey.aws.connection_pool import ConnectionPool
@@ -30,19 +29,19 @@ class Client:
             create=lambda: _connect_readwrite(endpoint, key),
             is_alive=_is_alive)
 
-    def query(self, query, description="query", **kwargs):
+    async def query(self, query, description="query", **kwargs):
         r"""
         Run a query with a read-only connection.
         """
-        with self._readonly.connect() as connection:
-            return _execute(connection, query, description=description, **kwargs)
+        async with self._readonly.connect() as connection:
+            return await _execute(connection, query, description=description, **kwargs)
     
-    def mutate(self, query, description="mutation", **kwargs):
+    async def mutate(self, query, description="mutation", **kwargs):
         r"""
         Run a query with a read-write connection.
         """
-        with self._readwrite.connect() as connection:
-            return _execute(connection, query, description=description, **kwargs)
+        async with self._readwrite.connect() as connection:
+            return await _execute(connection, query, description=description, **kwargs)
 
 
 def _connect_with_headers(endpoint, headers):
@@ -57,21 +56,21 @@ def _connect_with_headers(endpoint, headers):
     return client
     
 
-def _connect(endpoint, api_key):
+async def _connect(endpoint, api_key):
     return _connect_with_headers(endpoint=endpoint, headers={'x-api-key': api_key})
 
 
-def _is_alive(connection):
+async def _is_alive(connection):
     try:
-        _execute(connection, "query { __typename }", description="liveness probe")
+        await _execute(connection, "query { __typename }", description="liveness probe")
     except Exception:
         return False
     return True
 
 
-def _connect_readwrite(endpoint, api_key):
-    connection = _connect(endpoint, api_key)
-    token = _execute(connection, r"""
+async def _connect_readwrite(endpoint, api_key):
+    connection = await _connect(endpoint, api_key)
+    token = (await _execute(connection, r"""
         mutation($mail: String!, $password: String!) {
             signin(input: {mail:$mail, password:$password}){
                 jwtToken
@@ -80,7 +79,7 @@ def _connect_readwrite(endpoint, api_key):
         variable_values={
             'mail': os.environ['FLATSURVEY_GRAPHQL_LOGIN'],
             'password': os.environ['FLATSURVEY_GRAPHQL_PASSWORD']},
-        description="login")['signin']['jwtToken']
+        description="login"))['signin']['jwtToken']
 
     return _connect_with_headers(endpoint=endpoint, headers={
         'x-api-key': api_key,
@@ -88,30 +87,22 @@ def _connect_readwrite(endpoint, api_key):
     })
     
 
-def _run(task):
-    r"""
-    Run ``task`` on a separate thread and block until it is complete.
-    """
-    import threading
-    import asyncio
-    result = None
-    exception = None
-    def run():
-        nonlocal result
-        nonlocal exception
-        try:
-            result = asyncio.run(task)
-        except Exception as e:
-            exception = e
-    thread = threading.Thread(target=run)
-    thread.start()
-    thread.join()
-    if exception is not None:
-        raise exception
-    return result
+async def _execute(connection, query, description="query", **kwargs):
+    def check(arg):
+        if type(arg) == dict:
+            for (key, value) in arg.items():
+                check(key)
+                check(value)
+        elif type(arg) == list:
+            for entry in arg:
+                check(entry)
+        elif type(arg) in [str, int, bool]:
+            pass
+        else:
+            raise TypeError(f"Arguments must be primitive but {arg} is a {type(arg)}.")
 
+    check(kwargs)
 
-def _execute(connection, query, description="query", **kwargs):
     if isinstance(query, str):
         from gql import gql
         try:
@@ -126,7 +117,7 @@ def _execute(connection, query, description="query", **kwargs):
         if retry:
             print(f"Retrying {description} ({retry}/{LIMIT}) …")
         try:
-            return _run(connection.execute_async(query, **kwargs))
+            return await connection.execute_async(query, **kwargs)
         except TimeoutError:
             print(f"A {description} timed out waiting for the database server. Maybe the database is still booting?")
         except TransportQueryError as e:
@@ -136,5 +127,5 @@ def _execute(connection, query, description="query", **kwargs):
         except TransportProtocolError as e:
             print(f"{description} caused an invalid response from the database server. Maybe the database is still booting? The response was: {e}")
         except Exception as e:
-            print(f"{description} failed: {e}")
+            print(f"{description} failed ({type(e).__name__}): {e}")
     raise Exception(f"{description} failed after {LIMIT} retries. Giving up.")

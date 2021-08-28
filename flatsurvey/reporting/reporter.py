@@ -11,7 +11,7 @@ EXAMPLES::
 #*********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ class Reporter:
         """
         pass
 
-    def result(self, source, result, **kwargs):
+    async def result(self, source, result, **kwargs):
         r"""
         Report a computation's ``result`` from ``source``.
 
@@ -70,9 +70,11 @@ class Reporter:
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
 
+            >>> import asyncio
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
-            >>> log.result(source=surface, result="result", additional_data=1337)
+            >>> report = log.result(source=surface, result="result", additional_data=1337)
+            >>> asyncio.run(report)
             [Ngon([1, 1, 1])] [Ngon] result (additional_data: 1337)
 
         """

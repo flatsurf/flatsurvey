@@ -21,26 +21,28 @@ EXAMPLES::
     Usage: survey ngons [OPTIONS]
       The translation surfaces that come from unfolding n-gons.
     Options:
-      -n, --vertices INTEGER         number of vertices  [required]
-      --length [exact-real|e-antic]  how side lengths are chosen  [default: e-antic
-                                     for triangles, exact-real otherwise]
-      --min INTEGER                  minimum sum of angles  [default: 0]
-      --limit INTEGER                maximum sum of angles  [default: unlimited]
-      --count INTEGER                number of n-gons to produce  [default:
-                                     unlimited]
-      --include-literature           also include ngons described in literature
-                                     [default: False]
-      --family TEXT                  instead of producing all n-gons up to a limited
-                                     total angle, produce the family given by this
-                                     expression for n = 1, …, limit, e.g., '(1, 2,
-                                     7*n)' for the family (1, 2, 7), (1, 2, 14), …
-      --help                         Show this message and exit.
+      -n, --vertices INTEGER          number of vertices  [required]
+      --length [exact-real|e-antic]   how side lengths are chosen  [default: e-antic
+                                      for triangles, exact-real otherwise]
+      --min INTEGER                   minimum sum of angles  [default: 0]
+      --limit INTEGER                 maximum sum of angles  [default: unlimited]
+      --count INTEGER                 number of n-gons to produce  [default:
+                                      unlimited]
+      --literature [exclude|include|only]
+                                      also include ngons described in literature
+                                      [default: exclude]
+      --family TEXT                   instead of producing all n-gons up to a
+                                      limited total angle, produce the family given
+                                      by this expression for n = 1, …, limit, e.g.,
+                                      '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2,
+                                      14), …
+      --help                          Show this message and exit.
 
 """
 #*********************************************************************
 #  This file is part of flatsurf.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2021 Julian Rüth
 #
 #  Flatsurf is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -91,7 +93,134 @@ class Ngon(Surface):
         self._name = "-".join([str(a) for a in angles])
         self._eliminate_marked_points = True
 
-    def reference(self):
+    def equivalents(self):
+        from sage.all import gcd
+        def ngon(angles):
+            angles = tuple(sorted(angles))
+            angles = tuple(a / gcd(angles) for a in angles)
+            if self._lengths.cache:
+                raise NotImplementedError(f"Cannot translate explicit lengths from {self} when constructing equivalent surface.")
+            return Ngon(angles, length=self.length)
+
+        if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
+            return [ngon(a for a in self.angles if a != sum(self.angles) / (len(self.angles) - 2))]
+
+        if list(sorted(self.angles)) != self.angles:
+            return [ngon(self.angles)]
+
+        if gcd(self.angles) != 1:
+            return [ngon(tuple(a / gcd(self.angles) for a in self.angles))]
+
+        equivalents = []
+
+        if len(self.angles) == 3:
+            a, b, c = self.angles
+            if a == b or b == c:
+                # (a, b, a + b) has a right angle at a + b. Adding a reflected
+                # copy, we either get (b, b, 2a) or (a, a, 2b)
+                if a == b:
+                    if c % 2 == 0:
+                        a_, b_ = c // 2, b
+                    else:
+                        # The sum of the angles does not go down, but we get a
+                        # lexicographically smaller ngon.
+                        a_, b_ = c, 2*b
+                else:
+                    # Same as above just with swapped variables.
+                    if a % 2 == 0:
+                        a_, b_ = a // 2, b
+                    else:
+                        # The sum of the angles does not go down, but we get a
+                        # lexicographically smaller ngon.
+                        a_, b_ = a, 2*b
+
+                c_ = a_ + b_
+
+                # Ignoring the marked points, the isosceles triangles may or
+                # may not unfold to the same translation surface.
+                # Let us assume that we unfold by turning around the vertex at
+                # a. Then we need k copies such that ka ≡ 0 mod 4(a+b) which
+                # corresponds to 2π. Also k must be even for the pieces to fit
+                # together. If k is not divisible by 4, we must also unfold the
+                # same triangle when flipped across the edge opposite to a.
+                k = 4*(a_ + b_) // gcd(a_, 4*(a_ + b_))
+                if k % 2 == 1: k *= 2
+
+                # We compare this to the unfolding of (b, b, 2a) to see whether
+                # we get the same surface. Again, we unfold around the vertex
+                # at 2a. We need l copies such that 2la ≡ 0 mod 4(a+b). Again l
+                # must be even and again we distinguish whether l is divisible
+                # by 4 or not.
+                l = 4*(a_ + b_) // gcd(2*a_, 4*(a_ + b_))
+                if l % 2 == 1: l *= 2
+
+                # So (a, b, a+b) and (b, b, 2a) give the same surface if k = 2l
+                # and k and l are the same mod 4.
+                same = k == 2*l and k % 4 == l % 4
+
+                # However, even if this is not the same surface, the unfolding
+                # is a degree two cover that is, for the purpose of the density
+                # of the orbit closure, no more interesting than the quotient.
+                if same or True:
+                    equivalents.append(ngon((a_, b_, c_)))
+
+            if c == a + b:
+                # The inverse of the above, we can go from (a, b, a + b) to (a, a, 2b)
+                k = 4*(a + b) // gcd(a, 4*(a + b))
+                if k % 2 == 1: k *= 2
+
+                l = 4*(a + b) // gcd(2*a, 4*(a + b))
+                if l % 2 == 1: l *= 2
+
+                same = k == 2*l and k % 4 == l % 4
+                if same or True:
+                    equivalents.append(ngon((a, a, 2*b)))
+
+        if len(self.angles) == 4:
+            a, b, c, d = self.angles
+            assert a <= b <= c <= d
+            
+            from itertools import permutations
+            for a, b, c, d in permutations(self.angles):
+                if c == sum(self.angles) / 4 and d == c:
+                    # The quadrilateral contains two angles pi/2. Unfold at the edge connecting them.
+                    return [ngon((a, a, b, b,))]
+
+        return equivalents
+
+    def _reference(self):
+        if len(self.angles) == 3:
+            a, b, c = self.angles
+            assert a <= b <= c
+
+            if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
+            if a == 1 and c == b + 1: return f"Regular {2*(b + 1)}-gon"
+            if a == 2 and c == b + 2: return "Veech 1989"
+
+            if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
+            if (a, b, c) == (1, 4, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c) == (1, 4, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c) == (2, 3, 4): return "Kenyon-Smillie 2000 acute triangle"
+            if (a, b, c) == (3, 4, 5): return "Kenyon-Smillie 2000 acute triangle; first appeared in Veech 1989"
+            if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
+            if (a, b, c) == (1, 3, 6): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
+            if (a, b, c) == (1, 3, 8): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
+            if (a, b, c) == (3, 4, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
+
+        if len(self.angles) == 4:
+            a, b, c, d = self.angles
+            assert a <= b <= c <= d
+
+            if (a, b, c, d) == (1, 1, 1, 1): return "Torus"
+            if (a, b, c, d) == (1, 1, 1, 7): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 1, 9): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 2, 8): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 1, 2, 12): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 2, 2, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (1, 2, 2, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
+            if (a, b, c, d) == (2, 2, 3, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
+
+    def reference(self, algorithm='sum'):
         r"""
         Return information about this surface if it has already been studied.
 
@@ -112,7 +241,7 @@ class Ngon(Surface):
         Well known cases::
 
             >>> Ngon((1, 1, 2)).reference()
-            'Torus'
+            'Regular 4-gon'
 
             >>> Ngon((1, 1, 1, 1)).reference()
             'Torus'
@@ -120,7 +249,7 @@ class Ngon(Surface):
         Instances from the literature::
 
             >>> Ngon((1, 1, 12)).reference()
-            'Veech 1989'
+            'Regular 14-gon via Ngon([1, 6, 7])'
 
         More complicated simplifications::
 
@@ -128,7 +257,7 @@ class Ngon(Surface):
             Ngon([1, 1, 3])
 
             >>> Ngon((3, 4, 7)).reference()
-            Ngon([2, 2, 3])
+            Ngon([3, 3, 8])
 
             >>> Ngon((2, 3, 3)).reference()
             Ngon([1, 3, 4])
@@ -140,113 +269,67 @@ class Ngon(Surface):
             Ngon([1, 1, 3, 3])
 
         """
-        def ngon(angles):
-            angles = tuple(sorted(angles))
-            if self._lengths.cache:
-                raise NotImplementedError("Cannot translate explicit lengths when constructing equivalent surface.")
-            assert sum(angles) < sum(self.angles) or (sum(angles) == sum(self.angles) and angles < tuple(self.angles)), f"{angles} < {self.angles}"
-            return Ngon(angles, length=self.length)
+        if algorithm is None:
+            algorithm = 'sum'
 
-        if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
-            return ngon(a for a in self.angles if a != sum(self.angles) / (len(self.angles) - 2))
+        if algorithm == 'A2':
+            if list(sorted(self.angles)) != self.angles:
+                return "not admissible"
 
-        if list(sorted(self.angles)) != self.angles:
-            return ngon(self.angles)
+            from sage.all import gcd
+            if gcd(self.angles) != 1:
+                return "not admissible"
 
-        from sage.all import gcd
-        if gcd(self.angles) != 1:
-            return ngon(tuple(a / gcd(self.angles) for a in self.angles))
+            if any((len(self.angles) - 2) * a == sum(self.angles) for a in self.angles):
+                return "not admissible"
 
-        if len(self.angles) == 3:
-            a, b, c = self.angles
-            assert a <= b <= c
-            if a == b == 1: return "Veech 1989"
-            if a == 1 and c == b + 1: return f"Regular {2*(b + 1)}-gon"
-            if a == 2 and c == b + 2: return "Veech 1989"
-            if a == 1 and b == 2 and c % 2 == 1: return "Ward 1998"
-            if (a, b, c) == (1, 4, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c) == (1, 4, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c) == (2, 3, 4): return "Kenyon-Smillie 2000 acute triangle"
-            if (a, b, c) == (3, 4, 5): return "Kenyon-Smillie 2000 acute triangle; first appeared in Veech 1989"
-            if (a, b, c) == (3, 5, 7): return "Kenyon-Smillie 2000 acute triangle; first appeared in Vorobets 1996"
-            if (a, b, c) == (1, 4, 7): return "Hooper 'Another Veech triangle'"
-            if (a, b, c) in [(1, 3, 6), (1, 3, 8)]: return "Rank-one example (to be checked)"
-            if (a, b, c) == (3, 4, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
-            if a == b or b == c:
-                # (a, b, a + b) has a right angle at a + b. Adding a reflected
-                # copy, we either get (b, b, 2a) or (a, a, 2b)
-                if a == b:
-                    if c % 2 == 0:
-                        a_, b_ = c // 2, b
-                    else:
-                        # The sum of the angles does not go down, but we get a
-                        # lexicographically smaller ngon.
-                        a_, b_ = c, 2*b
-                else:
-                    # Same as above just with swapped variables.
-                    if a % 2 == 0:
-                        a_, b_ = a // 2, b
-                    else:
-                        # The sum of the angles does not go down, but we get a
-                        # lexicographically smaller ngon.
-                        a_, b_ = a, 2*b
-                # Ignoring the marked points, the isosceles triangles may or
-                # may not unfold to the same translation surface.
-                # Let us assume that we unfold by turning around the vertex at
-                # a. Then we need k copies such that ka ≡ 0 mod 4(a+b) which
-                # corresponds to 2π. Also k must be even for the pieces to fit
-                # together. If k is not divisible by 4, we must also unfold the
-                # same triangle when flipped across the edge opposite to a.
-                k = 4*(a_ + b_) // gcd(a_, 4*(a_ + b_))
-                if k % 2 == 1: k *= 2
-                # We compare this to the unfolding of (b, b, 2a) to see whether
-                # we get the same surface. Again, we unfold around the vertex
-                # at 2a. We need l copies such that 2la ≡ 0 mod 4(a+b). Again l
-                # must be even and again we distinguish whether l is divisible
-                # by 4 or not.
-                l = 4*(a_ + b_) // gcd(2*a_, 4*(a_ + b_))
-                if l % 2 == 1: l *= 2
+            if len(self.angles) == 3:
+                a, b, c = self.angles
+                if a == b or b == c:
+                    return "reducible"
 
-                # So (a, b, a+b) and (b, b, 2a) give the same surface if k = 2l
-                # and k and l are the same mod 4.
-                if k == 2*l and k % 4 == l % 4:
-                    angles = (a_, b_, a_ + b_)
-                    if sum(angles) < sum(self.angles) or tuple(sorted(angles)) < tuple(self.angles):
-                        return ngon(angles)
-            if c == a + b:
-                # As above, we can go from (a, b, a + b) to (a, a, 2b)
-                k = 4*(a + b) // gcd(a, 4*(a + b))
-                if k % 2 == 1: k *= 2
+            if len(self.angles) == 4:
+                a, b, c, d = self.angles
+                if a == b and c == d:
+                    return "reducible"
 
-                l = 4*(a + b) // gcd(2*a, 4*(a + b))
-                if l % 2 == 1: l *= 2
+            return self._reference()
 
-                if k == 2*l and k % 4 == l % 4:
-                    angles = (a, a, 2*b)
+        elif algorithm == 'sum':
+            def better(gon):
+                if gon is None: return False
+                if isinstance(gon, str): return True
+                if list(sorted(gon.angles)) == gon.angles and list(sorted(self.angles)) != self.angles: return True
+                if sum(gon.angles) < sum(self.angles): return True
+                if sum(gon.angles) == sum(self.angles) and tuple(gon.angles) < tuple(self.angles): return True
+                return False
 
-                    if sum(angles) < sum(self.angles) or tuple(sorted(angles)) < tuple(self.angles):
-                        return ngon(angles)
+            for equivalent in self.equivalents():
+                if better(equivalent):
+                    return equivalent
 
-            if a == b: print("%s is (%d, %d, %d) which is %s"%(self, 2*a, c, 2*a+c, ngon((2*a, c, 2*a+c)).reference()))
-            if b == c: print("%s is (%d, %d, %d) which is %s"%(self, 2*b, a, 2*b+a, ngon((2*b, a, 2*b+a)).reference()))
+            if self._reference():
+                return self._reference()
 
-        if len(self.angles) == 4:
-            a, b, c, d = self.angles
-            assert a <= b <= c <= d
-            if (a, b, c, d) == (1, 1, 1, 1): return "Torus"
-            if (a, b, c, d) == (1, 1, 1, 7): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 1, 1, 9): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 1, 2, 8): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 1, 2, 12): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 2, 2, 11): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (1, 2, 2, 15): return "Eskin-McMullen-Mukamel-Wright 'Billiards, Quadrilaterals, and Moduli Spaces'"
-            if (a, b, c, d) == (2, 2, 3, 13): return "Delecroix-Rüth-Wright 'A new orbit closure in genus 8'"
-            
-            from itertools import permutations
-            for a, b, c, d in permutations(self.angles):
-                if c == sum(self.angles) / 4 and d == c:
-                    # The quadrilateral contains two angles pi/2. Unfold at the edge connecting them.
-                    return ngon((a, a, b, b,))
+            seen = set()
+            queue = [self]
+
+            while queue:
+                top = queue.pop()
+
+                reference = top._reference()
+                if reference:
+                    return f"{reference} via {top}"
+
+                if better(top):
+                    return top
+
+                if tuple(top.angles) in seen:
+                    continue
+                seen.add(tuple(top.angles))
+
+                for equivalent in top.equivalents():
+                    queue.append(equivalent)
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -386,16 +469,16 @@ class Ngons:
     
     EXAMPLES::
     
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, include_literature=True, family=None))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, include_literature=False, family=None))
-        [Ngon([1, 2, 2]), Ngon([1, 2, 4]), Ngon([1, 3, 3]), Ngon([2, 2, 3]), Ngon([1, 3, 4]), Ngon([1, 2, 6])]
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None))
+        [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, include_literature=True, family='(1, 1, n)'))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='(1, 1, n)'))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3])]
     
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, include_literature=True, family='[(1, 1, n), (1, 2, 12*n)]'))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='[(1, 1, n), (1, 2, 12*n)]'))
         [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2])]
     
     """
@@ -406,9 +489,9 @@ class Ngons:
     @click.option("--min", type=int, default=0, help="minimum sum of angles  [default: 0]")
     @click.option("--limit", type=int, default=None, help="maximum sum of angles  [default: unlimited]")
     @click.option("--count", type=int, default=None, help="number of n-gons to produce  [default: unlimited]")
-    @click.option("--include-literature", default=False, is_flag=True, help="also include ngons described in literature", show_default=True)
+    @click.option("--literature", default='exclude', type=click.Choice(['exclude', 'include', 'only']), help="also include ngons described in literature", show_default=True)
     @click.option("--family", type=str, default=None, help="instead of producing all n-gons up to a limited total angle, produce the family given by this expression for n = 1, …, limit, e.g., '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2, 14), …")
-    def click(vertices, length, min, limit, count, include_literature, family):
+    def click(vertices, length, min, limit, count, literature, family):
         if length is None:
             if vertices == 3: length = "e-antic"
             else: length = "exact-real"
@@ -443,8 +526,17 @@ class Ngons:
                     continue
     
                 ngon = Ngon(angles, length=length)
-    
-                if not include_literature and ngon.reference(): continue
+
+                if literature == 'include':
+                    pass
+                elif literature == 'exclude':
+                    if ngon.reference(): continue
+                elif literature == 'only':
+                    reference = ngon.reference()
+                    if reference is None or reference in ['not admissible', 'reducible']:
+                        continue
+                else:
+                    raise NotImplementedError("Unsupported literature value")
 
                 if count is not None:
                     if count <= 0: return
