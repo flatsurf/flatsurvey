@@ -17,7 +17,8 @@ dependencies:
   - python-dateutil
   - boto3
   - moto
+  - ruamel.yaml
   - pip:
     - pinject
-    - gql==3
+    - gql==3.0.0a6
     - aioresponses
