@@ -29,9 +29,3 @@ jobs:
         shell: bash -l {0}
         run: |
           pytest -x --doctest-modules flatsurvey
-      - name: show logs
-        shell: bash -l {0}
-        run: for log in `find . -name '*.log'`; do echo "::group::$log"; cat $log; echo "::endgroup"; done
-        if: ${{ always() }}
-      - uses: flatsurf/actions/show-logs@main
-        if: ${{ always() }}
