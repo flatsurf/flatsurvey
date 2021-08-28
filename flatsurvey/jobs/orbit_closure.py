@@ -233,10 +233,10 @@ class OrbitClosure(Consumer):
 
                 for tangent in tangents:
                     import cppyy
-                    # TODO: What is a good vector to use to deform?
+                    # TODO: What is a good vector to use to deform? See #3.
                     n = upper_bound(tangent) * scale
 
-                    # TODO: What is a good bound here?
+                    # TODO: What is a good bound here? See #3.
                     if n > 1e20:
                         continue
                     
@@ -244,7 +244,7 @@ class OrbitClosure(Consumer):
 
                     deformation = [orbit_closure.V2(x / n, x / (2*n)).vector for x in tangent]
                     try:
-                        # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient.
+                        # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient. See #3.
                         deformed = orbit_closure._surface + deformation
 
                         self._report.log(self, f"Deformed surface with {1/n} * tangent vector {tangent}.")

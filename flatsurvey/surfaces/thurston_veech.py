@@ -59,6 +59,7 @@ class ThurstonVeech(Surface):
         self.vp = vp
         self.hm = hm
         self.vm = vm
+        # TODO: Is this really what we want? See #13.
         self._eliminate_marked_points = False
 
     @property
@@ -91,13 +92,13 @@ class ThurstonVeech(Surface):
             sage: ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
         """
-        # TODO: known exotic loci
+        # TODO: known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
 
         # TODO: some of the quotient might come from something else than
         # automorphisms... Something needs to be done for each block of
-        # the monodromy.
+        # the monodromy. See #13.
         A = self.orientable_automorphisms()
         if not libgap.IsTrivial(A):
             oo = self.origami().quotient(A)

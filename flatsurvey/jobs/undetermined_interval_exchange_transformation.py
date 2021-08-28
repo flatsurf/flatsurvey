@@ -53,8 +53,8 @@ import cppyy
 # i.e., when serializing an IET of unknown type (as is this one because
 # (a) it comes from C++ and was not constructed in Python and (b) it
 # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
-# be smart about registering the right types in cppyy. (If possible.)
-# TODO: Expose something like this construction() in intervalxt.
+# be smart about registering the right types in cppyy. (If possible.) See #10.
+# TODO: Expose something like this construction() in intervalxt. See #10.
 cppyy.cppdef(r'''
 #include <boost/type_erasure/any_cast.hpp>
 
@@ -147,7 +147,7 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
             assert(not iet.boshernitzanNoPeriodicTrajectory())
 
             iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
-            # TODO: pyintervalxt fails to serialize IETs
+            # TODO: pyintervalxt fails to serialize IETs. See #10.
             await self._report.result(self, str(iet), surface=self._surface, degree=degree, intervals=iet.size(), orientation=self._saddle_connection_orientations._current)
 
         return not Consumer.COMPLETED

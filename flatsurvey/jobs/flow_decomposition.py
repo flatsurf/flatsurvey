@@ -73,8 +73,7 @@ class FlowDecompositions(Processor):
     @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="Zorich induction steps to perform before giving up")
     def click(limit):
         return {
-            # TODO: This should not be a goal but something else
-            # TODO: Do the same for other processors
+            # TODO: This should not be a goal but something else. Do the same for other processors. See #9.
             'goals': [FlowDecompositions],
             'bindings': [ PartialBindingSpec(FlowDecompositions)(limit=limit) ]
         }

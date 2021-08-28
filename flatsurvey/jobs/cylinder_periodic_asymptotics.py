@@ -127,7 +127,7 @@ class CylinderPeriodicAsymptotics(Consumer):
         elif decomposition.decomposition.undeterminedComponents():
             self._results.append(None)
         else:
-            # TODO: Is area() twice the area?
+            # TODO: Is area() twice the area? See #8.
             def float_height(component):
                 height = float(component.height())
                 vertical = component.vertical().vertical()

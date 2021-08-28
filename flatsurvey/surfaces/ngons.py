@@ -368,7 +368,7 @@ class Ngon(Surface):
 
         L = E.lengths_polytope()
         def random_lengths():
-            # TODO: Do this properly in sage-flatsurf
+            # TODO: Do this properly in sage-flatsurf. See #11.
             from sage.all import VectorSpace, span, free_module_element
             from random import shuffle
             U = L.ambient_space().subspace([])
@@ -406,7 +406,7 @@ class Ngon(Surface):
 
         EXAMPLES::
 
-            TODO: Why does this doctest not run?
+            TODO: Why does this doctest not run? See #12.
             >>> Ngon(1, 1, 1).polygon()
 
         """

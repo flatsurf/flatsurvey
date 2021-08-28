@@ -180,7 +180,6 @@ class Worker:
             for goal in self._goals:
                 await goal.resolve()
         finally:
-            # TODO: Should we make this configurable?
             for goal in self._goals:
                 await goal.report()
         for reporter in self._reporters:

@@ -100,7 +100,7 @@ def process(commands, **kwargs):
     r"""
     Run the specified subcommands of ``survey``.
 
-    # TODO: Currently, pytest fails to test these with a "fileno" error.
+    # TODO: Currently, pytest fails to test these with a "fileno" error, see #4.
     # >>> from .test.cli import invoke
     # >>> invoke(survey, "ngons", "-n", "3", "--include-literature", "--limit", "4", "orbit-closure")
 
@@ -249,7 +249,7 @@ class Scheduler:
         # TODO: This is a bit of a hack: Without it, the _run never actually
         # runs and we just enqueue forever (we do not need 1 for this, 0
         # works.) Without it, we schedule too many tasks but the load does not
-        # go up quickly enough.
+        # go up quickly enough. See #5.
         await asyncio.sleep(1)
         from os import cpu_count, getloadavg
         while self._load is not None and getloadavg()[0] / cpu_count() > self._load:
@@ -261,7 +261,7 @@ class Scheduler:
         r"""
         Run ``command``.
 
-        # TODO: Currently, pytest fails to test these with a "fileno" error.
+        # TODO: Currently, pytest fails to test these with a "fileno" error, see #4.
         # >>> scheduler = Scheduler(generators=[], goals=[], reporters=[], bindings=[], load=None)
         # >>> asyncio.run(scheduler._run(["echo", "hello world"]))
         # hello world

@@ -169,7 +169,7 @@ class Nodes:
         self._after = after
 
     async def __aiter__(self):
-        # TODO: Using a stateful _after is completely broken.
+        # TODO: Using a stateful _after is completely broken. See #6.
         while True:
             results = (await self._graphql_client.query(self._make_query(self._after)))['results']
 
@@ -221,7 +221,7 @@ class Results:
             result = node['data']['result']
             if result is not None:
                 result = node['data']['result']()
-                if result is not None: # TODO: why is this needed?
+                if result is not None: # TODO: why is this needed? See #7.
                     setattr(result, 'erase', lambda: self._nodes.erase(node))
                     yield result
 
