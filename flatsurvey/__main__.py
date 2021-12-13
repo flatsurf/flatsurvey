@@ -286,19 +286,23 @@ class Scheduler:
         from plumbum import local, BG
         from plumbum.commands.processes import ProcessExecutionError
 
+        # TODO: This is a hack. We should have better monitoring.
+        short = [arg for arg in command if 'output' in arg][0]
+        print("... spawning for", short)
+
         start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG(stdout=sys.stdout, stderr=sys.stderr)
 
         try:
             while not task.ready():
                 await asyncio.sleep(1)
-            print("*** completed ", command)
+            print("ooo completed for", short)
 
             if task.stdout:
                 print("*** task produced output on stdout: ")
                 print(task.stdout)
         except ProcessExecutionError as e:
-            print("*** process crashed ", " ".join(command))
+            print("xxx process crashed ", " ".join(command))
             print(e)
 
         print("*** terminated after %s wall time"%(datetime.datetime.now() - start,))
