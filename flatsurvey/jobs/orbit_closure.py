@@ -95,14 +95,16 @@ class OrbitClosure(Consumer):
         self._lower_bound = pyflatsurf.flatsurf.Bound(0)
         self._upper_bound = pyflatsurf.flatsurf.Bound(0)
 
-        results = cache.results(surface=surface, job=self)
-        if results.reduce() is not None:
-            report.log(self, "dense orbit closure (cached)")
+    async def init(self):
+        results = self._cache.results(surface=self._surface, job=self)
+
+        if await results.reduce() is not None:
+            self._report.log(self, "dense orbit closure (cached)")
             self._resolved = Consumer.COMPLETED
             return
 
         if self._cache_only:
-            report.log(self, "probably non-dense orbit closure (cached)")
+            self._report.log(self, "probably non-dense orbit closure (cached)")
             self._resolved = Consumer.COMPLETED
             return
 
@@ -214,8 +216,9 @@ class OrbitClosure(Consumer):
 
             return Consumer.COMPLETED
 
-        if dimension != orbit_closure.dimension() and not self._deformed and orbit_closure.dimension() > 2:
-            tangents = [orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[dimension:]]
+        if dimension != orbit_closure.dimension() and not self._deformed and orbit_closure.dimension() > 3:
+            tangents = [orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]]
+            tangents = [sum(t for t in tangents)]
 
             def upper_bound(v):
                 length = sum(abs(x.parent().number_field(x)) for x in v) / len(v)
@@ -234,11 +237,13 @@ class OrbitClosure(Consumer):
                 for tangent in tangents:
                     import cppyy
                     # TODO: What is a good vector to use to deform? See #3.
-                    n = upper_bound(tangent) * scale
+                    # n = upper_bound(tangent) * scale
+                    n = upper_bound(tangent) // 4
 
                     # TODO: What is a good bound here? See #3.
-                    if n > 1e20:
-                        continue
+                    # if n > 1e20:
+                    #     print("Cannot deform. Deformation would lead to too much coefficient blowup.")
+                    #     continue
                     
                     eligibles = True
 
@@ -266,6 +271,7 @@ class OrbitClosure(Consumer):
                 scale *= 2
 
                 if not eligibles:
+                    print("Cannot deform. No tangent vector can be used to deform.")
                     break
 
         return not Consumer.COMPLETED

@@ -148,7 +148,7 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
 
             iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
             # TODO: pyintervalxt fails to serialize IETs. See #10.
-            await self._report.result(self, str(iet), surface=self._surface, degree=degree, intervals=iet.size(), orientation=self._saddle_connection_orientations._current)
+            await self._report.result(self, str(iet), surface=self._surface, degree=degree, intervals=iet.size(), saf=list(iet.safInvariant()), orientation=self._saddle_connection_orientations._current)
 
         return not Consumer.COMPLETED
 

@@ -177,6 +177,9 @@ class Worker:
 
         """
         try:
+            # TODO: This is a weird hack.
+            for goal in self._goals:
+                await goal.init()
             for goal in self._goals:
                 await goal.resolve()
         finally:

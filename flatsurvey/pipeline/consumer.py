@@ -76,6 +76,8 @@ class Consumer:
         for producer in producers:
             producer.register_consumer(self)
 
+    async def init(self): pass
+
     async def consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and

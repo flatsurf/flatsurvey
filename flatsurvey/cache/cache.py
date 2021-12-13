@@ -67,7 +67,7 @@ class Nothing:
     r"""
     A missing cached result.
     """
-    def reduce(self):
+    async def reduce(self):
         r"""
         Return a verdict from the found cached results or ``None`` if no result
         could be determined.

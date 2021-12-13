@@ -225,13 +225,13 @@ class Results:
                     setattr(result, 'erase', lambda: self._nodes.erase(node))
                     yield result
 
-    def reduce(self):
+    async def reduce(self):
         r"""
         Combine all results to an overall verdict.
 
         Return ``None`` if the results are inconclusive.
         """
-        return self._job.reduce([node["data"] for node in self])
+        return self._job.reduce([node["data"] async for node in self])
 
     def _resolve(self, obj):
         r"""
