@@ -285,7 +285,6 @@ class Scheduler:
         import os.path
         from plumbum import local, BG
         from plumbum.commands.processes import ProcessExecutionError
-        local.cwd.chdir(os.path.dirname(os.path.dirname(__file__)))
 
         start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG(stdout=sys.stdout, stderr=sys.stderr)
