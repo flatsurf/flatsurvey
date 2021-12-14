@@ -13,7 +13,7 @@ EXAMPLES::
       --help             Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -30,7 +30,7 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -40,6 +40,7 @@ from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.pipeline.util import FactoryBindingSpec
 
+
 class Pickle:
     def __init__(self, raw):
         self._raw = raw
@@ -47,7 +48,12 @@ class Pickle:
     @classmethod
     def to_yaml(cls, representer, data):
         import base64
-        return representer.represent_scalar(u'tag:yaml.org,2002:binary', base64.encodebytes(data._raw).decode('ascii'), style='')
+
+        return representer.represent_scalar(
+            "tag:yaml.org,2002:binary",
+            base64.encodebytes(data._raw).decode("ascii"),
+            style="",
+        )
 
     @classmethod
     def from_yaml(self, constructor, obj):
@@ -79,42 +85,49 @@ class Yaml(Reporter):
         - {cylinder_periodic_directions: 0, undetermined_directions: 0, value: null}
 
     """
+
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
         import sys
+
         self._stream = stream or sys.stdout
 
-        self._data = { 'surface': surface }
+        self._data = {"surface": surface}
 
         from ruamel.yaml import YAML
+
         self._yaml = YAML()
-        self._yaml.width = 2**16
+        self._yaml.width = 2 ** 16
         self._yaml.representer.default_flow_style = None
         self._yaml.representer.add_representer(None, Yaml._represent_undefined)
-        self._yaml.register_class(type(self._data['surface']))
+        self._yaml.register_class(type(self._data["surface"]))
         self._yaml.register_class(Pickle)
 
     @classmethod
     def _represent_undefined(cls, representer, data):
         import pickle
-        return representer.represent_data({
-            "pickle": Pickle(pickle.dumps(data)),
-            "repr": repr(data),
-        })
+
+        return representer.represent_data(
+            {
+                "pickle": Pickle(pickle.dumps(data)),
+                "repr": repr(data),
+            }
+        )
 
     def _render(self, *args, **kwargs):
         if len(args) == 0:
             return self._render(kwargs)
-        
+
         if len(args) > 1:
             return self._render(args, **kwargs)
 
         value = args[0]
         if not kwargs:
             from sage.all import ZZ
+
             if type(value) is type(ZZ()):
                 value = int(value)
-            if hasattr(type(value), 'to_yaml'):
+            if hasattr(type(value), "to_yaml"):
                 self._yaml.representer.add_representer(type(value), type(value).to_yaml)
             return value
 
@@ -123,15 +136,16 @@ class Yaml(Reporter):
         if isinstance(value, dict):
             ret.update(value)
         else:
-            ret['value'] = value
+            ret["value"] = value
 
             from pickle import dumps
+
             try:
                 dumps(value)
             except Exception as e:
-                ret['value'] = "Failed: " + str(e)
+                ret["value"] = "Failed: " + str(e)
         return ret
-    
+
     async def result(self, source, result, **kwargs):
         r"""
         Report that computation ``source`` concluded with ``result``.
@@ -183,16 +197,35 @@ class Yaml(Reporter):
         self._stream.flush()
 
     @classmethod
-    @click.command(name="yaml", cls=GroupedCommand, group="Reports", help=__doc__.split("EXAMPLES")[0])
-    @click.option("--output", type=click.File("w"), default=None, help="[default: derived from surface name]")
+    @click.command(
+        name="yaml",
+        cls=GroupedCommand,
+        group="Reports",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--output",
+        type=click.File("w"),
+        default=None,
+        help="[default: derived from surface name]",
+    )
     def click(output):
         return {
-            "bindings": [ FactoryBindingSpec("yaml", lambda surface: Yaml(surface, stream=output or open(f"{surface.basename()}.yaml", "w"))) ],
-            "reporters": [ Yaml ],
+            "bindings": [
+                FactoryBindingSpec(
+                    "yaml",
+                    lambda surface: Yaml(
+                        surface,
+                        stream=output or open(f"{surface.basename()}.yaml", "w"),
+                    ),
+                )
+            ],
+            "reporters": [Yaml],
         }
 
     def command(self):
         import sys
+
         command = ["yaml"]
         if self._stream is not sys.stdout:
             command.append(f"--output={self._stream.name}")

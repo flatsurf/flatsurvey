@@ -1,7 +1,7 @@
 r"""
 Convenience methods for the dependency injection framework pinject.
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -18,11 +18,12 @@ Convenience methods for the dependency injection framework pinject.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import inspect
 
 import pinject.bindings
+
 
 def ListBindingSpec(name, sequence):
     r"""
@@ -40,14 +41,22 @@ def ListBindingSpec(name, sequence):
     """
     from types import FunctionType
 
-    args = [pinject.bindings.default_get_arg_names_from_class_name(typ.__name__)[0] for typ in sequence]
-    provider = f"def provide_{name}(self, {', '.join(args)}): return [{', '.join(args)}]"
-    provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {}, f"provide_{name}")
+    args = [
+        pinject.bindings.default_get_arg_names_from_class_name(typ.__name__)[0]
+        for typ in sequence
+    ]
+    provider = (
+        f"def provide_{name}(self, {', '.join(args)}): return [{', '.join(args)}]"
+    )
+    provider = FunctionType(
+        compile(provider, "<string>", "exec").co_consts[0], {}, f"provide_{name}"
+    )
     provider.__module__ = "__main__"
-    binding = type(f"{name}ListBinding", (pinject.BindingSpec,), {
-        f"provide_{name}": provider,
-        "__repr__": lambda self: f"{name}->{sequence}"
-    })()
+    binding = type(
+        f"{name}ListBinding",
+        (pinject.BindingSpec,),
+        {f"provide_{name}": provider, "__repr__": lambda self: f"{name}->{sequence}"},
+    )()
     binding.name = name
 
     return binding
@@ -79,20 +88,38 @@ def PartialBindingSpec(prototype, name=None):
 
     """
     from types import FunctionType
-    name = name or pinject.bindings.default_get_arg_names_from_class_name(prototype.__name__)[0]
+
+    name = (
+        name
+        or pinject.bindings.default_get_arg_names_from_class_name(prototype.__name__)[0]
+    )
     signature = inspect.signature(prototype)
+
     def wrap(**kwargs):
-        injected = [param.name for param in signature.parameters.values() if param.name not in kwargs and param.default is inspect._empty]
+        injected = [
+            param.name
+            for param in signature.parameters.values()
+            if param.name not in kwargs and param.default is inspect._empty
+        ]
         args = [f"{arg}={arg}" for arg in injected + list(kwargs.keys())]
         provider = f"def provide_{name}(self, {', '.join(injected)}): return prototype({', '.join(args)})"
-        provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {**kwargs, "prototype": prototype}, f"provide_{name}")
+        provider = FunctionType(
+            compile(provider, "<string>", "exec").co_consts[0],
+            {**kwargs, "prototype": prototype},
+            f"provide_{name}",
+        )
         provider.__module__ = "__main__"
-        binding = type(f"Partial{prototype.__name__}Binding", (pinject.BindingSpec,), {
-            f"provide_{name}": provider,
-            "__repr__": lambda self: f"{name}->{prototype.__name__}"
-        })()
+        binding = type(
+            f"Partial{prototype.__name__}Binding",
+            (pinject.BindingSpec,),
+            {
+                f"provide_{name}": provider,
+                "__repr__": lambda self: f"{name}->{prototype.__name__}",
+            },
+        )()
         binding.name = name
         return binding
+
     return wrap
 
 
@@ -113,25 +140,34 @@ def FactoryBindingSpec(name, prototype):
     signature = inspect.signature(prototype)
     args = [param for param in signature.parameters.keys()]
     provider = f"def provide_{name}(self, {', '.join(args)}): return prototype({', '.join(args)})"
-    provider = FunctionType(compile(provider, "<string>", "exec").co_consts[0], {'prototype': prototype}, f"provide_{name}")
+    provider = FunctionType(
+        compile(provider, "<string>", "exec").co_consts[0],
+        {"prototype": prototype},
+        f"provide_{name}",
+    )
     provider.__module__ = "__main__"
-    binding = type(f"{name}FactoryBinding", (pinject.BindingSpec,), {
-        f"provide_{name}": provider,
-        "__repr__": lambda self: f"{name}->{prototype}"
-    })()
+    binding = type(
+        f"{name}FactoryBinding",
+        (pinject.BindingSpec,),
+        {f"provide_{name}": provider, "__repr__": lambda self: f"{name}->{prototype}"},
+    )()
     binding.name = name
 
     return binding
 
 
 def provide(name, objects):
-    src = compile(f"""
+    src = compile(
+        f"""
 class Provider:
     def __init__(self, { name }): self.value = { name }
-    """, "<string>", "exec")
+    """,
+        "<string>",
+        "exec",
+    )
     scope = {}
     exec(src, scope)
-    provider = scope['Provider']
+    provider = scope["Provider"]
     # pinject expects a module on the __init__ (probably for no good reason)
     provider.__init__.__module__ = provide.__module__
     return objects.provide(provider).value

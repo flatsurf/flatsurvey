@@ -19,7 +19,7 @@ fairly trivial to change that and allow for other similar systems as well.
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -36,7 +36,8 @@ fairly trivial to change that and allow for other similar systems as well.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
+
 
 class Cache:
     r"""
@@ -45,6 +46,7 @@ class Cache:
     This is the default cache that is used when the user did not ask for an
     actual cache explicitly on the command line.
     """
+
     def results(self, surface, job, exact=False):
         r"""
         Return our previous verdicts on running ``job`` for ``surface``.
@@ -59,14 +61,16 @@ class Cache:
             >>> results = Cache().results(Ngon([1,1,1]), CompletelyCylinderPeriodic)
             >>> results.reduce() is None
             True
-            
+
         """
         return Nothing()
+
 
 class Nothing:
     r"""
     A missing cached result.
     """
+
     async def reduce(self):
         r"""
         Return a verdict from the found cached results or ``None`` if no result

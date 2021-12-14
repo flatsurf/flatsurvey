@@ -8,7 +8,7 @@ EXAMPLES::
     True
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -25,7 +25,8 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
+
 
 class Reporter:
     r"""
@@ -42,6 +43,7 @@ class Reporter:
         True
 
     """
+
     def log(self, source, message, **kwargs):
         r"""
         Write ``message`` emitted by ``source`` to this log.
@@ -137,4 +139,3 @@ class Reporter:
 
     def __repr__(self):
         return " ".join(self.command())
-

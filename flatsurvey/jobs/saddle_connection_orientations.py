@@ -11,7 +11,7 @@ The saddle connections on a translation surface.
       --help  Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -28,7 +28,7 @@ The saddle connections on a translation surface.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -37,11 +37,13 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline import Producer, Processor
 
+
 class SaddleConnectionOrientations(Processor):
     r"""
     Orientations of saddle connections on the surface, i.e., the vectors of
     saddle connections irrespective of scaling and sign.
     """
+
     @copy_args_to_internal_fields
     def __init__(self, saddle_connections):
         super().__init__(producers=[saddle_connections])
@@ -51,21 +53,29 @@ class SaddleConnectionOrientations(Processor):
         vector = connection.vector()
         if self._seen == None:
             import cppyy
+
             self._seen = cppyy.gbl.std.set[type(vector), type(vector).CompareSlope]()
 
         if vector.x():
             try:
                 vector = type(vector)(vector.x() / vector.x(), vector.y() / vector.x())
-            except Exception: pass
+            except Exception:
+                pass
         if vector.y():
             try:
                 vector = type(vector)(vector.x() / vector.y(), vector.y() / vector.y())
-            except Exception: pass
+            except Exception:
+                pass
 
         import cppyy
+
         flat_triangulation = self._saddle_connections._surface.flat_triangulation()
-        source = cppyy.gbl.flatsurf.Vertex.source(connection.source(), flat_triangulation.combinatorial())
-        target = cppyy.gbl.flatsurf.Vertex.source(connection.target(), flat_triangulation.combinatorial())
+        source = cppyy.gbl.flatsurf.Vertex.source(
+            connection.source(), flat_triangulation.combinatorial()
+        )
+        target = cppyy.gbl.flatsurf.Vertex.source(
+            connection.target(), flat_triangulation.combinatorial()
+        )
         if self._seen.find(vector) == self._seen.end():
             self._seen.insert(vector)
             self._current = connection.vector()
@@ -75,11 +85,14 @@ class SaddleConnectionOrientations(Processor):
         return not Processor.COMPLETED
 
     @classmethod
-    @click.command(name="saddle-connection-orientations", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES')[0])
+    @click.command(
+        name="saddle-connection-orientations",
+        cls=GroupedCommand,
+        group="Intermediates",
+        help=__doc__.split("EXAMPLES")[0],
+    )
     def click():
-        return {
-            'bindings': SaddleConnectionOrientations
-        }
+        return {"bindings": SaddleConnectionOrientations}
 
     def command(self):
         return ["saddle-connection-orientations"]

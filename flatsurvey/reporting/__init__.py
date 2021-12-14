@@ -1,7 +1,7 @@
 r"""
 A package providing ways to report progress and result of a computation.
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020 Julian Rüth
@@ -18,7 +18,7 @@ A package providing ways to report progress and result of a computation.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from .report import Report
 from .reporter import Reporter

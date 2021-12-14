@@ -48,7 +48,7 @@ TESTS::
       thurston-veech  Thurston-Veech construction
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -65,7 +65,7 @@ TESTS::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import sys
 import click
@@ -82,6 +82,7 @@ from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
 
+
 @click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
 @click.option("--debug", is_flag=True)
 def worker(debug):
@@ -93,7 +94,12 @@ def worker(debug):
 
 
 # Register subcommands
-for kind in [flatsurvey.surfaces.commands, flatsurvey.jobs.commands, flatsurvey.reporting.commands, flatsurvey.cache.commands]:
+for kind in [
+    flatsurvey.surfaces.commands,
+    flatsurvey.jobs.commands,
+    flatsurvey.reporting.commands,
+    flatsurvey.cache.commands,
+]:
     for command in kind:
         worker.add_command(command)
 
@@ -118,6 +124,7 @@ def process(commands, debug):
     if debug:
         import pdb
         import signal
+
         signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
 
     try:
@@ -126,9 +133,13 @@ def process(commands, debug):
 
             try:
                 import asyncio
+
                 asyncio.run(objects.provide(Worker).start())
             except Restart as restart:
-                commands = [ restart.rewrite_command(command, objects=objects) for command in commands ]
+                commands = [
+                    restart.rewrite_command(command, objects=objects)
+                    for command in commands
+                ]
                 continue
 
             break
@@ -150,8 +161,10 @@ class Worker:
         >>> asyncio.run(start)
 
     """
+
     @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters): pass
+    def __init__(self, goals, reporters):
+        pass
 
     @classmethod
     def make_object_graph(cls, commands):
@@ -160,16 +173,27 @@ class Worker:
         reporters = []
 
         for command in commands:
-            bindings.extend(command.get('bindings', []))
-            goals.extend(command.get('goals', []))
-            reporters.extend(command.get('reporters', []))
+            bindings.extend(command.get("bindings", []))
+            goals.extend(command.get("goals", []))
+            reporters.extend(command.get("reporters", []))
 
         bindings.append(ListBindingSpec("goals", goals))
-        bindings.append(ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log]))
+        bindings.append(
+            ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log])
+        )
         from random import randint
-        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
-        return pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2 ** 64)))
+
+        return pinject.new_object_graph(
+            modules=[
+                flatsurvey.reporting,
+                flatsurvey.surfaces,
+                flatsurvey.jobs,
+                flatsurvey.cache,
+            ],
+            binding_specs=bindings,
+        )
 
     async def start(self):
         r"""
@@ -189,4 +213,5 @@ class Worker:
             reporter.flush()
 
 
-if __name__ == "__main__": worker()
+if __name__ == "__main__":
+    worker()

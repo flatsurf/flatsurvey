@@ -15,7 +15,7 @@ you should limit the length of saddle connections considered.
       --help   Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2021 Julian Rüth
@@ -32,7 +32,7 @@ you should limit the length of saddle connections considered.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -41,6 +41,7 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Consumer
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+
 
 class CylinderPeriodicAsymptotics(Consumer):
     r"""
@@ -58,6 +59,7 @@ class CylinderPeriodicAsymptotics(Consumer):
         cylinder-periodic-asymptotics
 
     """
+
     @copy_args_to_internal_fields
     def __init__(self, report, flow_decompositions):
         super().__init__(producers=[flow_decompositions])
@@ -65,11 +67,16 @@ class CylinderPeriodicAsymptotics(Consumer):
         self._results = []
 
     @classmethod
-    @click.command(name="cylinder-periodic-asymptotics", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
+    @click.command(
+        name="cylinder-periodic-asymptotics",
+        cls=GroupedCommand,
+        group="Goals",
+        help=__doc__.split("EXAMPLES")[0],
+    )
     def click():
         return {
-            'bindings': [ PartialBindingSpec(CylinderPeriodicAsymptotics)() ],
-            'goals': [ CylinderPeriodicAsymptotics ],
+            "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)()],
+            "goals": [CylinderPeriodicAsymptotics],
         }
 
     def command(self):
@@ -91,7 +98,9 @@ class CylinderPeriodicAsymptotics(Consumer):
         """
         undetermineds = len([r for r in results if r is None])
         if undetermineds:
-            print(f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders.")
+            print(
+                f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
+            )
         return sorted([r for r in results if r])
 
     async def _consume(self, decomposition, cost):
@@ -132,12 +141,23 @@ class CylinderPeriodicAsymptotics(Consumer):
                 height = float(component.height())
                 vertical = component.vertical().vertical()
                 from math import sqrt
-                scale = sqrt(float(vertical.x())**2 + float(vertical.y())**2)
+
+                scale = sqrt(float(vertical.x()) ** 2 + float(vertical.y()) ** 2)
                 return height / scale
-            self._results.append(max(float_height(component) for component in decomposition.decomposition.components()))
+
+            self._results.append(
+                max(
+                    float_height(component)
+                    for component in decomposition.decomposition.components()
+                )
+            )
 
         return not Consumer.COMPLETED
 
     async def report(self, result=None, **kwargs):
         if self._resolved != Consumer.COMPLETED:
-            await self._report.result(self, result, distribution=CylinderPeriodicAsymptotics.reduce(self._results))
+            await self._report.result(
+                self,
+                result,
+                distribution=CylinderPeriodicAsymptotics.reduce(self._results),
+            )

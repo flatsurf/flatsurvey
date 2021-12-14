@@ -1,4 +1,4 @@
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -15,26 +15,42 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from flatsurvey.pipeline.util import provide
+
 
 class Restart(Exception):
     def rewrite_command(self, command, objects):
         return {
-            "bindings": [self.rewrite_binding(binding, objects=objects) for binding in command.get("bindings", [])],
-            "goals": [self.rewrite_goal(goal, objects=objects) for goal in command.get("goals", [])],
-            "reporters": [self.rewrite_reporter(reporter, objects=objects) for reporter in command.get("reporters", [])],
+            "bindings": [
+                self.rewrite_binding(binding, objects=objects)
+                for binding in command.get("bindings", [])
+            ],
+            "goals": [
+                self.rewrite_goal(goal, objects=objects)
+                for goal in command.get("goals", [])
+            ],
+            "reporters": [
+                self.rewrite_reporter(reporter, objects=objects)
+                for reporter in command.get("reporters", [])
+            ],
         }
 
     def rewrite_binding(self, binding, objects):
-        providers = [provider for provider in dir(binding) if provider.startswith('provide_')]
+        providers = [
+            provider for provider in dir(binding) if provider.startswith("provide_")
+        ]
         if not providers:
-            raise NotImplementedError("Cannot rewrite binding that does not provide_ anything")
+            raise NotImplementedError(
+                "Cannot rewrite binding that does not provide_ anything"
+            )
         if len(providers) >= 2:
-            raise NotImplementedError("Cannot rewrite binding that does provide_ more than one object")
-        
-        bound = provide(providers[0][len("provide_"):], objects)
+            raise NotImplementedError(
+                "Cannot rewrite binding that does provide_ more than one object"
+            )
+
+        bound = provide(providers[0][len("provide_") :], objects)
 
         bindings = self.rewrite_bound(bound)
 

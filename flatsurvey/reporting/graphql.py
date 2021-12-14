@@ -24,7 +24,7 @@ Note that throughout the doctests here, we mock GraphQL and S3 so we do not
 actually write to the real AWS.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -41,7 +41,7 @@ actually write to the real AWS.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -53,6 +53,7 @@ from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.aws.graphql import Client as GraphQLClient
+
 
 class GraphQL(Reporter):
     r"""
@@ -73,24 +74,38 @@ class GraphQL(Reporter):
     DEFAULT_BUCKET = "flatsurvey"
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, lot, endpoint=DEFAULT_ENDPOINT, key=DEFAULT_API_KEY, bucket=DEFAULT_BUCKET, region=DEFAULT_REGION):
+    def __init__(
+        self,
+        surface,
+        lot,
+        endpoint=DEFAULT_ENDPOINT,
+        key=DEFAULT_API_KEY,
+        bucket=DEFAULT_BUCKET,
+        region=DEFAULT_REGION,
+    ):
         self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
     @cached_method
     def _s3(self):
         s3 = GraphQL.s3_client(self._region)
-        if not any(b['Name'] == self._bucket for b in s3.list_buckets()['Buckets']):
-            s3.create_bucket(Bucket=self._bucket, CreateBucketConfiguration={"LocationConstraint": self._region})
+        if not any(b["Name"] == self._bucket for b in s3.list_buckets()["Buckets"]):
+            s3.create_bucket(
+                Bucket=self._bucket,
+                CreateBucketConfiguration={"LocationConstraint": self._region},
+            )
         return s3
 
     @classmethod
     def s3_client(cls, region=DEFAULT_REGION):
         import boto3
+
         return boto3.client("s3", region_name=region)
 
     async def _surface_id(self):
         if not hasattr(self, "_surface_id_cache"):
-            self._surface_id_cache = (await self._graphql.mutate(r"""
+            self._surface_id_cache = (
+                await self._graphql.mutate(
+                    r"""
                 mutation($data: JSON!) {
                     createSurface(input: {
                         surface: {
@@ -100,8 +115,10 @@ class GraphQL(Reporter):
                         surface { id }
                     }
                 }""",
-                variable_values={"data": self._serialize(self._surface)},
-                description="create surface"))["createSurface"]["surface"]["id"]
+                    variable_values={"data": self._serialize(self._surface)},
+                    description="create surface",
+                )
+            )["createSurface"]["surface"]["id"]
         return self._surface_id_cache
 
     def s3(self, raw, directory="pickles"):
@@ -122,7 +139,7 @@ class GraphQL(Reporter):
             ...     url = log.s3(dumps(surface))
             ...     # When we write the surface again to S3, nothing is actually stored:
             ...     assert log.s3(dumps(surface)) == url
-            
+
             >>> url
             's3://flatsurvey/pickles/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz'
 
@@ -139,14 +156,16 @@ class GraphQL(Reporter):
         try:
             self._s3().head_object(Bucket=self._bucket, Key=key)
         except ClientError as e:
-            if int(e.response['Error']['Code']) != 404:
+            if int(e.response["Error"]["Code"]) != 404:
                 raise
 
             compressed = io.BytesIO()
             compressed.write(compress(raw))
-            compressed.seek(0);
+            compressed.seek(0)
 
-            self._s3().put_object(ACL='public-read', Body=compressed, Key=key, Bucket=self._bucket)
+            self._s3().put_object(
+                ACL="public-read", Body=compressed, Key=key, Bucket=self._bucket
+            )
 
         return f"s3://{self._bucket}/{key}"
 
@@ -177,7 +196,7 @@ class GraphQL(Reporter):
             ...     }, f"Unexpected serialization: {log._serialize(surface)}"
 
         """
-        if type(item).__name__ == 'Integer':
+        if type(item).__name__ == "Integer":
             return int(item)
 
         if isinstance(item, (bool, str, int)):
@@ -186,19 +205,27 @@ class GraphQL(Reporter):
         if isinstance(item, (list, tuple)):
             return [self._serialize(entry) for entry in item]
 
-        characteristics = item._flatsurvey_characteristics() if hasattr(item, "_flatsurvey_characteristics") else {}
+        characteristics = (
+            item._flatsurvey_characteristics()
+            if hasattr(item, "_flatsurvey_characteristics")
+            else {}
+        )
 
         from pickle import dumps
+
         dump = dumps(item)
 
         from pickle import loads
-        assert loads(dump) == item, f"{item} failed to deserialize: {item} != {loads(dump)}"
+
+        assert (
+            loads(dump) == item
+        ), f"{item} failed to deserialize: {item} != {loads(dump)}"
 
         return {
             **characteristics,
             "description": str(item),
             "pickle": self.s3(dump, directory=GraphQL._upper(item)),
-        };
+        }
 
     @classmethod
     def _upper(cls, job):
@@ -214,7 +241,7 @@ class GraphQL(Reporter):
         """
         if not isinstance(job, type):
             job = type(job)
-        return job.__name__.strip('s')
+        return job.__name__.strip("s")
 
     @classmethod
     def _camel(cls, job):
@@ -246,7 +273,8 @@ class GraphQL(Reporter):
         if not isinstance(job, type):
             job = type(job)
         import re
-        return re.sub(r'(?<!^)(?=[A-Z])', '_', job.__name__).lower()
+
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", job.__name__).lower()
 
     async def result(self, job, result, **kwargs):
         r"""
@@ -288,10 +316,13 @@ class GraphQL(Reporter):
 
         """
         import sys
-        argv = sys.argv
-        if argv and argv[0] == "-m": argv = argv[1:]
 
-        await self._graphql.mutate(f"""
+        argv = sys.argv
+        if argv and argv[0] == "-m":
+            argv = argv[1:]
+
+        await self._graphql.mutate(
+            f"""
             mutation($data: JSON!, $surface: UUID!) {{
                 create{GraphQL._upper(job)}(input: {{
                     {GraphQL._camel(job)}: {{
@@ -302,37 +333,84 @@ class GraphQL(Reporter):
                     {GraphQL._camel(job)} {{ id }}
                 }}
             }}
-        """, variable_values={
-            "surface": await self._surface_id(),
-            "data": {
-                "invocation": argv,
-                "command": job.command(),
-                "lot": self._lot,
-                "result": self._serialize(result),
-                **{key: self._serialize(value) for (key, value) in kwargs.items() if value is not None}
-            }
-        }, description=f"create {job}")
+        """,
+            variable_values={
+                "surface": await self._surface_id(),
+                "data": {
+                    "invocation": argv,
+                    "command": job.command(),
+                    "lot": self._lot,
+                    "result": self._serialize(result),
+                    **{
+                        key: self._serialize(value)
+                        for (key, value) in kwargs.items()
+                        if value is not None
+                    },
+                },
+            },
+            description=f"create {job}",
+        )
 
     @classmethod
-    @click.command(name="graphql", cls=GroupedCommand, group="Reports", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--endpoint", type=str, default=DEFAULT_ENDPOINT, show_default=True, help="GraphQL HTTP endpoint to connect to")
-    @click.option("--key", type=str, default=DEFAULT_API_KEY, show_default=True, help="GraphQL API key")
-    @click.option("--region", type=str, default=DEFAULT_REGION, show_default=True, help="AWS region to connect to")
-    @click.option("--bucket", type=str, default=DEFAULT_BUCKET, show_default=True, help="S3 bucket to write to")
+    @click.command(
+        name="graphql",
+        cls=GroupedCommand,
+        group="Reports",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--endpoint",
+        type=str,
+        default=DEFAULT_ENDPOINT,
+        show_default=True,
+        help="GraphQL HTTP endpoint to connect to",
+    )
+    @click.option(
+        "--key",
+        type=str,
+        default=DEFAULT_API_KEY,
+        show_default=True,
+        help="GraphQL API key",
+    )
+    @click.option(
+        "--region",
+        type=str,
+        default=DEFAULT_REGION,
+        show_default=True,
+        help="AWS region to connect to",
+    )
+    @click.option(
+        "--bucket",
+        type=str,
+        default=DEFAULT_BUCKET,
+        show_default=True,
+        help="S3 bucket to write to",
+    )
     def click(endpoint, key, region, bucket):
         return {
-            'bindings': GraphQL.bindings(endpoint=endpoint, key=key, region=region, bucket=bucket),
-            'reporters': [ GraphQL ],
+            "bindings": GraphQL.bindings(
+                endpoint=endpoint, key=key, region=region, bucket=bucket
+            ),
+            "reporters": [GraphQL],
         }
 
     @classmethod
     def bindings(cls, endpoint, key, region, bucket):
-        return [ PartialBindingSpec(GraphQL)(endpoint=endpoint, key=key, bucket=bucket, region=region) ]
+        return [
+            PartialBindingSpec(GraphQL)(
+                endpoint=endpoint, key=key, bucket=bucket, region=region
+            )
+        ]
 
     def deform(self, deformation):
         return {
-            'bindings': GraphQL.bindings(endpoint=self._endpoint, key=self._key, region=self._region, bucket=self._bucket),
-            'reporters': [ GraphQL ],
+            "bindings": GraphQL.bindings(
+                endpoint=self._endpoint,
+                key=self._key,
+                region=self._region,
+                bucket=self._bucket,
+            ),
+            "reporters": [GraphQL],
         }
 
     def command(self):

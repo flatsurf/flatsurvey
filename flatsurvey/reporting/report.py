@@ -13,7 +13,7 @@ EXAMPLES::
     [Ngon([1, 1, 1])] [Ngon] Hello World
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -30,7 +30,7 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -38,6 +38,7 @@ from pinject import copy_args_to_internal_fields
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+
 
 class Report:
     r"""
@@ -51,17 +52,21 @@ class Report:
         >>> report.log(report, "invisible message because no reporter has been registered")
 
     """
+
     def __init__(self, reporters, ignore=None):
         self._reporters = reporters
         self._ignore = ignore or []
 
     @classmethod
-    @click.command(name="report", cls=GroupedCommand, group="Reports", help=__doc__.split('EXAMPLES:')[0])
+    @click.command(
+        name="report",
+        cls=GroupedCommand,
+        group="Reports",
+        help=__doc__.split("EXAMPLES:")[0],
+    )
     @click.option("--ignore", type=str, multiple=True)
     def click(ignore):
-        return {
-            "bindings": [ PartialBindingSpec(Report)(ignore=ignore) ]
-        }
+        return {"bindings": [PartialBindingSpec(Report)(ignore=ignore)]}
 
     def log(self, source, message, **kwargs):
         r"""
@@ -80,7 +85,8 @@ class Report:
             [Ngon([1, 1, 1])] [Ngon] Hello World printed by two identical reporters
 
         """
-        if type(source).__name__ in self._ignore: return
+        if type(source).__name__ in self._ignore:
+            return
         for reporter in self._reporters:
             reporter.log(source, message, **kwargs)
 
@@ -103,7 +109,8 @@ class Report:
             [Ngon([1, 1, 1])] [Ngon] Computation completed.
 
         """
-        if type(source).__name__ in self._ignore: return
+        if type(source).__name__ in self._ignore:
+            return
         for reporter in self._reporters:
             await reporter.result(source, result, **kwargs)
 
@@ -126,7 +133,8 @@ class Report:
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
-        if type(source).__name__ in self._ignore: return
+        if type(source).__name__ in self._ignore:
+            return
         for reporter in self._reporters:
             reporter.progress(source, unit, count, total)
 
@@ -134,6 +142,4 @@ class Report:
         return ["report"] + [f"--ignore={i}" for i in self._ignore]
 
     def deform(self, deformation):
-        return {
-            "bindings": [ PartialBindingSpec(Report)(ignore=self._ignore) ]
-        }
+        return {"bindings": [PartialBindingSpec(Report)(ignore=self._ignore)]}

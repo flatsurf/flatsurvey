@@ -10,7 +10,7 @@ Any goal of a computation implements the Consumer interface::
     True
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -27,7 +27,8 @@ Any goal of a computation implements the Consumer interface::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
+
 
 class Consumer:
     r"""
@@ -36,7 +37,7 @@ class Consumer:
     Producer, e.g., OrbitClosure consumes the decompositions that come out of
     FlowDecompositions. FlowDecompositions is itself a Consumer (and a
     Producer) which consumes directions of saddle connections.
-    
+
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
@@ -48,7 +49,7 @@ class Consumer:
         >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
         >>> isinstance(orientations, Consumer)
         True
-    
+
     Each consumer registers to one (or several) ``producers``. Whenever these
     produces generate something new, the consumers ``consume`` method is
     called::
@@ -66,7 +67,7 @@ class Consumer:
         # determined the correct orbit closure, we'd set its _resolved to
         # COMPLETED.
         self._resolved = not Consumer.COMPLETED
-        
+
         # Some consumers need to be resolved because they have been mentioned
         # explicitly in the invocation. When that's the case, we mark_required().
         self._required = False
@@ -76,7 +77,8 @@ class Consumer:
         for producer in producers:
             producer.register_consumer(self)
 
-    async def init(self): pass
+    async def init(self):
+        pass
 
     async def consume(self, product, cost):
         r"""
@@ -140,7 +142,7 @@ class Consumer:
             >>> connections = SaddleConnections(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
             >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
-            
+
             >>> import asyncio
             >>> resolve = oc.resolve()
             >>> asyncio.run(resolve) == Consumer.COMPLETED
@@ -150,6 +152,7 @@ class Consumer:
         while self._resolved != Consumer.COMPLETED:
             for producer in self._producers:
                 from flatsurvey.pipeline.producer import Producer
+
                 if await producer.produce() != Producer.EXHAUSTED:
                     break
             else:

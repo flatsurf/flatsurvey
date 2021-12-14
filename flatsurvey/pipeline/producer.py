@@ -8,7 +8,7 @@ EXAMPLES::
     True
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -25,9 +25,10 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import time
+
 
 class Producer:
     r"""
@@ -88,6 +89,7 @@ class Producer:
         """
         for consumer in list(self._consumers):
             from flatsurvey.pipeline.consumer import Consumer
+
             if await consumer.consume(self._current, cost) == Consumer.COMPLETED:
                 self._consumers.remove(consumer)
 

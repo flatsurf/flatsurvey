@@ -1,7 +1,7 @@
 r"""
 Reads caches of previous results.
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -18,7 +18,7 @@ Reads caches of previous results.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 from .cache import Cache
 from .graphql import GraphQL
 

@@ -9,7 +9,7 @@ computation in a pipeline, i.e., a graph where the vertices are called
 Producers if they are at the source of an edge and Consumers if they are
 targeted by an edge. (And Processors when they are both.)
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -26,7 +26,7 @@ targeted by an edge. (And Processors when they are both.)
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from .consumer import Consumer
 from .processor import Processor

@@ -1,4 +1,4 @@
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -15,13 +15,14 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from .surface import Surface
 
 from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
 
 import flatsurvey.worker.restart
+
 
 class Deformation(Surface):
     def __init__(self, deformed, old):
@@ -46,7 +47,11 @@ class Deformation(Surface):
         return hash((self._deformed, self._old))
 
     def __eq__(self, other):
-        return isinstance(other, Deformation) and self._deformed == other._deformed and self._old == other._old
+        return (
+            isinstance(other, Deformation)
+            and self._deformed == other._deformed
+            and self._old == other._old
+        )
 
     def __ne__(self, other):
         return not (self == other)
@@ -57,20 +62,24 @@ class Deformation(Surface):
 
         def rewrite_bound(self, bound):
             if isinstance(bound, Surface):
-                return [ FactoryBindingSpec(name="surface", prototype=lambda: self._deformation) ]
+                return [
+                    FactoryBindingSpec(
+                        name="surface", prototype=lambda: self._deformation
+                    )
+                ]
 
-            return bound.deform(deformation=self._deformation)['bindings']
+            return bound.deform(deformation=self._deformation)["bindings"]
 
         def rewrite_goal(self, goal, objects):
             goal = objects.provide(goal)
-            goals = goal.deform(deformation=self._deformation)['goals']
+            goals = goal.deform(deformation=self._deformation)["goals"]
             if len(goals) != 1:
                 raise NotImplementedError
             return goals[0]
 
         def rewrite_reporter(self, reporter, objects):
             reporter = objects.provide(reporter)
-            reporters = reporter.deform(deformation=self._deformation)['reporters']
+            reporters = reporter.deform(deformation=self._deformation)["reporters"]
             if len(reporters) != 1:
                 raise NotImplementedError
             return reporters[0]

@@ -1,4 +1,4 @@
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2021 Julian Rüth
@@ -15,11 +15,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from .surface import Surface
 
 from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
+
 
 class TranslationSurface(Surface):
     def __init__(self, surface):
@@ -36,9 +37,10 @@ class TranslationSurface(Surface):
     def orbit_closure_dimension_upper_bound(self):
         if not hasattr(self, "_bound"):
             from flatsurf.geometry.gl2r_orbit_closure import GL2ROrbitClosure
+
             O = GL2ROrbitClosure(self.__surface)
             self._bound = O.d
-        
+
         return self._bound
 
     def _surface(self):
@@ -48,7 +50,9 @@ class TranslationSurface(Surface):
         return hash(self.__surface)
 
     def __eq__(self, other):
-        return isinstance(other, TranslationSurface) and self.__surface == other.__surface
+        return (
+            isinstance(other, TranslationSurface) and self.__surface == other.__surface
+        )
 
     def __ne__(self, other):
         return not (self == other)

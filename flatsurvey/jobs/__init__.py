@@ -4,7 +4,7 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -21,7 +21,7 @@ entrypoints as subcommands.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 from .orbit_closure import OrbitClosure
 from .flow_decomposition import FlowDecompositions
 from .saddle_connections import SaddleConnections
@@ -29,6 +29,18 @@ from .saddle_connection_orientations import SaddleConnectionOrientations
 from .completely_cylinder_periodic import CompletelyCylinderPeriodic
 from .cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
 from .cylinder_periodic_direction import CylinderPeriodicDirection
-from .undetermined_interval_exchange_transformation import UndeterminedIntervalExchangeTransformation
+from .undetermined_interval_exchange_transformation import (
+    UndeterminedIntervalExchangeTransformation,
+)
 
-commands = [OrbitClosure.click, CylinderPeriodicDirection.click, CompletelyCylinderPeriodic.click, FlowDecompositions.click, CylinderPeriodicDirection.click, CylinderPeriodicAsymptotics.click, SaddleConnections.click, SaddleConnectionOrientations.click, UndeterminedIntervalExchangeTransformation.click]
+commands = [
+    OrbitClosure.click,
+    CylinderPeriodicDirection.click,
+    CompletelyCylinderPeriodic.click,
+    FlowDecompositions.click,
+    CylinderPeriodicDirection.click,
+    CylinderPeriodicAsymptotics.click,
+    SaddleConnections.click,
+    SaddleConnectionOrientations.click,
+    UndeterminedIntervalExchangeTransformation.click,
+]

@@ -15,7 +15,7 @@ EXAMPLES::
       --help         Show this message and exit.
     
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -32,12 +32,13 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import FactoryBindingSpec
+
 
 @click.command(cls=GroupedCommand, group="Surfaces")
 @click.option("--base64", type=str, required=True, help="a base64 encoded surface")
@@ -47,7 +48,6 @@ def pickle(base64):
     """
     from base64 import b64decode
     from sage.all import loads
-    encoded = b64decode(base64.strip().encode('ASCII'))
-    return {
-        "bindings": [ FactoryBindingSpec("surface", lambda: loads(encoded))]
-    }
+
+    encoded = b64decode(base64.strip().encode("ASCII"))
+    return {"bindings": [FactoryBindingSpec("surface", lambda: loads(encoded))]}

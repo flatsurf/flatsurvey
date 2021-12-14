@@ -8,7 +8,7 @@ EXAMPLES::
     True
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -25,9 +25,10 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from sage.all import cached_method
+
 
 class Surface:
     r"""
@@ -40,6 +41,7 @@ class Surface:
         True
 
     """
+
     def reference(self):
         r"""
         Return a literature reference where this surface has been studied, a practically identical (but simpler) surface, or ``None``.
@@ -68,6 +70,7 @@ class Surface:
 
         """
         from flatsurf import GL2ROrbitClosure
+
         return GL2ROrbitClosure(self.surface())
 
     @property
@@ -82,7 +85,9 @@ class Surface:
             19
 
         """
-        raise NotImplementedError("to be able to compute the orbit closure we need an upper bound on the dimensions")
+        raise NotImplementedError(
+            "to be able to compute the orbit closure we need an upper bound on the dimensions"
+        )
 
     def flat_triangulation(self):
         r"""
@@ -96,6 +101,7 @@ class Surface:
 
         """
         from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf
+
         return self.orbit_closure()._surface
 
     @cached_method
@@ -107,12 +113,16 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).surface()
-            
+
 
         """
         S = self._surface()
         if self._eliminate_marked_points:
-            from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf, to_pyflatsurf
+            from flatsurf.geometry.pyflatsurf_conversion import (
+                from_pyflatsurf,
+                to_pyflatsurf,
+            )
+
             S = to_pyflatsurf(S)
             S.delaunay()
             S = from_pyflatsurf(S)
@@ -150,7 +160,8 @@ class Surface:
         """
         from base64 import b64encode
         from sage.all import dumps
-        return ["pickle", "--base64", b64encode(dumps(self)).decode('ASCII').strip()]
+
+        return ["pickle", "--base64", b64encode(dumps(self)).decode("ASCII").strip()]
 
     def basename(self):
         r"""
@@ -164,10 +175,13 @@ class Surface:
 
         """
         import re
-        return re.sub('[^\\w]+', '-', repr(self)).strip('-').lower()
+
+        return re.sub("[^\\w]+", "-", repr(self)).strip("-").lower()
 
     def __repr__(self):
-        raise NotImplementedError("to be able to log results for surfaces we need a printable representation")
+        raise NotImplementedError(
+            "to be able to log results for surfaces we need a printable representation"
+        )
 
     def _flatsurvey_characteristics(self):
         r"""

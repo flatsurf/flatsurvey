@@ -17,7 +17,7 @@ non-cylinder.
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -34,7 +34,7 @@ non-cylinder.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -43,6 +43,7 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Consumer
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+
 
 class CylinderPeriodicDirection(Consumer):
     r"""
@@ -69,12 +70,22 @@ class CylinderPeriodicDirection(Consumer):
         self._directions = 0
 
     @classmethod
-    @click.command(name="cylinder-periodic-direction", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--limit", type=int, default=DEFAULT_LIMIT, help="stop search after having looked at that many flow decompositions  [default: no limit]")
+    @click.command(
+        name="cylinder-periodic-direction",
+        cls=GroupedCommand,
+        group="Goals",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--limit",
+        type=int,
+        default=DEFAULT_LIMIT,
+        help="stop search after having looked at that many flow decompositions  [default: no limit]",
+    )
     def click(limit):
         return {
-            'bindings': [ PartialBindingSpec(CylinderPeriodicDirection)(limit=limit) ],
-            'goals': [ CylinderPeriodicDirection ],
+            "bindings": [PartialBindingSpec(CylinderPeriodicDirection)(limit=limit)],
+            "goals": [CylinderPeriodicDirection],
         }
 
     def command(self):
@@ -96,7 +107,7 @@ class CylinderPeriodicDirection(Consumer):
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> cpd = CylinderPeriodicDirection(report=Report([log]), flow_decompositions=flow_decompositions)
-        
+
         Investigate in a single direction. We find that this direction is
         cylinder periodic::
 
@@ -109,7 +120,12 @@ class CylinderPeriodicDirection(Consumer):
         """
         self._directions += 1
 
-        if all([component.cylinder() == True for component in decomposition.decomposition.components()]):
+        if all(
+            [
+                component.cylinder() == True
+                for component in decomposition.decomposition.components()
+            ]
+        ):
             await self.report(True, decomposition=decomposition)
             return Consumer.COMPLETED
 

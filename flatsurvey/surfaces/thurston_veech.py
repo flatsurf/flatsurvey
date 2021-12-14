@@ -7,7 +7,7 @@ EXAMPLES::
     TranslationSurface built from 3 polygons
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020 Vincent Delecroix
@@ -25,7 +25,7 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -37,6 +37,7 @@ from flatsurvey.surfaces.surface import Surface
 
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+
 
 class ThurstonVeech(Surface):
     r"""
@@ -54,6 +55,7 @@ class ThurstonVeech(Surface):
         sage: S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
+
     def __init__(self, hp, vp, hm, vm):
         self.hp = hp
         self.vp = vp
@@ -77,7 +79,9 @@ class ThurstonVeech(Surface):
         return o.stratum().dimension()
 
     def __repr__(self):
-        return "ThurstonVeech({}, {}, {}, {})".format(self.hp, self.vp, self.hm, self.vm)
+        return "ThurstonVeech({}, {}, {}, {})".format(
+            self.hp, self.vp, self.hm, self.vm
+        )
 
     def reference(self):
         r"""
@@ -111,6 +115,7 @@ class ThurstonVeech(Surface):
     @cached_method
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
+
         return ThurstonVeech(self.hp, self.vp)
 
     @cached_method
@@ -153,8 +158,9 @@ class ThurstonVeech(Surface):
 
         # 1. compute action of the automorphisms on horiz / vert cylinders
         from surface_dynamics.misc.permutation import perm_dense_cycles
-        hcyls,hdeg = perm_dense_cycles(o.r_tuple(), n)
-        vcyls,vdeg = perm_dense_cycles(o.u_tuple(), n)
+
+        hcyls, hdeg = perm_dense_cycles(o.r_tuple(), n)
+        vcyls, vdeg = perm_dense_cycles(o.u_tuple(), n)
         hreps = [None] * len(self.hm)
         vreps = [None] * len(self.vm)
         for i in range(n):
@@ -168,8 +174,16 @@ class ThurstonVeech(Surface):
         hgens = []  # induced action on horizontal cylinders
         vgens = []  # induced action on vertical cylinders
         for p in libgap.GeneratorsOfGroup(A):
-            hgens.append( libgap.PermList([hcyls[(hreps[i]+1)**p - 1] + 1 for i in range(len(self.hm))]) )
-            vgens.append( libgap.PermList([vcyls[(vreps[i]+1)**p - 1] + 1 for i in range(len(self.vm))] ))
+            hgens.append(
+                libgap.PermList(
+                    [hcyls[(hreps[i] + 1) ** p - 1] + 1 for i in range(len(self.hm))]
+                )
+            )
+            vgens.append(
+                libgap.PermList(
+                    [vcyls[(vreps[i] + 1) ** p - 1] + 1 for i in range(len(self.vm))]
+                )
+            )
         hP = libgap.Group(hgens)
         vP = libgap.Group(vgens)
         hH = libgap.GroupHomomorphismByImages(A, hP, hgens)
@@ -177,14 +191,14 @@ class ThurstonVeech(Surface):
 
         # 2. compute the subgroup that stabilizes hm / vm
         hd = defaultdict(list)
-        for i,j in enumerate(self.hm):
+        for i, j in enumerate(self.hm):
             hd[j].append(i)
-        hd = [[i+1 for i in atom] for atom in hd.values()]
+        hd = [[i + 1 for i in atom] for atom in hd.values()]
 
         vd = defaultdict(list)
-        for i,j in enumerate(self.vm):
+        for i, j in enumerate(self.vm):
             vd[j].append(i)
-        vd = [[i+1 for i in atom] for atom in vd.values()]
+        vd = [[i + 1 for i in atom] for atom in vd.values()]
 
         hStab = libgap(hP).Stabilizer(hd, libgap.OnTuplesSets)
         vStab = libgap(vP).Stabilizer(vd, libgap.OnTuplesSets)
@@ -193,34 +207,65 @@ class ThurstonVeech(Surface):
         return hLiftedStab.Intersection(hLiftedStab, vLiftedStab)
 
     @classmethod
-    @click.command(name="thurston-veech", cls=GroupedCommand, group="Surfaces", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--horizontal-permutation", "-h", type=str, help="horizontal permutaiton")
+    @click.command(
+        name="thurston-veech",
+        cls=GroupedCommand,
+        group="Surfaces",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--horizontal-permutation", "-h", type=str, help="horizontal permutaiton"
+    )
     @click.option("--vertical-permutation", "-v", type=str, help="vertical permutation")
-    @click.option("--horizontal-multiplicities", "-m", type=str, help="horizontal multiplicities")
-    @click.option("--vertical-multiplicities", "-n", type=str, help="vertical multiplicities")
-    def click(horizontal_permutation, vertical_permutation, horizontal_multiplicities, vertical_multiplicities):
+    @click.option(
+        "--horizontal-multiplicities", "-m", type=str, help="horizontal multiplicities"
+    )
+    @click.option(
+        "--vertical-multiplicities", "-n", type=str, help="vertical multiplicities"
+    )
+    def click(
+        horizontal_permutation,
+        vertical_permutation,
+        horizontal_multiplicities,
+        vertical_multiplicities,
+    ):
         pass
+
 
 class ThurstonVeechs:
     r"""
     The translation surfaces obtained from Thurston-Veech construction.
     """
+
     @classmethod
-    @click.command(name="thurston-veech", cls=GroupedCommand, group="Surfaces", help=__doc__.split('EXAMPLES')[0])
+    @click.command(
+        name="thurston-veech",
+        cls=GroupedCommand,
+        group="Surfaces",
+        help=__doc__.split("EXAMPLES")[0],
+    )
     @click.option("--stratum", type=str, required=True)
     @click.option("--component", type=str, required=False)
-    @click.option("--nb-squares-limit", "-n", type=int, help="maximum number of squares")
-    @click.option("--multiplicities-limit", "-m", type=int, help="maximum sum of twist multiplicities")
+    @click.option(
+        "--nb-squares-limit", "-n", type=int, help="maximum number of squares"
+    )
+    @click.option(
+        "--multiplicities-limit",
+        "-m",
+        type=int,
+        help="maximum sum of twist multiplicities",
+    )
     def click(stratum, component, nb_squares_limit, multiplicities_limit):
         print(stratum)
         print(component)
         print(nb_squares_limit)
         print(multiplicities_limit)
         from surface_dynamics import AbelianStratum
-        if not stratum.startswith('H(') or not stratum.endswith(')'):
+
+        if not stratum.startswith("H(") or not stratum.endswith(")"):
             raise click.UsageError("invalid stratum argument")
         try:
-            H = AbelianStratum(*[int(x.strip()) for x in stratum[2:-1].split(',')])
+            H = AbelianStratum(*[int(x.strip()) for x in stratum[2:-1].split(",")])
         except ValueError:
             raise click.UsageError("invalid stratum argument")
 
@@ -252,7 +297,7 @@ class ThurstonVeechs:
                         # origami twice.
 
                         cd1 = o1.cylinder_decomposition()
-                        if any(h != 1 for _,_,_,h,_,_ in cd1):
+                        if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
                         for mh in IntegerVectors(multiplicities_limit, c.ncyls()):

@@ -13,7 +13,7 @@ decompositions::
     True
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -30,10 +30,11 @@ decompositions::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from flatsurvey.pipeline.producer import Producer
 from flatsurvey.pipeline.consumer import Consumer
+
 
 class Processor(Producer, Consumer):
     r"""
@@ -55,6 +56,7 @@ class Processor(Producer, Consumer):
         True
 
     """
+
     def __init__(self, producers):
         Producer.__init__(self)
         Consumer.__init__(self, producers=producers)

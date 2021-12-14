@@ -19,7 +19,7 @@ number of Zorich induction steps:
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -36,7 +36,7 @@ number of Zorich induction steps:
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 import time
@@ -47,6 +47,7 @@ from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
 
 from ..pipeline import Processor, Consumer
+
 
 class FlowDecompositions(Processor):
     r"""
@@ -65,17 +66,30 @@ class FlowDecompositions(Processor):
     DEFAULT_LIMIT = 256
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, saddle_connection_orientations, limit=DEFAULT_LIMIT):
+    def __init__(
+        self, surface, report, saddle_connection_orientations, limit=DEFAULT_LIMIT
+    ):
         super().__init__(producers=[saddle_connection_orientations])
 
     @classmethod
-    @click.command(name="flow-decompositions", cls=GroupedCommand, group="Intermediates", help=__doc__.split('EXAMPLES:')[0])
-    @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="Zorich induction steps to perform before giving up")
+    @click.command(
+        name="flow-decompositions",
+        cls=GroupedCommand,
+        group="Intermediates",
+        help=__doc__.split("EXAMPLES:")[0],
+    )
+    @click.option(
+        "--limit",
+        type=int,
+        default=DEFAULT_LIMIT,
+        show_default=True,
+        help="Zorich induction steps to perform before giving up",
+    )
     def click(limit):
         return {
             # TODO: This should not be a goal but something else. Do the same for other processors. See #9.
-            'goals': [FlowDecompositions],
-            'bindings': [ PartialBindingSpec(FlowDecompositions)(limit=limit) ]
+            "goals": [FlowDecompositions],
+            "bindings": [PartialBindingSpec(FlowDecompositions)(limit=limit)],
         }
 
     def command(self):
@@ -105,17 +119,21 @@ class FlowDecompositions(Processor):
 
         """
         start = time.perf_counter()
-        self._current = self._surface.orbit_closure().decomposition(orientation, self._limit)
+        self._current = self._surface.orbit_closure().decomposition(
+            orientation, self._limit
+        )
         cost += time.perf_counter() - start
 
-        await self._report.result(self,
+        await self._report.result(
+            self,
             # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274
             # self._current.decomposition,
             None,
             orientation=orientation,
             cylinders=len(self._current.decomposition.cylinders()),
             minimal=len(self._current.decomposition.minimalComponents()),
-            undetermined=len(self._current.decomposition.undeterminedComponents()))
+            undetermined=len(self._current.decomposition.undeterminedComponents()),
+        )
 
         await self._notify_consumers(cost)
 

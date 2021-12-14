@@ -19,7 +19,7 @@ fairly trivial to change that and allow for other similar systems as well.
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -36,7 +36,7 @@ fairly trivial to change that and allow for other similar systems as well.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -59,31 +59,55 @@ class GraphQL:
         cache
 
     """
+
     @copy_args_to_internal_fields
-    def __init__(self, endpoint=GraphQLReporter.DEFAULT_ENDPOINT, key=GraphQLReporter.DEFAULT_API_KEY, region=GraphQLReporter.DEFAULT_REGION):
+    def __init__(
+        self,
+        endpoint=GraphQLReporter.DEFAULT_ENDPOINT,
+        key=GraphQLReporter.DEFAULT_API_KEY,
+        region=GraphQLReporter.DEFAULT_REGION,
+    ):
         self._pickle_cache = PickleCache(region=region)
         self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
-    def results(self, job, surface=None, filter=None, exact=False, page_size=16, after=None):
+    def results(
+        self, job, surface=None, filter=None, exact=False, page_size=16, after=None
+    ):
         r"""
         Return the previous results for ``job`` on ``surface``.
         """
         if exact:
             raise NotImplementedError("exact surface filtering")
 
-        query = lambda after_: self._create_query(job=job, surface_filter=f'name: {{ equalTo: "{str(surface)}" }}' if surface else None, result_filter=filter, limit=page_size, after=after_)
-        delete = lambda node: self._create_delete(job=job, id=node['id'])
+        query = lambda after_: self._create_query(
+            job=job,
+            surface_filter=f'name: {{ equalTo: "{str(surface)}" }}'
+            if surface
+            else None,
+            result_filter=filter,
+            limit=page_size,
+            after=after_,
+        )
+        delete = lambda node: self._create_delete(job=job, id=node["id"])
 
-        return Results(job=job, nodes=Nodes(query=query, delete=delete, graphql_client=self._graphql, after=after), pickle_cache=self._pickle_cache)
+        return Results(
+            job=job,
+            nodes=Nodes(
+                query=query, delete=delete, graphql_client=self._graphql, after=after
+            ),
+            pickle_cache=self._pickle_cache,
+        )
 
     def __repr__(self):
         return "cache"
 
-    def _create_query(self, job, surface_filter=None, result_filter=None, limit=None, after=None):
+    def _create_query(
+        self, job, surface_filter=None, result_filter=None, limit=None, after=None
+    ):
         upper = GraphQLReporter._upper(job)
 
         if surface_filter is None:
-            surface_filter = ''
+            surface_filter = ""
         else:
             surface_filter = f"""
             surfaceBySurface: {{
@@ -91,7 +115,7 @@ class GraphQL:
             }}"""
 
         if result_filter is None:
-            result_filter = ''
+            result_filter = ""
 
         filter = ""
         if surface_filter or result_filter:
@@ -139,22 +163,51 @@ class GraphQL:
         """
 
     @classmethod
-    @click.command(name="cache", cls=GroupedCommand, group="Cache", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--endpoint", type=str, default=GraphQLReporter.DEFAULT_ENDPOINT, show_default=True, help="GraphQL HTTP endpoint to connect to")
-    @click.option("--key", type=str, default=GraphQLReporter.DEFAULT_API_KEY, show_default=True, help="GraphQL API key")
-    @click.option("--region", type=str, default=GraphQLReporter.DEFAULT_REGION, show_default=True, help="AWS region to connect to")
+    @click.command(
+        name="cache",
+        cls=GroupedCommand,
+        group="Cache",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--endpoint",
+        type=str,
+        default=GraphQLReporter.DEFAULT_ENDPOINT,
+        show_default=True,
+        help="GraphQL HTTP endpoint to connect to",
+    )
+    @click.option(
+        "--key",
+        type=str,
+        default=GraphQLReporter.DEFAULT_API_KEY,
+        show_default=True,
+        help="GraphQL API key",
+    )
+    @click.option(
+        "--region",
+        type=str,
+        default=GraphQLReporter.DEFAULT_REGION,
+        show_default=True,
+        help="AWS region to connect to",
+    )
     def click(endpoint, key, region):
         return {
-            'bindings': GraphQL.bindings(endpoint=endpoint, key=key, region=region),
+            "bindings": GraphQL.bindings(endpoint=endpoint, key=key, region=region),
         }
 
     @classmethod
     def bindings(cls, endpoint, key, region):
-        return [ PartialBindingSpec(GraphQL, name="cache")(endpoint=endpoint, key=key, region=region) ]
+        return [
+            PartialBindingSpec(GraphQL, name="cache")(
+                endpoint=endpoint, key=key, region=region
+            )
+        ]
 
     def deform(self, deformation):
         return {
-            'bindings': GraphQL.bindings(endpoint=self._endpoint, key=self._key, region=self._region)
+            "bindings": GraphQL.bindings(
+                endpoint=self._endpoint, key=self._key, region=self._region
+            )
         }
 
 
@@ -162,6 +215,7 @@ class Nodes:
     r"""
     A (internally paginated) list of raw nodes as returned by a GraphQL ``query``.
     """
+
     def __init__(self, query, delete, graphql_client, after=None):
         self._make_query = query
         self._make_delete = delete
@@ -171,14 +225,16 @@ class Nodes:
     async def __aiter__(self):
         # TODO: Using a stateful _after is completely broken. See #6.
         while True:
-            results = (await self._graphql_client.query(self._make_query(self._after)))['results']
+            results = (await self._graphql_client.query(self._make_query(self._after)))[
+                "results"
+            ]
 
-            if len(results) == 0 or len(results['edges']) == 0:
+            if len(results) == 0 or len(results["edges"]) == 0:
                 break
 
-            for edge in results['edges']:
-                self._after = edge['cursor']
-                node = edge['node']
+            for edge in results["edges"]:
+                self._after = edge["cursor"]
+                node = edge["node"]
                 yield node
 
     def erase(self, node):
@@ -207,9 +263,9 @@ class Results:
         """
         async for node in self:
             yield {
-                **node['data'],
-                'surface': node['surface']['data'],
-                'timestamp': node['timestamp'],
+                **node["data"],
+                "surface": node["surface"]["data"],
+                "timestamp": node["timestamp"],
             }
 
     async def results(self):
@@ -218,11 +274,11 @@ class Results:
         database.
         """
         async for node in self:
-            result = node['data']['result']
+            result = node["data"]["result"]
             if result is not None:
-                result = node['data']['result']()
-                if result is not None: # TODO: why is this needed? See #7.
-                    setattr(result, 'erase', lambda: self._nodes.erase(node))
+                result = node["data"]["result"]()
+                if result is not None:  # TODO: why is this needed? See #7.
+                    setattr(result, "erase", lambda: self._nodes.erase(node))
                     yield result
 
     async def reduce(self):
@@ -246,22 +302,28 @@ class Results:
         if isinstance(obj, tuple):
             return tuple(self._resolve(list(obj)))
         if isinstance(obj, dict):
-            if 'timestamp' in obj:
+            if "timestamp" in obj:
                 import dateutil.parser
-                obj['timestamp'] = dateutil.parser.isoparse(obj['timestamp'])
-            if 'pickle' in obj:
+
+                obj["timestamp"] = dateutil.parser.isoparse(obj["timestamp"])
+            if "pickle" in obj:
                 restored = None
-                url = obj['pickle']
+                url = obj["pickle"]
+
                 def restore():
                     nonlocal restored
                     if restored is None:
                         restored = self._pickle_cache[url]
                     return restored
-                restore.__doc__ = obj['description']
+
+                restore.__doc__ = obj["description"]
                 restore.download = lambda: self._pickle_cache.download(url)
                 return restore
             else:
-                return {self._resolve(key): self._resolve(value) for (key, value) in obj.items()}
+                return {
+                    self._resolve(key): self._resolve(value)
+                    for (key, value) in obj.items()
+                }
 
         return obj
 
@@ -269,6 +331,7 @@ class Results:
 class S3Cache:
     def __init__(self, region):
         self._downloads = {}
+
         def connect():
             client = GraphQLReporter.s3_client(region=region)
             # https://stackoverflow.com/a/56607118/812379
@@ -288,11 +351,12 @@ class S3Cache:
 
     def download(self, url):
         from io import BytesIO
+
         if url not in self._downloads:
             with self._s3_client_pool() as s3:
-                prefix = 's3://'
+                prefix = "s3://"
                 assert url.startswith(prefix)
-                bucket, key = url[len(prefix):].split('/', 1)
+                bucket, key = url[len(prefix) :].split("/", 1)
                 buffer = self._downloads[url] = BytesIO()
                 s3.download_fileobj(bucket, key, buffer)
                 buffer.seek(0)
@@ -314,6 +378,7 @@ class PickleCache:
         import weakref
         from zlib import decompress
         from pickle import loads
+
         buffer = self._downloads[url]
         buffer = buffer.read()
         pickle = decompress(buffer)
@@ -327,7 +392,7 @@ class PickleCache:
 
     def _download(self, url):
         self._downloads.schedule(url)
-            
+
 
 def pool(constructor):
     import queue
@@ -343,4 +408,5 @@ def pool(constructor):
             connection = constructor()
         yield connection
         pool.put(connection)
+
     return connect

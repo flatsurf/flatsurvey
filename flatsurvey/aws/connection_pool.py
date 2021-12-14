@@ -1,4 +1,4 @@
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -15,7 +15,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import queue
 
@@ -37,7 +37,7 @@ class ConnectionPool:
                 connection = await self._create_connection()
             if await self._is_alive(connection):
                 break
-            
+
             print("Discarding old connection. Retrying.")
 
         yield connection

@@ -49,7 +49,7 @@ TESTS::
                       construction.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -66,7 +66,7 @@ TESTS::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import asyncio
 import click
@@ -80,8 +80,13 @@ import flatsurvey.surfaces
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.pipeline.util import provide
 
-@click.group(chain=True, cls=CommandWithGroups, help="Run a survey on the `objects` until all the `goals` are reached.")
-@click.option('--dry-run', is_flag=True, help="do not spawn any workers")
+
+@click.group(
+    chain=True,
+    cls=CommandWithGroups,
+    help="Run a survey on the `objects` until all the `goals` are reached.",
+)
+@click.option("--dry-run", is_flag=True, help="do not spawn any workers")
 def survey(dry_run):
     r"""
     Main command, runs a survey; specific survey objects and goals are
@@ -90,7 +95,12 @@ def survey(dry_run):
 
 
 # Register objects and goals as subcommans of "survey".
-for kind in [flatsurvey.surfaces.generators, flatsurvey.jobs.commands, flatsurvey.reporting.commands, flatsurvey.cache.commands]:
+for kind in [
+    flatsurvey.surfaces.generators,
+    flatsurvey.jobs.commands,
+    flatsurvey.reporting.commands,
+    flatsurvey.cache.commands,
+]:
     for command in kind:
         survey.add_command(command)
 
@@ -112,17 +122,26 @@ def process(commands, **kwargs):
 
     for command in commands:
         from collections.abc import Iterable
+
         if isinstance(command, dict):
-            goals.extend(command.get('goals', []))
-            reporters.extend(command.get('reporters', []))
-            bindings.extend(command.get('bindings', []))
+            goals.extend(command.get("goals", []))
+            reporters.extend(command.get("reporters", []))
+            bindings.extend(command.get("bindings", []))
         else:
             surface_generators.append(command)
 
-    if kwargs.get('dry_run', False):
-        kwargs.setdefault('load', None)
+    if kwargs.get("dry_run", False):
+        kwargs.setdefault("load", None)
 
-    asyncio.run(Scheduler(surface_generators, bindings=bindings, goals=goals, reporters=reporters, **kwargs).start())
+    asyncio.run(
+        Scheduler(
+            surface_generators,
+            bindings=bindings,
+            goals=goals,
+            reporters=reporters,
+            **kwargs
+        ).start()
+    )
 
 
 class Scheduler:
@@ -134,7 +153,17 @@ class Scheduler:
     Scheduler
 
     """
-    def __init__(self, generators, bindings, goals, reporters, dry_run=False, load=1., quiet=False):
+
+    def __init__(
+        self,
+        generators,
+        bindings,
+        goals,
+        reporters,
+        dry_run=False,
+        load=1.0,
+        quiet=False,
+    ):
         self._generators = generators
         self._bindings = bindings
         self._goals = goals
@@ -144,7 +173,8 @@ class Scheduler:
         self._quiet = quiet
         self._jobs = []
 
-    def __repr__(self): return "Scheduler"
+    def __repr__(self):
+        return "Scheduler"
 
     async def start(self):
         r"""
@@ -158,6 +188,7 @@ class Scheduler:
         tasks = []
         nothing = object()
         from itertools import zip_longest, chain
+
         iters = [iter(generator) for generator in self._generators]
         try:
             while iters:
@@ -192,26 +223,45 @@ class Scheduler:
         bindings = list(self._bindings)
 
         from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
+
         bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))
         bindings.append(ListBindingSpec("reporters", self._reporters))
         from random import randint
-        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
+
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2 ** 64)))
 
         import pinject
-        objects = pinject.new_object_graph(modules=[flatsurvey.reporting, flatsurvey.surfaces, flatsurvey.jobs, flatsurvey.cache], binding_specs=bindings)
+
+        objects = pinject.new_object_graph(
+            modules=[
+                flatsurvey.reporting,
+                flatsurvey.surfaces,
+                flatsurvey.jobs,
+                flatsurvey.cache,
+            ],
+            binding_specs=bindings,
+        )
 
         commands = []
 
         class Reporters:
-            def __init__(self, reporters): self._reporters = reporters
+            def __init__(self, reporters):
+                self._reporters = reporters
+
         reporters = objects.provide(Reporters)._reporters
         for reporter in reporters:
             commands.extend(reporter.command())
 
         class Goals:
-            def __init__(self, goals): self._goals = goals
-        goals = [goal for goal in objects.provide(Goals)._goals if goal._resolved != goal.COMPLETED]
+            def __init__(self, goals):
+                self._goals = goals
+
+        goals = [
+            goal
+            for goal in objects.provide(Goals)._goals
+            if goal._resolved != goal.COMPLETED
+        ]
 
         if not goals:
             return None
@@ -231,9 +281,14 @@ class Scheduler:
             commands.extend(binding.command())
 
         commands.extend(surface.command())
-        
+
         import os
-        return [os.environ.get("PYTHON", "python"), "-m", "flatsurvey.worker"] + commands
+
+        return [
+            os.environ.get("PYTHON", "python"),
+            "-m",
+            "flatsurvey.worker",
+        ] + commands
 
     async def _enqueue(self, command):
         r"""
@@ -252,6 +307,7 @@ class Scheduler:
         # go up quickly enough. See #5.
         await asyncio.sleep(1)
         from os import cpu_count, getloadavg
+
         while self._load is not None and getloadavg()[0] / cpu_count() > self._load:
             await asyncio.sleep(1)
 
@@ -287,11 +343,13 @@ class Scheduler:
         from plumbum.commands.processes import ProcessExecutionError
 
         # TODO: This is a hack. We should have better monitoring.
-        short = [arg for arg in command if 'output' in arg][0]
+        short = [arg for arg in command if "output" in arg][0]
         print("... spawning for", short)
 
         start = datetime.datetime.now()
-        task = local[command[0]].__getitem__(command[1:]) & BG(stdout=sys.stdout, stderr=sys.stderr)
+        task = local[command[0]].__getitem__(command[1:]) & BG(
+            stdout=sys.stdout, stderr=sys.stderr
+        )
 
         try:
             while not task.ready():
@@ -305,6 +363,8 @@ class Scheduler:
             print("xxx process crashed ", " ".join(command))
             print(e)
 
-        print("*** terminated after %s wall time"%(datetime.datetime.now() - start,))
+        print("*** terminated after %s wall time" % (datetime.datetime.now() - start,))
 
-if __name__ == "__main__": survey()
+
+if __name__ == "__main__":
+    survey()

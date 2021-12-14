@@ -8,7 +8,7 @@ of families of such structures such as unfoldings of all triangles.
 This module does not expose the actual structures but the ``click`` command
 line interface that is used to generate them.
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -25,7 +25,7 @@ line interface that is used to generate them.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 from .ngons import Ngons, Ngon
 from .thurston_veech import ThurstonVeechs, ThurstonVeech

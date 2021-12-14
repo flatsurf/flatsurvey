@@ -18,7 +18,7 @@ _all_ directions are cylinder periodic.
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2020-2021 Julian Rüth
@@ -35,7 +35,7 @@ _all_ directions are cylinder periodic.
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 
@@ -44,6 +44,7 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Consumer
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+
 
 class CompletelyCylinderPeriodic(Consumer):
     r"""
@@ -72,12 +73,22 @@ class CompletelyCylinderPeriodic(Consumer):
         self._cylinder_periodic_directions = 0
 
     @classmethod
-    @click.command(name="completely-cylinder-periodic", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--limit", type=int, default=DEFAULT_LIMIT, help="stop search after having looked at that many flow decompositions  [default: no limit]")
+    @click.command(
+        name="completely-cylinder-periodic",
+        cls=GroupedCommand,
+        group="Goals",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--limit",
+        type=int,
+        default=DEFAULT_LIMIT,
+        help="stop search after having looked at that many flow decompositions  [default: no limit]",
+    )
     def click(limit):
         return {
-            'bindings': [ PartialBindingSpec(CompletelyCylinderPeriodic)(limit=limit) ],
-            'goals': [ CompletelyCylinderPeriodic ],
+            "bindings": [PartialBindingSpec(CompletelyCylinderPeriodic)(limit=limit)],
+            "goals": [CompletelyCylinderPeriodic],
         }
 
     def command(self):
@@ -135,9 +146,17 @@ class CompletelyCylinderPeriodic(Consumer):
             self.report(False, decomposition=decomposition.decomposition)
             return Consumer.COMPLETED
 
-        if all([component.cylinder() == True for component in decomposition.decomposition.components()]):
+        if all(
+            [
+                component.cylinder() == True
+                for component in decomposition.decomposition.components()
+            ]
+        ):
             self._cylinder_periodic_directions += 1
-            if self._limit is not None and self._cylinder_periodic_directions >= self._limit:
+            if (
+                self._limit is not None
+                and self._cylinder_periodic_directions >= self._limit
+            ):
                 self.report()
                 return Consumer.COMPLETED
 
@@ -148,4 +167,10 @@ class CompletelyCylinderPeriodic(Consumer):
 
     async def report(self, result=None, **kwargs):
         if self._resolved != Consumer.COMPLETED:
-            await self._report.result(self, result, cylinder_periodic_directions=self._cylinder_periodic_directions, undetermined_directions=self._undetermined_directions, **kwargs)
+            await self._report.result(
+                self,
+                result,
+                cylinder_periodic_directions=self._cylinder_periodic_directions,
+                undetermined_directions=self._undetermined_directions,
+                **kwargs,
+            )

@@ -14,7 +14,7 @@ EXAMPLES::
       --help           Show this message and exit.
 
 """
-#*********************************************************************
+# *********************************************************************
 #  This file is part of flatsurvey.
 #
 #        Copyright (C) 2021 Julian Rüth
@@ -31,7 +31,7 @@ EXAMPLES::
 #
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
-#*********************************************************************
+# *********************************************************************
 
 import click
 import time
@@ -49,13 +49,15 @@ import pyintervalxt
 import pyexactreal
 import pyeantic
 import cppyy
+
 # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
 # i.e., when serializing an IET of unknown type (as is this one because
 # (a) it comes from C++ and was not constructed in Python and (b) it
 # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
 # be smart about registering the right types in cppyy. (If possible.) See #10.
 # TODO: Expose something like this construction() in intervalxt. See #10.
-cppyy.cppdef(r'''
+cppyy.cppdef(
+    r"""
 #include <boost/type_erasure/any_cast.hpp>
 
 template <typename T> std::tuple<std::vector<eantic::renf_elem_class>, std::vector<int> > construction(T& iet) {
@@ -78,7 +80,9 @@ template <typename T> int degree(T& iet) {
     auto length = boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label));
     return length.parent().degree();
 }
-''')
+"""
+)
+
 
 class UndeterminedIntervalExchangeTransformation(Consumer):
     r"""
@@ -101,20 +105,43 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
     DEFAULT_LIMIT = 256
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, flow_decompositions, saddle_connection_orientations, cache, limit=DEFAULT_LIMIT):
+    def __init__(
+        self,
+        surface,
+        report,
+        flow_decompositions,
+        saddle_connection_orientations,
+        cache,
+        limit=DEFAULT_LIMIT,
+    ):
         super().__init__(producers=[flow_decompositions])
 
     @classmethod
-    @click.command(name="undetermined-iet", cls=GroupedCommand, group="Goals", help=__doc__.split('EXAMPLES')[0])
-    @click.option("--limit", type=int, default=DEFAULT_LIMIT, show_default=True, help="Zorich induction steps to perform before giving up")
+    @click.command(
+        name="undetermined-iet",
+        cls=GroupedCommand,
+        group="Goals",
+        help=__doc__.split("EXAMPLES")[0],
+    )
+    @click.option(
+        "--limit",
+        type=int,
+        default=DEFAULT_LIMIT,
+        show_default=True,
+        help="Zorich induction steps to perform before giving up",
+    )
     def click(limit):
         return {
             "goals": [UndeterminedIntervalExchangeTransformation],
-            'bindings': [ PartialBindingSpec(UndeterminedIntervalExchangeTransformation)(limit=limit) ],
+            "bindings": [
+                PartialBindingSpec(UndeterminedIntervalExchangeTransformation)(
+                    limit=limit
+                )
+            ],
         }
 
     def command(self):
-        command =["undetermined-iet"]
+        command = ["undetermined-iet"]
         if self._limit != UndeterminedIntervalExchangeTransformation.DEFAULT_LIMIT:
             command += ["--limit", str(self._limit)]
         return command
@@ -125,9 +152,9 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
 
         """
         for component in decomposition.decomposition.components():
-            if (component.withoutPeriodicTrajectory()):
+            if component.withoutPeriodicTrajectory():
                 continue
-            if (component.cylinder()):
+            if component.cylinder():
                 continue
 
             iet = component.dynamicalComponent().iet()
@@ -135,20 +162,32 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
             # Forget the surface structure of this IET
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
-            iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
+            iet = pyintervalxt.IntervalExchangeTransformation(
+                list(construction[0]), list(construction[1])
+            )
 
             start = time.perf_counter()
             induction = iet.induce(self._limit)
             cost += time.perf_counter() - start
 
-            if str(induction) != 'LIMIT_REACHED':
+            if str(induction) != "LIMIT_REACHED":
                 continue
 
-            assert(not iet.boshernitzanNoPeriodicTrajectory())
+            assert not iet.boshernitzanNoPeriodicTrajectory()
 
-            iet = pyintervalxt.IntervalExchangeTransformation(list(construction[0]), list(construction[1]))
+            iet = pyintervalxt.IntervalExchangeTransformation(
+                list(construction[0]), list(construction[1])
+            )
             # TODO: pyintervalxt fails to serialize IETs. See #10.
-            await self._report.result(self, str(iet), surface=self._surface, degree=degree, intervals=iet.size(), saf=list(iet.safInvariant()), orientation=self._saddle_connection_orientations._current)
+            await self._report.result(
+                self,
+                str(iet),
+                surface=self._surface,
+                degree=degree,
+                intervals=iet.size(),
+                saf=list(iet.safInvariant()),
+                orientation=self._saddle_connection_orientations._current,
+            )
 
         return not Consumer.COMPLETED
 
