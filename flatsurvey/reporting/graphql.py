@@ -139,7 +139,7 @@ class GraphQL(Reporter):
             ...     assert log.s3(dumps(surface)) == url
 
             >>> url
-            's3://flatsurvey/pickles/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz'
+            's3://flatsurvey/pickles/89651606a8d679017fd6392ac84469fdf8d81dcd660ce8a4612545ac14cf2adc.pickle.gz'
 
         """
         import hashlib
@@ -191,7 +191,7 @@ class GraphQL(Reporter):
             ...     assert log._serialize(surface) == {
             ...         "angles": [1, 1, 1],
             ...         "description": "Ngon([1, 1, 1])",
-            ...         "pickle": "s3://flatsurvey/Ngon/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz"
+            ...         "pickle": "s3://flatsurvey/Ngon/89651606a8d679017fd6392ac84469fdf8d81dcd660ce8a4612545ac14cf2adc.pickle.gz",
             ...     }, f"Unexpected serialization: {log._serialize(surface)}"
 
         """
@@ -311,7 +311,7 @@ class GraphQL(Reporter):
             ...         mock.post(endpoint, payload={"data":{}})
             ...         asyncio.run(log.result(job=ccp, result=None))
             ...         mock.post(endpoint, payload={"data":{"surfaces": {"nodes": []}}})
-            ...         assert Cache().results(surface=surface, job=ccp).reduce() == None, "expected unconclusive result"
+            ...         assert asyncio.run(Cache().results(surface=surface, job=ccp).reduce()) == None, "expected unconclusive result"
 
         """
         import sys

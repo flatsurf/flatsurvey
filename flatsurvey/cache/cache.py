@@ -59,7 +59,9 @@ class Cache:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
             >>> results = Cache().results(Ngon([1,1,1]), CompletelyCylinderPeriodic)
-            >>> results.reduce() is None
+
+            >>> import asyncio
+            >>> asyncio.run(results.reduce()) is None
             True
 
         """

@@ -44,7 +44,6 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.aws.graphql import Client as GraphQLClient
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
-from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
 
 
