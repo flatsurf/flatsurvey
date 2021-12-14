@@ -13,6 +13,7 @@ dependencies:
   - click
   - pip
   - pytest
+  - pytest-xdist
   - plumbum
   - python-dateutil
   - boto3

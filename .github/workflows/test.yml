@@ -28,4 +28,4 @@ jobs:
       - name: doctest
         shell: bash -l {0}
         run: |
-          pytest -x --doctest-modules flatsurvey
+          pytest -n auto -x --doctest-modules flatsurvey
