@@ -14,8 +14,9 @@ TESTS::
     Usage: survey [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
       Run a survey on the `objects` until all the `goals` are reached.
     Options:
-      --dry-run  do not spawn any workers
-      --help     Show this message and exit.
+      --help         Show this message and exit.
+      -N, --dry-run  Do not spawn any workers.
+      -l, --load L   Do not start workers until load is below L.
     Cache:
       cache  A cache of previous results stored behind a GraphQL API in the cloud.
     Goals:
@@ -69,6 +70,7 @@ TESTS::
 # *********************************************************************
 
 import asyncio
+import os
 
 import click
 
@@ -86,33 +88,46 @@ from flatsurvey.ui.group import CommandWithGroups
     cls=CommandWithGroups,
     help="Run a survey on the `objects` until all the `goals` are reached.",
 )
-@click.option("--dry-run", is_flag=True, help="do not spawn any workers")
-def survey(dry_run):
+@click.option("--dry-run", "-N", is_flag=True, help="Do not spawn any workers.")
+@click.option("--load", "-l", metavar="L", type=float, default=None, help="Do not start workers until load is below L.")
+def survey(dry_run, load):
     r"""
     Main command, runs a survey; specific survey objects and goals are
     registered automatically as subcommands.
     """
+    # For technical reasons, dry_run needs to be a parameter here. It is consumed by process() below.
+    _ = dry_run
+    # For technical reasons, load needs to be a parameter here. It is consumed by process() below.
+    _ = load
 
 
 # Register objects and goals as subcommans of "survey".
-for kind in [
+for commands in [
     flatsurvey.surfaces.generators,
     flatsurvey.jobs.commands,
     flatsurvey.reporting.commands,
     flatsurvey.cache.commands,
 ]:
-    for command in kind:
+    for command in commands:
         survey.add_command(command)
 
 
 @survey.result_callback()
-def process(commands, **kwargs):
+def process(subcommands, dry_run=False, load=None):
     r"""
     Run the specified subcommands of ``survey``.
 
-    # TODO: Currently, pytest fails to test these with a "fileno" error, see #4.
-    # >>> from .test.cli import invoke
-    # >>> invoke(survey, "ngons", "-n", "3", "--include-literature", "--limit", "4", "orbit-closure")
+    EXAMPLES:
+
+    We start an orbit-closure computation for a single triangle without waiting
+    for the system load to be low::
+
+        >>> from .test.cli import invoke
+        >>> invoke(survey, "--load=0", "ngons", "-n", "3", "--limit=3", "--literature=include", "orbit-closure")  # doctest: +ELLIPSIS
+        All jobs have been scheduled. Now waiting for jobs to finish.
+        ...
+        [Ngon([1, 1, 1])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
+        ...
 
     """
     surface_generators = []
@@ -120,18 +135,16 @@ def process(commands, **kwargs):
     reporters = []
     bindings = []
 
-    for command in commands:
-        from collections.abc import Iterable
-
-        if isinstance(command, dict):
-            goals.extend(command.get("goals", []))
-            reporters.extend(command.get("reporters", []))
-            bindings.extend(command.get("bindings", []))
+    for subcommand in subcommands:
+        if isinstance(subcommand, dict):
+            goals.extend(subcommand.get("goals", []))
+            reporters.extend(subcommand.get("reporters", []))
+            bindings.extend(subcommand.get("bindings", []))
         else:
-            surface_generators.append(command)
+            surface_generators.append(subcommand)
 
-    if kwargs.get("dry_run", False):
-        kwargs.setdefault("load", None)
+    if dry_run:
+        load = 0
 
     asyncio.run(
         Scheduler(
@@ -139,7 +152,8 @@ def process(commands, **kwargs):
             bindings=bindings,
             goals=goals,
             reporters=reporters,
-            **kwargs
+            dry_run=dry_run,
+            load=load,
         ).start()
     )
 
@@ -161,9 +175,12 @@ class Scheduler:
         goals,
         reporters,
         dry_run=False,
-        load=1.0,
+        load=None,
         quiet=False,
     ):
+        if load is None:
+            load = os.cpu_count()
+
         self._generators = generators
         self._bindings = bindings
         self._goals = goals
@@ -186,8 +203,6 @@ class Scheduler:
 
         """
         tasks = []
-        nothing = object()
-        from itertools import chain, zip_longest
 
         iters = [iter(generator) for generator in self._generators]
         try:
@@ -216,7 +231,7 @@ class Scheduler:
 
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[])
         >>> command = scheduler._render_command(Ngon([1, 1, 1]))
-        >>> asyncio.run(command) # doctest: +ELLIPSIS
+        >>> asyncio.run(command)  # doctest: +ELLIPSIS
         ['python', '-m', 'flatsurvey.worker', 'orbit-closure', 'pickle', '--base64', '...']
 
         """
@@ -297,9 +312,13 @@ class Scheduler:
 
         The result of this coroutine is a task that terminates when the command is completed.
 
-        >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=None)
-        >>> asyncio.run(scheduler._enqueue(["true"]))
-        <Task ...>
+        TESTS:
+
+        We enqueue a job without worrying about the actual system load::
+
+            >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=0)
+            >>> asyncio.run(scheduler._enqueue(["true"]))
+            <Task ...>
 
         """
         # TODO: This is a bit of a hack: Without it, the _run never actually
@@ -307,10 +326,10 @@ class Scheduler:
         # works.) Without it, we schedule too many tasks but the load does not
         # go up quickly enough. See #5.
         await asyncio.sleep(1)
-        from os import cpu_count, getloadavg
 
-        while self._load is not None and getloadavg()[0] / cpu_count() > self._load:
-            await asyncio.sleep(1)
+        if self._load > 0:
+            while os.getloadavg()[0] > self._load:
+                await asyncio.sleep(1)
 
         return asyncio.create_task(self._run(command))
 
@@ -338,25 +357,22 @@ class Scheduler:
             return
 
         import datetime
-        import os.path
-        import sys
 
         from plumbum import BG, local
         from plumbum.commands.processes import ProcessExecutionError
 
         # TODO: This is a hack. We should have better monitoring.
-        short = [arg for arg in command if "output" in arg][0]
-        print("... spawning for", short)
+        # short = ([arg for arg in command if "output" in arg] + [str(command)])[0]
+        # print("... spawning for", short)
 
         start = datetime.datetime.now()
-        task = local[command[0]].__getitem__(command[1:]) & BG(
-            stdout=sys.stdout, stderr=sys.stderr
-        )
+        task = local[command[0]].__getitem__(command[1:]) & BG
 
         try:
             while not task.ready():
                 await asyncio.sleep(1)
-            print("ooo completed for", short)
+            # TODO: Better monitoring.
+            # print("ooo completed for", short)
 
             if task.stdout:
                 print("*** task produced output on stdout: ")

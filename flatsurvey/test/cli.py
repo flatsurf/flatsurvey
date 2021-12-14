@@ -24,13 +24,12 @@ scenarios so we wrap it in more convenient ways here.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
-
 
 def invoke(command, *args):
     r"""
     Invoke the click ``command`` with the given list of string arguments.
 
+    >>> import click
     >>> @click.command()
     ... def hello(): print("Hello World")
     >>> invoke(hello)
