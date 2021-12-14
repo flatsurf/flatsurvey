@@ -49,15 +49,13 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-
 from pinject import copy_args_to_internal_fields
-
 from sage.all import cached_method
 
 from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 from flatsurvey.pipeline import Consumer
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
 
 
 class OrbitClosure(Consumer):
@@ -346,9 +344,8 @@ class OrbitClosure(Consumer):
                         )
 
                         surface = deformed.surface()
-                        from flatsurf.geometry.pyflatsurf_conversion import (
-                            from_pyflatsurf,
-                        )
+                        from flatsurf.geometry.pyflatsurf_conversion import \
+                            from_pyflatsurf
 
                         surface = from_pyflatsurf(surface)
 

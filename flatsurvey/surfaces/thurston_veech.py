@@ -27,16 +27,14 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
-
 from collections import defaultdict
 
-from sage.all import cached_method, IntegerVectors, QQ, libgap
+import click
+from sage.all import QQ, IntegerVectors, cached_method, libgap
 
-from flatsurvey.surfaces.surface import Surface
-
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.surfaces.surface import Surface
+from flatsurvey.ui.group import GroupedCommand
 
 
 class ThurstonVeech(Surface):

@@ -67,18 +67,18 @@ TESTS::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+import collections
 import sys
+
 import click
 import pinject
-import collections
 
-import flatsurvey.surfaces
+import flatsurvey.cache
 import flatsurvey.jobs
 import flatsurvey.reporting
-import flatsurvey.cache
-
+import flatsurvey.surfaces
 from flatsurvey.pipeline import Consumer
-from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
+from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
 

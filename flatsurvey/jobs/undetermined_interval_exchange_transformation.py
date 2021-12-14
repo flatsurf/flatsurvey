@@ -33,22 +33,20 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
 import time
 
+import click
+import cppyy
+import pyeantic
+import pyexactreal
+import pyintervalxt
 from pinject import copy_args_to_internal_fields
-
 from sage.all import cached_method
 
 from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 from flatsurvey.pipeline import Consumer
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
-
-import pyintervalxt
-import pyexactreal
-import pyeantic
-import cppyy
+from flatsurvey.ui.group import GroupedCommand
 
 # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
 # i.e., when serializing an IET of unknown type (as is this one because

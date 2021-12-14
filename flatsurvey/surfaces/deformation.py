@@ -17,11 +17,10 @@
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from .surface import Surface
-
+import flatsurvey.worker.restart
 from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
 
-import flatsurvey.worker.restart
+from .surface import Surface
 
 
 class Deformation(Surface):

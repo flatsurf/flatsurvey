@@ -69,16 +69,16 @@ TESTS::
 # *********************************************************************
 
 import asyncio
-import click
-import flatsurvey
 
+import click
+
+import flatsurvey
 import flatsurvey.cache
 import flatsurvey.jobs
 import flatsurvey.reporting
 import flatsurvey.surfaces
-
-from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.pipeline.util import provide
+from flatsurvey.ui.group import CommandWithGroups
 
 
 @click.group(
@@ -187,7 +187,7 @@ class Scheduler:
         """
         tasks = []
         nothing = object()
-        from itertools import zip_longest, chain
+        from itertools import chain, zip_longest
 
         iters = [iter(generator) for generator in self._generators]
         try:
@@ -222,7 +222,8 @@ class Scheduler:
         """
         bindings = list(self._bindings)
 
-        from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
+        from flatsurvey.pipeline.util import (FactoryBindingSpec,
+                                              ListBindingSpec)
 
         bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))
@@ -336,10 +337,11 @@ class Scheduler:
                 print(" ".join(command))
             return
 
-        import sys
         import datetime
         import os.path
-        from plumbum import local, BG
+        import sys
+
+        from plumbum import BG, local
         from plumbum.commands.processes import ProcessExecutionError
 
         # TODO: This is a hack. We should have better monitoring.

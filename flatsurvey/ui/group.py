@@ -24,9 +24,9 @@ https://github.com/pallets/click/issues/373.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
-
 from collections import defaultdict
+
+import click
 
 
 class CommandWithGroups(click.Group):

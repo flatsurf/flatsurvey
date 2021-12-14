@@ -39,14 +39,13 @@ fairly trivial to change that and allow for other similar systems as well.
 # *********************************************************************
 
 import click
-
-from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.reporting.reporter import Reporter
-from flatsurvey.pipeline.util import PartialBindingSpec
-from flatsurvey.aws.graphql import Client as GraphQLClient
-from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
-
 from pinject import copy_args_to_internal_fields
+
+from flatsurvey.aws.graphql import Client as GraphQLClient
+from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
+from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.ui.group import GroupedCommand
 
 
 class GraphQL:
@@ -376,8 +375,8 @@ class PickleCache:
                 return cached
 
         import weakref
-        from zlib import decompress
         from pickle import loads
+        from zlib import decompress
 
         buffer = self._downloads[url]
         buffer = buffer.read()
@@ -395,8 +394,8 @@ class PickleCache:
 
 
 def pool(constructor):
-    import queue
     import contextlib
+    import queue
 
     pool = queue.Queue()
 

@@ -59,13 +59,12 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-
 from sage.all import cached_method
 
-from .surface import Surface
+from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
-from flatsurvey.pipeline.util import PartialBindingSpec
+from .surface import Surface
 
 
 class Ngon(Surface):
@@ -439,8 +438,9 @@ class Ngon(Surface):
 
         def random_lengths():
             # TODO: Do this properly in sage-flatsurf. See #11.
-            from sage.all import VectorSpace, span, free_module_element
             from random import shuffle
+
+            from sage.all import VectorSpace, free_module_element, span
 
             U = L.ambient_space().subspace([])
 

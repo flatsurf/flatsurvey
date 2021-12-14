@@ -17,9 +17,9 @@
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from .surface import Surface
-
 from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
+
+from .surface import Surface
 
 
 class TranslationSurface(Surface):

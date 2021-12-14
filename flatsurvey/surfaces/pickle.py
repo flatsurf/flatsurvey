@@ -36,8 +36,8 @@ EXAMPLES::
 
 import click
 
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import FactoryBindingSpec
+from flatsurvey.ui.group import GroupedCommand
 
 
 @click.command(cls=GroupedCommand, group="Surfaces")
@@ -47,6 +47,7 @@ def pickle(base64):
     A base64 encoded pickle.
     """
     from base64 import b64decode
+
     from sage.all import loads
 
     encoded = b64decode(base64.strip().encode("ASCII"))

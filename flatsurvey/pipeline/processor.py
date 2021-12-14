@@ -32,8 +32,8 @@ decompositions::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from flatsurvey.pipeline.producer import Producer
 from flatsurvey.pipeline.consumer import Consumer
+from flatsurvey.pipeline.producer import Producer
 
 
 class Processor(Producer, Consumer):

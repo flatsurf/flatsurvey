@@ -4,6 +4,10 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
+from .completely_cylinder_periodic import CompletelyCylinderPeriodic
+from .cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
+from .cylinder_periodic_direction import CylinderPeriodicDirection
+from .flow_decomposition import FlowDecompositions
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
@@ -23,15 +27,10 @@ entrypoints as subcommands.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 from .orbit_closure import OrbitClosure
-from .flow_decomposition import FlowDecompositions
-from .saddle_connections import SaddleConnections
 from .saddle_connection_orientations import SaddleConnectionOrientations
-from .completely_cylinder_periodic import CompletelyCylinderPeriodic
-from .cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
-from .cylinder_periodic_direction import CylinderPeriodicDirection
-from .undetermined_interval_exchange_transformation import (
-    UndeterminedIntervalExchangeTransformation,
-)
+from .saddle_connections import SaddleConnections
+from .undetermined_interval_exchange_transformation import \
+    UndeterminedIntervalExchangeTransformation
 
 commands = [
     OrbitClosure.click,

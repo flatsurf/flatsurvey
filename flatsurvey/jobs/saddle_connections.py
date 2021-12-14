@@ -34,12 +34,11 @@ The saddle connections on a translation surface.
 # *********************************************************************
 
 import click
-
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.pipeline import Producer, Processor
+from flatsurvey.pipeline import Processor, Producer
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
 
 
 class SaddleConnections(Producer):

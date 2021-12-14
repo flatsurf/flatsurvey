@@ -38,15 +38,15 @@ number of Zorich induction steps:
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
 import time
 
+import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
 
-from ..pipeline import Processor, Consumer
+from ..pipeline import Consumer, Processor
 
 
 class FlowDecompositions(Processor):

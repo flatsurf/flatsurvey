@@ -20,11 +20,10 @@ A package providing ways to report progress and result of a computation.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from .graphql import GraphQL
+from .log import Log
 from .report import Report
 from .reporter import Reporter
-
-from .log import Log
 from .yaml import Yaml
-from .graphql import GraphQL
 
 commands = [Log.click, Yaml.click, GraphQL.click, Report.click]

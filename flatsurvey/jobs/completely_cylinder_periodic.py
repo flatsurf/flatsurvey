@@ -38,12 +38,11 @@ _all_ directions are cylinder periodic.
 # *********************************************************************
 
 import click
-
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline import Consumer
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
 
 
 class CompletelyCylinderPeriodic(Consumer):

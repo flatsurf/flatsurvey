@@ -44,15 +44,13 @@ actually write to the real AWS.
 # *********************************************************************
 
 import click
-
 from pinject import copy_args_to_internal_fields
-
 from sage.misc.cachefunc import cached_method
 
-from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.reporting.reporter import Reporter
-from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.aws.graphql import Client as GraphQLClient
+from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.ui.group import GroupedCommand
 
 
 class GraphQL(Reporter):
@@ -144,9 +142,10 @@ class GraphQL(Reporter):
             's3://flatsurvey/pickles/8b3bf3f6366af37d5b9b78132a8160bf118b7ee9007e9710fb3d3444a72274ff.pickle.gz'
 
         """
-        from zlib import compress
-        import io
         import hashlib
+        import io
+        from zlib import compress
+
         from botocore.exceptions import ClientError
 
         sha = hashlib.sha256()

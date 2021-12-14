@@ -119,9 +119,7 @@ class Surface:
         S = self._surface()
         if self._eliminate_marked_points:
             from flatsurf.geometry.pyflatsurf_conversion import (
-                from_pyflatsurf,
-                to_pyflatsurf,
-            )
+                from_pyflatsurf, to_pyflatsurf)
 
             S = to_pyflatsurf(S)
             S.delaunay()
@@ -159,6 +157,7 @@ class Surface:
 
         """
         from base64 import b64encode
+
         from sage.all import dumps
 
         return ["pickle", "--base64", b64encode(dumps(self)).decode("ASCII").strip()]
