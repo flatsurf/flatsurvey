@@ -132,3 +132,8 @@ class Report:
 
     def command(self):
         return ["report"] + [f"--ignore={i}" for i in self._ignore]
+
+    def deform(self, deformation):
+        return {
+            "bindings": [ PartialBindingSpec(Report)(ignore=self._ignore) ]
+        }
