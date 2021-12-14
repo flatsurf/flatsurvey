@@ -7,20 +7,22 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - sage-flatsurf >=0.4
+  - black
+  - boto3
+  - click
+  - isort
+  - moto
+  - pip
+  - plumbum
   - pyflatsurf
   - pyintervalxt
-  - click
-  - black
-  - pip
+  - pylint
   - pytest
   - pytest-xdist
-  - plumbum
   - python-dateutil
-  - boto3
-  - moto
   - ruamel.yaml
+  - sage-flatsurf >=0.4
   - pip:
-    - pinject
-    - gql==3.0.0a6
     - aioresponses
+    - gql==3.0.0a6
+    - pinject
