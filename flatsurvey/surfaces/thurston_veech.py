@@ -114,7 +114,12 @@ class ThurstonVeech(Surface):
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
 
-        return ThurstonVeech(self.hp, self.vp)
+        # NOTE: the ThurstonVeech constructor should support the as_tuple keyword
+        # of surface-dynamics Origami that allows permutation to starts with 0.
+        # see https://github.com/flatsurf/sage-flatsurf/issues/133
+        hp = [i+1 for i in self.hp]
+        vp = [i+1 for i in self.vp]
+        return ThurstonVeech(hp, vp)
 
     @cached_method
     def _surface(self):
