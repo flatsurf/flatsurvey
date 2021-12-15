@@ -70,10 +70,10 @@ class ThurstonVeech(Surface):
             # arithmetic Teichmueller curve
             return 2
 
-        oi = o.inverse()
-        if o.is_isomorphic(oi):
-            raise NotImplemented
-
+        # NOTE: in order to do something more sensible, we need to have access to an up to
+        # date list of GL(2,R)-orbit closures and possibly implement some ad-hoc detection
+        # for Thurston-Veech construction.
+        # see https://github.com/flatsurf/sage-flatsurf/issues/133
         return o.stratum().dimension()
 
     def __repr__(self):
