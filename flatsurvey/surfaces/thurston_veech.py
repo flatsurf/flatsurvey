@@ -55,12 +55,14 @@ class ThurstonVeech(Surface):
     """
 
     def __init__(self, hp, vp, hm, vm):
+        if len(hp) != len(vp):
+            raise ValueError('hp and vp must be zero based permutations of the same size')
         self.hp = hp
         self.vp = vp
+        if not all(hm) or not all(vm):
+            raise ValueError('hm and vm must be positive vectors')
         self.hm = hm
         self.vm = vm
-        # TODO: Is this really what we want? See #13.
-        self._eliminate_marked_points = False
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -123,7 +125,7 @@ class ThurstonVeech(Surface):
 
     @cached_method
     def _surface(self):
-        return self._thurston_veech()(self.hm, self.vm)
+        return self._thurston_veech()(self.hm, self.vm).erase_marked_points()
 
     @cached_method
     def orientable_automorphisms(self):
