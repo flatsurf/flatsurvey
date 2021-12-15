@@ -298,6 +298,6 @@ class ThurstonVeechs:
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
-                        for mh in IntegerVectors(multiplicities_limit, c.ncyls()):
-                            for mv in IntegerVectors(multiplicities_limit, len(cd1)):
+                        for mh in IntegerVectors(multiplicities_limit, c.ncyls(), min_part=1):
+                            for mv in IntegerVectors(multiplicities_limit, len(cd1), min_part=1):
                                 yield ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
