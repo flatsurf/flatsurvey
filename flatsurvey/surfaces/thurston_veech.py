@@ -3,9 +3,9 @@ Translation surfaces coming from Thurston-Veech constructions
 
 EXAMPLES::
 
-    >>> ThurstonVeech('(1,2)', '(1,3)', [1,1], [1,1]).surface()
+    >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+    >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
     TranslationSurface built from 3 polygons
-
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -43,14 +43,14 @@ class ThurstonVeech(Surface):
 
     EXAMPLES::
 
-        sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
-        sage: TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
-        sage: TV
+        >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+        >>> TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
+        >>> TV
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
-        sage: S = TV._surface()
-        sage: S
+        >>> S = TV._surface()
+        >>> S
         TranslationSurface built from 3 polygons
-        sage: S.base_ring()
+        >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
 
@@ -85,13 +85,13 @@ class ThurstonVeech(Surface):
         r"""
         EXAMPLES::
 
-            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+            >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
 
-            sage: hp = (1, 0, 3, 2, 5, 4, 7, 6)
-            sage: vp = (7, 2, 1, 4, 3, 6, 5, 0)
-            sage: ThurstonVeech(hp, vp, (1,1,1,1), (1,1,1,1)).reference()
+            >>> hp = (1, 0, 3, 2, 5, 4, 7, 6)
+            >>> vp = (7, 2, 1, 4, 3, 6, 5, 0)
+            >>> ThurstonVeech(hp, vp, (1,1,1,1), (1,1,1,1)).reference()
             'An origami'
-            sage: ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
+            >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
         """
         # TODO: known exotic loci. See #13.
@@ -130,24 +130,24 @@ class ThurstonVeech(Surface):
         r"""
         EXAMPLES::
 
-            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+            >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
 
-            sage: hp = (1,0,3,2)
-            sage: vp = (0,2,1,3)
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,1))
-            sage: TV.orientable_automorphisms()
+            >>> hp = (1,0,3,2)
+            >>> vp = (0,2,1,3)
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,1))
+            >>> TV.orientable_automorphisms()
             Group([ (1,4)(2,3) ])
 
-            sage: TV = ThurstonVeech(hp, vp, (1,2), (1,1,1))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,2), (1,1,1))
+            >>> TV.orientable_automorphisms()
             Group(())
 
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,2,1))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,2,1))
+            >>> TV.orientable_automorphisms()
             Group([ (1,4)(2,3) ])
 
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
+            >>> TV.orientable_automorphisms()
             Group(())
         """
         o = self.origami()
