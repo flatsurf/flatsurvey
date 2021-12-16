@@ -3,9 +3,9 @@ Translation surfaces coming from Thurston-Veech constructions
 
 EXAMPLES::
 
-    >>> ThurstonVeech('(1,2)', '(1,3)', [1,1], [1,1]).surface()
+    >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+    >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
     TranslationSurface built from 3 polygons
-
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -43,24 +43,26 @@ class ThurstonVeech(Surface):
 
     EXAMPLES::
 
-        sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
-        sage: TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
-        sage: TV
+        >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+        >>> TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
+        >>> TV
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
-        sage: S = TV._surface()
-        sage: S
+        >>> S = TV._surface()
+        >>> S
         TranslationSurface built from 3 polygons
-        sage: S.base_ring()
+        >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
 
     def __init__(self, hp, vp, hm, vm):
+        if len(hp) != len(vp):
+            raise ValueError('hp and vp must be zero based permutations of the same size')
         self.hp = hp
         self.vp = vp
+        if not all(hm) or not all(vm):
+            raise ValueError('hm and vm must be positive vectors')
         self.hm = hm
         self.vm = vm
-        # TODO: Is this really what we want? See #13.
-        self._eliminate_marked_points = False
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -70,10 +72,10 @@ class ThurstonVeech(Surface):
             # arithmetic Teichmueller curve
             return 2
 
-        oi = o.inverse()
-        if o.is_isomorphic(oi):
-            raise NotImplemented
-
+        # NOTE: in order to do something more sensible, we need to have access to an up to
+        # date list of GL(2,R)-orbit closures and possibly implement some ad-hoc detection
+        # for Thurston-Veech construction.
+        # see https://github.com/flatsurf/sage-flatsurf/issues/133
         return o.stratum().dimension()
 
     def __repr__(self):
@@ -85,13 +87,13 @@ class ThurstonVeech(Surface):
         r"""
         EXAMPLES::
 
-            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+            >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
 
-            sage: hp = (1, 0, 3, 2, 5, 4, 7, 6)
-            sage: vp = (7, 2, 1, 4, 3, 6, 5, 0)
-            sage: ThurstonVeech(hp, vp, (1,1,1,1), (1,1,1,1)).reference()
+            >>> hp = (1, 0, 3, 2, 5, 4, 7, 6)
+            >>> vp = (7, 2, 1, 4, 3, 6, 5, 0)
+            >>> ThurstonVeech(hp, vp, (1,1,1,1), (1,1,1,1)).reference()
             'An origami'
-            sage: ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
+            >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
         """
         # TODO: known exotic loci. See #13.
@@ -114,35 +116,40 @@ class ThurstonVeech(Surface):
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
 
-        return ThurstonVeech(self.hp, self.vp)
+        # NOTE: the ThurstonVeech constructor should support the as_tuple keyword
+        # of surface-dynamics Origami that allows permutation to starts with 0.
+        # see https://github.com/flatsurf/sage-flatsurf/issues/133
+        hp = [i+1 for i in self.hp]
+        vp = [i+1 for i in self.vp]
+        return ThurstonVeech(hp, vp)
 
     @cached_method
     def _surface(self):
-        return self._thurston_veech()(self.hm, self.vm)
+        return self._thurston_veech()(self.hm, self.vm).erase_marked_points()
 
     @cached_method
     def orientable_automorphisms(self):
         r"""
         EXAMPLES::
 
-            sage: from flatsurvey.surfaces.thurston_veech import ThurstonVeech
+            >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
 
-            sage: hp = (1,0,3,2)
-            sage: vp = (0,2,1,3)
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,1))
-            sage: TV.orientable_automorphisms()
+            >>> hp = (1,0,3,2)
+            >>> vp = (0,2,1,3)
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,1))
+            >>> TV.orientable_automorphisms()
             Group([ (1,4)(2,3) ])
 
-            sage: TV = ThurstonVeech(hp, vp, (1,2), (1,1,1))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,2), (1,1,1))
+            >>> TV.orientable_automorphisms()
             Group(())
 
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,2,1))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,2,1))
+            >>> TV.orientable_automorphisms()
             Group([ (1,4)(2,3) ])
 
-            sage: TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
-            sage: TV.orientable_automorphisms()
+            >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
+            >>> TV.orientable_automorphisms()
             Group(())
         """
         o = self.origami()
@@ -298,6 +305,6 @@ class ThurstonVeechs:
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
-                        for mh in IntegerVectors(multiplicities_limit, c.ncyls()):
-                            for mv in IntegerVectors(multiplicities_limit, len(cd1)):
+                        for mh in IntegerVectors(multiplicities_limit, c.ncyls(), min_part=1):
+                            for mv in IntegerVectors(multiplicities_limit, len(cd1), min_part=1):
                                 yield ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
