@@ -55,11 +55,13 @@ class ThurstonVeech(Surface):
 
     def __init__(self, hp, vp, hm, vm):
         if len(hp) != len(vp):
-            raise ValueError('hp and vp must be zero based permutations of the same size')
+            raise ValueError(
+                "hp and vp must be zero based permutations of the same size"
+            )
         self.hp = hp
         self.vp = vp
         if not all(hm) or not all(vm):
-            raise ValueError('hm and vm must be positive vectors')
+            raise ValueError("hm and vm must be positive vectors")
         self.hm = hm
         self.vm = vm
 
@@ -122,8 +124,8 @@ class ThurstonVeech(Surface):
         # NOTE: the ThurstonVeech constructor should support the as_tuple keyword
         # of surface-dynamics Origami that allows permutation to starts with 0.
         # see https://github.com/flatsurf/sage-flatsurf/issues/133
-        hp = [i+1 for i in self.hp]
-        vp = [i+1 for i in self.vp]
+        hp = [i + 1 for i in self.hp]
+        vp = [i + 1 for i in self.vp]
         return ThurstonVeech(hp, vp)
 
     @cached_method
@@ -229,7 +231,6 @@ class ThurstonVeech(Surface):
     def __ne__(self, other):
         return not (self == other)
 
-
     @classmethod
     @click.command(
         name="thurston-veech",
@@ -271,7 +272,11 @@ class ThurstonVeechs:
     @click.option("--stratum", type=str, required=True)
     @click.option("--component", type=str, required=False)
     @click.option(
-        "--nb-squares-limit", "-n", type=int, help="maximum number of squares", required=True
+        "--nb-squares-limit",
+        "-n",
+        type=int,
+        help="maximum number of squares",
+        required=True,
     )
     @click.option(
         "--multiplicities-limit",
@@ -330,8 +335,12 @@ class ThurstonVeechs:
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
-                        for mh in IntegerVectors(multiplicities_limit, c.ncyls(), min_part=1):
-                            for mv in IntegerVectors(multiplicities_limit, len(cd1), min_part=1):
+                        for mh in IntegerVectors(
+                            multiplicities_limit, c.ncyls(), min_part=1
+                        ):
+                            for mv in IntegerVectors(
+                                multiplicities_limit, len(cd1), min_part=1
+                            ):
                                 tv = ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
 
                                 if tv in seen:
@@ -345,10 +354,15 @@ class ThurstonVeechs:
                                         continue
                                 elif literature == "only":
                                     reference = tv.reference()
-                                    if reference is None or "Translation covering" in reference:
+                                    if (
+                                        reference is None
+                                        or "Translation covering" in reference
+                                    ):
                                         continue
                                 else:
-                                    raise NotImplementedError("Unsupported literature value")
+                                    raise NotImplementedError(
+                                        "Unsupported literature value"
+                                    )
 
                                 seen.add(tv)
                                 yield tv
