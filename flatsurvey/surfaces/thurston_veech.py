@@ -214,6 +214,22 @@ class ThurstonVeech(Surface):
         vLiftedStab = libgap.PreImage(vH, vStab)
         return hLiftedStab.Intersection(hLiftedStab, vLiftedStab)
 
+    def __hash__(self):
+        return hash((tuple(self.hp), tuple(self.vp), tuple(self.hm), tuple(self.vm)))
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, ThurstonVeech)
+            and self.hp == other.hp
+            and self.vp == other.vp
+            and self.hm == other.hm
+            and self.vm == other.vm
+        )
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
     @classmethod
     @click.command(
         name="thurston-veech",
