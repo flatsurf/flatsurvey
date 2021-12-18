@@ -32,7 +32,6 @@ from collections import defaultdict
 import click
 from sage.all import QQ, IntegerVectors, cached_method, libgap
 
-from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
 
@@ -64,6 +63,9 @@ class ThurstonVeech(Surface):
         self.hm = hm
         self.vm = vm
 
+        # TODO: Move this to the super() invocation instead.
+        self._eliminate_marked_points = True
+
     @property
     def orbit_closure_dimension_upper_bound(self):
         o = self.origami()
@@ -76,6 +78,7 @@ class ThurstonVeech(Surface):
         # date list of GL(2,R)-orbit closures and possibly implement some ad-hoc detection
         # for Thurston-Veech construction.
         # see https://github.com/flatsurf/sage-flatsurf/issues/133
+
         return o.stratum().dimension()
 
     def __repr__(self):
@@ -125,7 +128,7 @@ class ThurstonVeech(Surface):
 
     @cached_method
     def _surface(self):
-        return self._thurston_veech()(self.hm, self.vm).erase_marked_points()
+        return self._thurston_veech()(self.hm, self.vm)
 
     @cached_method
     def orientable_automorphisms(self):
