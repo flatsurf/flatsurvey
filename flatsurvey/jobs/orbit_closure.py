@@ -344,9 +344,8 @@ class OrbitClosure(Consumer):
                         )
 
                         surface = deformed.surface()
-                        from flatsurf.geometry.pyflatsurf_conversion import (
-                            from_pyflatsurf,
-                        )
+                        from flatsurf.geometry.pyflatsurf_conversion import \
+                            from_pyflatsurf
 
                         surface = from_pyflatsurf(surface)
 

@@ -244,7 +244,8 @@ class Scheduler:
         """
         bindings = list(self._bindings)
 
-        from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
+        from flatsurvey.pipeline.util import (FactoryBindingSpec,
+                                              ListBindingSpec)
 
         bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))
