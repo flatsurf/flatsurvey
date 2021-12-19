@@ -46,7 +46,7 @@ class ThurstonVeech(Surface):
         >>> TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
         >>> TV
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
-        >>> S = TV._surface()
+        >>> S = TV.surface()
         >>> S
         TranslationSurface built from 6 polygons
         >>> S.base_ring()
