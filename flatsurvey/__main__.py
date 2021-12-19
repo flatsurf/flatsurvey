@@ -89,7 +89,14 @@ from flatsurvey.ui.group import CommandWithGroups
     help="Run a survey on the `objects` until all the `goals` are reached.",
 )
 @click.option("--dry-run", "-N", is_flag=True, help="Do not spawn any workers.")
-@click.option("--load", "-l", metavar="L", type=float, default=None, help="Do not start workers until load is below L.")
+@click.option(
+    "--load",
+    "-l",
+    metavar="L",
+    type=float,
+    default=None,
+    help="Do not start workers until load is below L.",
+)
 def survey(dry_run, load):
     r"""
     Main command, runs a survey; specific survey objects and goals are
@@ -237,8 +244,7 @@ class Scheduler:
         """
         bindings = list(self._bindings)
 
-        from flatsurvey.pipeline.util import (FactoryBindingSpec,
-                                              ListBindingSpec)
+        from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
 
         bindings.append(FactoryBindingSpec("surface", lambda: surface))
         bindings.append(ListBindingSpec("goals", self._goals))

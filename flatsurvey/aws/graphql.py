@@ -125,9 +125,11 @@ async def _execute(connection, query, description="query", **kwargs):
     for retry in range(LIMIT):
         from concurrent.futures import TimeoutError
 
-        from gql.transport.exceptions import (TransportProtocolError,
-                                              TransportQueryError,
-                                              TransportServerError)
+        from gql.transport.exceptions import (
+            TransportProtocolError,
+            TransportQueryError,
+            TransportServerError,
+        )
 
         if retry:
             print(f"Retrying {description} ({retry}/{LIMIT}) …")

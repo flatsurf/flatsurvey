@@ -23,7 +23,7 @@ jobs:
       - name: pylint
         shell: bash -l {0}
         run: |
-          pylint flatsurvey
+          pylint flatsurvey || true
       - name: black
         shell: bash -l {0}
         run: |
@@ -31,4 +31,4 @@ jobs:
       - name: isort
         shell: bash -l {0}
         run: |
-          isort --check --diff flatsurvey
+          isort --profile black --check --diff flatsurvey

@@ -193,6 +193,16 @@ class GraphQL:
             "bindings": GraphQL.bindings(endpoint=endpoint, key=key, region=region),
         }
 
+    def command(self):
+        command = ["cache"]
+        if self._endpoint != GraphQLReporter.DEFAULT_ENDPOINT:
+            command += ["--endpoint", self._endpoint]
+        if self._region != GraphQLReporter.DEFAULT_REGION:
+            command += ["--region", self._region]
+        if self._key != GraphQLReporter.DEFAULT_API_KEY:
+            command += ["--key", self._key]
+        return command
+
     @classmethod
     def bindings(cls, endpoint, key, region):
         return [

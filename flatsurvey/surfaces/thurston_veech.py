@@ -5,7 +5,7 @@ EXAMPLES::
 
     >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
     >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
-    TranslationSurface built from 3 polygons
+    TranslationSurface built from 6 polygons
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -32,7 +32,6 @@ from collections import defaultdict
 import click
 from sage.all import QQ, IntegerVectors, cached_method, libgap
 
-from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
 
@@ -47,22 +46,27 @@ class ThurstonVeech(Surface):
         >>> TV = ThurstonVeech((1,0,2), (0,2,1), (1,1), (1,1))
         >>> TV
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
-        >>> S = TV._surface()
+        >>> S = TV.surface()
         >>> S
-        TranslationSurface built from 3 polygons
+        TranslationSurface built from 6 polygons
         >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
 
     def __init__(self, hp, vp, hm, vm):
         if len(hp) != len(vp):
-            raise ValueError('hp and vp must be zero based permutations of the same size')
+            raise ValueError(
+                "hp and vp must be zero based permutations of the same size"
+            )
         self.hp = hp
         self.vp = vp
         if not all(hm) or not all(vm):
-            raise ValueError('hm and vm must be positive vectors')
+            raise ValueError("hm and vm must be positive vectors")
         self.hm = hm
         self.vm = vm
+
+        # TODO: Move this to the super() invocation instead.
+        self._eliminate_marked_points = True
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -76,6 +80,7 @@ class ThurstonVeech(Surface):
         # date list of GL(2,R)-orbit closures and possibly implement some ad-hoc detection
         # for Thurston-Veech construction.
         # see https://github.com/flatsurf/sage-flatsurf/issues/133
+
         return o.stratum().dimension()
 
     def __repr__(self):
@@ -119,13 +124,13 @@ class ThurstonVeech(Surface):
         # NOTE: the ThurstonVeech constructor should support the as_tuple keyword
         # of surface-dynamics Origami that allows permutation to starts with 0.
         # see https://github.com/flatsurf/sage-flatsurf/issues/133
-        hp = [i+1 for i in self.hp]
-        vp = [i+1 for i in self.vp]
+        hp = [i + 1 for i in self.hp]
+        vp = [i + 1 for i in self.vp]
         return ThurstonVeech(hp, vp)
 
     @cached_method
     def _surface(self):
-        return self._thurston_veech()(self.hm, self.vm).erase_marked_points()
+        return self._thurston_veech()(self.hm, self.vm)
 
     @cached_method
     def orientable_automorphisms(self):
@@ -211,6 +216,21 @@ class ThurstonVeech(Surface):
         vLiftedStab = libgap.PreImage(vH, vStab)
         return hLiftedStab.Intersection(hLiftedStab, vLiftedStab)
 
+    def __hash__(self):
+        return hash((tuple(self.hp), tuple(self.vp), tuple(self.hm), tuple(self.vm)))
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, ThurstonVeech)
+            and self.hp == other.hp
+            and self.vp == other.vp
+            and self.hm == other.hm
+            and self.vm == other.vm
+        )
+
+    def __ne__(self, other):
+        return not (self == other)
+
     @classmethod
     @click.command(
         name="thurston-veech",
@@ -252,19 +272,27 @@ class ThurstonVeechs:
     @click.option("--stratum", type=str, required=True)
     @click.option("--component", type=str, required=False)
     @click.option(
-        "--nb-squares-limit", "-n", type=int, help="maximum number of squares"
+        "--nb-squares-limit",
+        "-n",
+        type=int,
+        help="maximum number of squares",
+        required=True,
     )
     @click.option(
         "--multiplicities-limit",
         "-m",
         type=int,
+        required=True,
         help="maximum sum of twist multiplicities",
     )
-    def click(stratum, component, nb_squares_limit, multiplicities_limit):
-        print(stratum)
-        print(component)
-        print(nb_squares_limit)
-        print(multiplicities_limit)
+    @click.option(
+        "--literature",
+        default="exclude",
+        type=click.Choice(["exclude", "include", "only"]),
+        help="also include ngons described in literature",
+        show_default=True,
+    )
+    def click(stratum, component, nb_squares_limit, multiplicities_limit, literature):
         from surface_dynamics import AbelianStratum
 
         if not stratum.startswith("H(") or not stratum.endswith(")"):
@@ -284,6 +312,8 @@ class ThurstonVeechs:
             H = H.odd_component()
         elif component is not None:
             raise click.UsageError("invalid component argument")
+
+        seen = set()
 
         for c in H.cylinder_diagrams():
             for n in range(c.smallest_integer_lengths()[0], nb_squares_limit):
@@ -305,6 +335,34 @@ class ThurstonVeechs:
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
-                        for mh in IntegerVectors(multiplicities_limit, c.ncyls(), min_part=1):
-                            for mv in IntegerVectors(multiplicities_limit, len(cd1), min_part=1):
-                                yield ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
+                        for mh in IntegerVectors(
+                            multiplicities_limit, c.ncyls(), min_part=1
+                        ):
+                            for mv in IntegerVectors(
+                                multiplicities_limit, len(cd1), min_part=1
+                            ):
+                                tv = ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
+
+                                if tv in seen:
+                                    print("Skipping duplicate")
+                                    continue
+
+                                if literature == "include":
+                                    pass
+                                elif literature == "exclude":
+                                    if tv.reference():
+                                        continue
+                                elif literature == "only":
+                                    reference = tv.reference()
+                                    if (
+                                        reference is None
+                                        or "Translation covering" in reference
+                                    ):
+                                        continue
+                                else:
+                                    raise NotImplementedError(
+                                        "Unsupported literature value"
+                                    )
+
+                                seen.add(tv)
+                                yield tv
