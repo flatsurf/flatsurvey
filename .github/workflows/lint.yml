@@ -31,4 +31,4 @@ jobs:
       - name: isort
         shell: bash -l {0}
         run: |
-          isort --check --diff flatsurvey
+          isort --profile black --check --diff flatsurvey
