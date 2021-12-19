@@ -5,7 +5,7 @@ EXAMPLES::
 
     >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
     >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
-    TranslationSurface built from 3 polygons
+    TranslationSurface built from 6 polygons
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -48,7 +48,7 @@ class ThurstonVeech(Surface):
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
         >>> S = TV._surface()
         >>> S
-        TranslationSurface built from 3 polygons
+        TranslationSurface built from 6 polygons
         >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
