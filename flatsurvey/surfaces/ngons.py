@@ -36,6 +36,9 @@ EXAMPLES::
                                       by this expression for n = 1, …, limit, e.g.,
                                       '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2,
                                       14), …
+      --filter TEXT                   only produce the n-gons which satisfy this
+                                      lambda expresion, e.g., 'lambda a, b, c: (a +
+                                      b + c) % 2 == 0'
       --help                          Show this message and exit.
 
 """
@@ -568,16 +571,19 @@ class Ngons:
 
     EXAMPLES::
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None, filter=None))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None, filter=None))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='(1, 1, n)'))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family=None, filter='lambda a, b, c: (a + b + c) % 2 == 0'))
+        [Ngon([1, 1, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
+
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='(1, 1, n)', filter=None))
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='[(1, 1, n), (1, 2, 12*n)]'))
+        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='[(1, 1, n), (1, 2, 12*n)]', filter=None))
         [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2])]
 
     """
@@ -626,12 +632,22 @@ class Ngons:
         default=None,
         help="instead of producing all n-gons up to a limited total angle, produce the family given by this expression for n = 1, …, limit, e.g., '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2, 14), …",
     )
-    def click(vertices, length, min, limit, count, literature, family):
+    @click.option(
+        "--filter",
+        type=str,
+        default=None,
+        help="only produce the n-gons which satisfy this lambda expresion, e.g., 'lambda a, b, c: (a + b + c) % 2 == 0'",
+    )
+    def click(vertices, length, min, limit, count, literature, family, filter):
         if length is None:
             if vertices == 3:
                 length = "e-antic"
             else:
                 length = "exact-real"
+
+        if filter is not None:
+            if not callable(filter):
+                filter = eval(filter, {})
 
         import itertools
 
@@ -663,6 +679,10 @@ class Ngons:
 
                 if gcd(angles) != 1:
                     continue
+
+                if filter is not None:
+                    if not filter(*angles):
+                        continue
 
                 ngon = Ngon(angles, length=length)
 
