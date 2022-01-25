@@ -39,6 +39,7 @@ from flatsurvey.pipeline import Producer
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.pipeline.util import PartialBindingSpec
 
+
 class BoshernitzanConjectureOrientations(Producer):
     r"""
     Produces some particular directions in triangles related to
@@ -53,6 +54,7 @@ class BoshernitzanConjectureOrientations(Producer):
         boshernitzan-conjecture-orientations
 
     """
+
     @copy_args_to_internal_fields
     def __init__(self, surface):
         super().__init__()
@@ -60,11 +62,14 @@ class BoshernitzanConjectureOrientations(Producer):
         angles = surface.angles
 
         if len(angles) != 3:
-            raise NotImplementedError("Special directions for Boshernitzan Conjecture only implemented for triangles")
+            raise NotImplementedError(
+                "Special directions for Boshernitzan Conjecture only implemented for triangles"
+            )
 
         a, b, c = angles
 
         from sage.all import vector
+
         orthogonals = [vector((-e[1], e[0])) for e in surface.polygon().edges()]
 
         if sum(angles) % 2 == 0:
@@ -167,9 +172,14 @@ class BoshernitzanConjectureOrientations(Producer):
         help=__doc__.split("EXAMPLES")[0],
     )
     def click():
-        return {"bindings": [
-            PartialBindingSpec(BoshernitzanConjectureOrientations, name="saddle_connection_orientations")()
-        ]}
+        return {
+            "bindings": [
+                PartialBindingSpec(
+                    BoshernitzanConjectureOrientations,
+                    name="saddle_connection_orientations",
+                )()
+            ]
+        }
 
     def command(self):
         return ["boshernitzan-conjecture-orientations"]
