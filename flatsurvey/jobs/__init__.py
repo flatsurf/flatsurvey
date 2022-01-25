@@ -29,6 +29,7 @@ from .flow_decomposition import FlowDecompositions
 # *********************************************************************
 from .orbit_closure import OrbitClosure
 from .saddle_connection_orientations import SaddleConnectionOrientations
+from .boshernitzan_conjecture_orientations import BoshernitzanConjectureOrientations
 from .saddle_connections import SaddleConnections
 from .undetermined_interval_exchange_transformation import (
     UndeterminedIntervalExchangeTransformation,
@@ -43,5 +44,6 @@ commands = [
     CylinderPeriodicAsymptotics.click,
     SaddleConnections.click,
     SaddleConnectionOrientations.click,
+    BoshernitzanConjectureOrientations.click,
     UndeterminedIntervalExchangeTransformation.click,
 ]
