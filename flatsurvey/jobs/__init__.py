@@ -4,6 +4,7 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
+from .boshernitzan_conjecture_orientations import BoshernitzanConjectureOrientations
 from .completely_cylinder_periodic import CompletelyCylinderPeriodic
 from .cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
 from .cylinder_periodic_direction import CylinderPeriodicDirection
@@ -43,5 +44,6 @@ commands = [
     CylinderPeriodicAsymptotics.click,
     SaddleConnections.click,
     SaddleConnectionOrientations.click,
+    BoshernitzanConjectureOrientations.click,
     UndeterminedIntervalExchangeTransformation.click,
 ]

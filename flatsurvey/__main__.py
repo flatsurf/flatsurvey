@@ -33,6 +33,10 @@ TESTS::
       undetermined-iet               Tracks undetermined Interval Exchange
                                      Transformations.
     Intermediates:
+      boshernitzan-conjecture-orientations
+                                      Produces some particular directions in
+                                      triangles related to a conjecture of
+                                      Boshernitzan.
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
       saddle-connection-orientations  Orientations of saddle connections on the
@@ -324,6 +328,7 @@ class Scheduler:
 
             >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=0)
             >>> asyncio.run(scheduler._enqueue(["true"]))
+            ...
             <Task ...>
 
         """
