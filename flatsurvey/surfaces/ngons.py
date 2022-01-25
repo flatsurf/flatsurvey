@@ -1,11 +1,11 @@
 r"""
-Translation Surfaces coming from unfoldings of n-gons
+Translation surfaces coming from unfoldings of n-gons
 
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
     >>> from flatsurvey.worker.__main__ import worker
-    >>> invoke(worker, "ngon", "--help") # doctest: +NORMALIZE_WHITESPACE
+    >>> invoke(worker, "ngon", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: worker ngon [OPTIONS]
       Unfolding of an n-gon with prescribed angles.
     Options:
@@ -17,7 +17,7 @@ EXAMPLES::
       --help                         Show this message and exit.
 
     >>> from flatsurvey.__main__ import survey
-    >>> invoke(survey, "ngons", "--help") # doctest: +NORMALIZE_WHITESPACE
+    >>> invoke(survey, "ngons", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: survey ngons [OPTIONS]
       The translation surfaces that come from unfolding n-gons.
     Options:
@@ -37,8 +37,8 @@ EXAMPLES::
                                       '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2,
                                       14), …
       --filter TEXT                   only produce the n-gons which satisfy this
-                                      lambda expresion, e.g., 'lambda a, b, c: (a +
-                                      b + c) % 2 == 0'
+                                      lambda expression, e.g., 'lambda a, b, c:
+                                      (a + b + c) % 2 == 0'
       --help                          Show this message and exit.
 
 """
@@ -636,7 +636,7 @@ class Ngons:
         "--filter",
         type=str,
         default=None,
-        help="only produce the n-gons which satisfy this lambda expresion, e.g., 'lambda a, b, c: (a + b + c) % 2 == 0'",
+        help="only produce the n-gons which satisfy this lambda expression, e.g., 'lambda a, b, c: (a + b + c) % 2 == 0'",
     )
     def click(vertices, length, min, limit, count, literature, family, filter):
         if length is None:
