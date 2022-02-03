@@ -146,10 +146,7 @@ class CompletelyCylinderPeriodic(Consumer):
             return Consumer.COMPLETED
 
         if all(
-            [
-                component.cylinder() == True
-                for component in decomposition.components()
-            ]
+            [component.cylinder() == True for component in decomposition.components()]
         ):
             self._cylinder_periodic_directions += 1
             if (

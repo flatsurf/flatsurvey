@@ -225,10 +225,7 @@ class OrbitClosure(Consumer):
             self._upper_bound,
         )
 
-        if (
-            decomposition.cylinders()
-            and not decomposition.undeterminedComponents()
-        ):
+        if decomposition.cylinders() and not decomposition.undeterminedComponents():
             self._cylinders_without_increase += 1
             self._directions_with_cylinders += 1
 

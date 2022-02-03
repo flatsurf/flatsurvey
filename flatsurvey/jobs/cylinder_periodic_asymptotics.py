@@ -145,10 +145,7 @@ class CylinderPeriodicAsymptotics(Consumer):
                 return height / scale
 
             self._results.append(
-                max(
-                    float_height(component)
-                    for component in decomposition.components()
-                )
+                max(float_height(component) for component in decomposition.components())
             )
 
         return not Consumer.COMPLETED
