@@ -187,7 +187,7 @@ class Worker:
         )
         from random import randint
 
-        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2 ** 64)))
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
         return pinject.new_object_graph(
             modules=[

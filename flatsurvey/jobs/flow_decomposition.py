@@ -115,7 +115,7 @@ class FlowDecompositions(Processor):
             [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, -(2*c ~ 3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
-            Flow decomposition with 1 cylinders, 0 minimal components and 0 undetermined components
+            FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components
 
         """
         start = time.perf_counter()
@@ -127,12 +127,12 @@ class FlowDecompositions(Processor):
         await self._report.result(
             self,
             # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274
-            # self._current.decomposition,
+            # self._current,
             None,
             orientation=orientation,
-            cylinders=len(self._current.decomposition.cylinders()),
-            minimal=len(self._current.decomposition.minimalComponents()),
-            undetermined=len(self._current.decomposition.undeterminedComponents()),
+            cylinders=len(self._current.cylinders()),
+            minimal=len(self._current.minimalComponents()),
+            undetermined=len(self._current.undeterminedComponents()),
         )
 
         await self._notify_consumers(cost)

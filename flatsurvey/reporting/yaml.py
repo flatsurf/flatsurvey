@@ -96,7 +96,7 @@ class Yaml(Reporter):
         from ruamel.yaml import YAML
 
         self._yaml = YAML()
-        self._yaml.width = 2 ** 16
+        self._yaml.width = 2**16
         self._yaml.representer.default_flow_style = None
         self._yaml.representer.add_representer(None, Yaml._represent_undefined)
         self._yaml.register_class(type(self._data["surface"]))

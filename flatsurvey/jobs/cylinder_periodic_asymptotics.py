@@ -130,9 +130,9 @@ class CylinderPeriodicAsymptotics(Consumer):
             [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distribution: [6.92820323027551])
 
         """
-        if decomposition.decomposition.minimalComponents():
+        if decomposition.minimalComponents():
             self._results.append(False)
-        elif decomposition.decomposition.undeterminedComponents():
+        elif decomposition.undeterminedComponents():
             self._results.append(None)
         else:
             # TODO: Is area() twice the area? See #8.
@@ -145,10 +145,7 @@ class CylinderPeriodicAsymptotics(Consumer):
                 return height / scale
 
             self._results.append(
-                max(
-                    float_height(component)
-                    for component in decomposition.decomposition.components()
-                )
+                max(float_height(component) for component in decomposition.components())
             )
 
         return not Consumer.COMPLETED
