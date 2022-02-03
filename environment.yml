@@ -21,7 +21,7 @@ dependencies:
   - pytest-xdist
   - python-dateutil
   - ruamel.yaml
-  - sage-flatsurf >=0.4
+  - sage-flatsurf >=0.4.4
   - pip:
     - aioresponses
     - gql==3.0.0a6

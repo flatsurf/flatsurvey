@@ -127,12 +127,12 @@ class FlowDecompositions(Processor):
         await self._report.result(
             self,
             # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274
-            # self._current.decomposition,
+            # self._current,
             None,
             orientation=orientation,
-            cylinders=len(self._current.decomposition.cylinders()),
-            minimal=len(self._current.decomposition.minimalComponents()),
-            undetermined=len(self._current.decomposition.undeterminedComponents()),
+            cylinders=len(self._current.cylinders()),
+            minimal=len(self._current.minimalComponents()),
+            undetermined=len(self._current.undeterminedComponents()),
         )
 
         await self._notify_consumers(cost)
