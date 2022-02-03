@@ -115,7 +115,7 @@ class FlowDecompositions(Processor):
             [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, -(2*c ~ 3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
-            Flow decomposition with 1 cylinders, 0 minimal components and 0 undetermined components
+            FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components
 
         """
         start = time.perf_counter()

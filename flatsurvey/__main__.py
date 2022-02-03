@@ -255,7 +255,7 @@ class Scheduler:
         bindings.append(ListBindingSpec("reporters", self._reporters))
         from random import randint
 
-        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2 ** 64)))
+        bindings.append(FactoryBindingSpec("lot", lambda: randint(0, 2**64)))
 
         import pinject
 
