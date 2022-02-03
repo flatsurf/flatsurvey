@@ -122,7 +122,7 @@ class CylinderPeriodicDirection(Consumer):
         if all(
             [
                 component.cylinder() == True
-                for component in decomposition.decomposition.components()
+                for component in decomposition.components()
             ]
         ):
             await self.report(True, decomposition=decomposition)

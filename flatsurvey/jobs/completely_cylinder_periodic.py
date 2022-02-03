@@ -141,14 +141,14 @@ class CompletelyCylinderPeriodic(Consumer):
             [Ngon([1, 1, 1])] [CompletelyCylinderPeriodic] ¯\_(ツ)_/¯ (cylinder_periodic_directions: 1) (undetermined_directions: 0)
 
         """
-        if decomposition.decomposition.minimalComponents():
-            self.report(False, decomposition=decomposition.decomposition)
+        if decomposition.minimalComponents():
+            self.report(False, decomposition=decomposition)
             return Consumer.COMPLETED
 
         if all(
             [
                 component.cylinder() == True
-                for component in decomposition.decomposition.components()
+                for component in decomposition.components()
             ]
         ):
             self._cylinder_periodic_directions += 1
@@ -159,7 +159,7 @@ class CompletelyCylinderPeriodic(Consumer):
                 self.report()
                 return Consumer.COMPLETED
 
-        if decomposition.decomposition.undeterminedComponents():
+        if decomposition.undeterminedComponents():
             self._undetermined_directions += 1
 
         return not Consumer.COMPLETED
