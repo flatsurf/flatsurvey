@@ -27,7 +27,7 @@ actually write to the real AWS.
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@ class GraphQL(Reporter):
             ...     assert log.s3(dumps(surface)) == url
 
             >>> url
-            's3://flatsurvey/pickles/89651606a8d679017fd6392ac84469fdf8d81dcd660ce8a4612545ac14cf2adc.pickle.gz'
+            's3://flatsurvey/pickles/266fdac09908480227d25f5e336052edb90e6694b7485750f00cceebbc234596.pickle.gz'
 
         """
         import hashlib
@@ -191,7 +191,7 @@ class GraphQL(Reporter):
             ...     assert log._serialize(surface) == {
             ...         "angles": [1, 1, 1],
             ...         "description": "Ngon([1, 1, 1])",
-            ...         "pickle": "s3://flatsurvey/Ngon/89651606a8d679017fd6392ac84469fdf8d81dcd660ce8a4612545ac14cf2adc.pickle.gz",
+            ...         "pickle": "s3://flatsurvey/Ngon/266fdac09908480227d25f5e336052edb90e6694b7485750f00cceebbc234596.pickle.gz",
             ...     }, f"Unexpected serialization: {log._serialize(surface)}"
 
         """
@@ -288,7 +288,7 @@ class GraphQL(Reporter):
 
             >>> surface = Ngon((1, 1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions)
+            >>> ccp = CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
 
         We use a mock for GraphQL/S3 in this example so we do not actually talk
         to AWS::

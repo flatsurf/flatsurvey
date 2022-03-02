@@ -16,7 +16,7 @@ EXAMPLES::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -71,9 +71,10 @@ class Yaml(Reporter):
 
         >>> import asyncio
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
+        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.reporting import Report
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions)
+        >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
         >>> report = ccp.report()
         >>> asyncio.run(report)
 

@@ -11,13 +11,14 @@ EXAMPLES::
     Options:
       --limit INTEGER  Zorich induction steps to perform before giving up  [default:
                        256]
+      --cache-only     Do not perform any computation. Only query the cache.
       --help           Show this message and exit.
 
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2021 Julian Rüth
+#        Copyright (C) 2021-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -44,7 +45,7 @@ from pinject import copy_args_to_internal_fields
 from sage.all import cached_method
 
 from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-from flatsurvey.pipeline import Consumer
+from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
@@ -82,7 +83,7 @@ template <typename T> int degree(T& iet) {
 )
 
 
-class UndeterminedIntervalExchangeTransformation(Consumer):
+class UndeterminedIntervalExchangeTransformation(Goal):
     r"""
     Tracks undetermined Interval Exchange Transformations.
 
@@ -110,9 +111,28 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         flow_decompositions,
         saddle_connection_orientations,
         cache,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
         limit=DEFAULT_LIMIT,
     ):
-        super().__init__(producers=[flow_decompositions])
+        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+
+    async def consume_cache(self):
+        r"""
+        TODO
+        """
+        results = self._cache.results(surface=self._surface, job=self)
+
+        verdict = await results.reduce()
+
+        if verdict is not None:
+            self._report.log(self, "undetermined interval exchange transformation (cached)" if verdict else "no undetermined interval exchange transformation (cached)")
+            self._resolved = Goal.COMPLETED
+            return
+
+        if self._cache_only:
+            self._report.log(self, "probably no undetermined interval exchange transformation (cached)")
+            self._resolved = Goal.COMPLETED
+            return
 
     @classmethod
     @click.command(
@@ -128,6 +148,7 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         show_default=True,
         help="Zorich induction steps to perform before giving up",
     )
+    @Goal._cache_only_option
     def click(limit):
         return {
             "goals": [UndeterminedIntervalExchangeTransformation],
@@ -142,6 +163,8 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         command = ["undetermined-iet"]
         if self._limit != UndeterminedIntervalExchangeTransformation.DEFAULT_LIMIT:
             command += ["--limit", str(self._limit)]
+        if self._cache_only != self.DEFAULT_CACHE_ONLY:
+            command.append(f"--cache-only")
         return command
 
     async def _consume(self, decomposition, cost):
@@ -194,5 +217,6 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         r"""
         Given a list of historic results, return a final verdict.
 
+        TODO
         """
         return None

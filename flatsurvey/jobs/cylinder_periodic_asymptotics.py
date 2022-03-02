@@ -12,13 +12,14 @@ you should limit the length of saddle connections considered.
     Determines the maximum circumference of all cylinders in each cylinder
     periodic direction.
     Options:
-      --help   Show this message and exit.
+      --cache-only  Do not perform any computation. Only query the cache.
+      --help        Show this message and exit.
 
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2021 Julian Rüth
+#        Copyright (C) 2021-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,12 +38,12 @@ you should limit the length of saddle connections considered.
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline import Consumer
+from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class CylinderPeriodicAsymptotics(Consumer):
+class CylinderPeriodicAsymptotics(Goal):
     r"""
     Determines the maximum circumference of all cylinders in each cylinder
     periodic direction.
@@ -51,19 +52,26 @@ class CylinderPeriodicAsymptotics(Consumer):
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting.report import Report
+        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions)
+        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
         cylinder-periodic-asymptotics
 
     """
 
     @copy_args_to_internal_fields
-    def __init__(self, report, flow_decompositions):
-        super().__init__(producers=[flow_decompositions])
+    def __init__(self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY):
+        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
 
         self._results = []
+
+    async def consume_cache(self):
+        r"""
+        TODO
+        """
+        raise NotImplementedError
 
     @classmethod
     @click.command(
@@ -72,6 +80,7 @@ class CylinderPeriodicAsymptotics(Consumer):
         group="Goals",
         help=__doc__.split("EXAMPLES")[0],
     )
+    @Goal._cache_only_option
     def click():
         return {
             "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)()],
@@ -79,7 +88,10 @@ class CylinderPeriodicAsymptotics(Consumer):
         }
 
     def command(self):
-        return ["cylinder-periodic-asymptotics"]
+        command = ["cylinder-periodic-asymptotics"]
+        if self._cache_only != self.DEFAULT_CACHE_ONLY:
+            command.append(f"--cache-only")
+        return command
 
     @classmethod
     def reduce(self, results):
@@ -110,11 +122,12 @@ class CylinderPeriodicAsymptotics(Consumer):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions)
+            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
 
         Investigate in a single direction::
 
@@ -148,10 +161,10 @@ class CylinderPeriodicAsymptotics(Consumer):
                 max(float_height(component) for component in decomposition.components())
             )
 
-        return not Consumer.COMPLETED
+        return not Goal.COMPLETED
 
     async def report(self, result=None, **kwargs):
-        if self._resolved != Consumer.COMPLETED:
+        if self._resolved != Goal.COMPLETED:
             await self._report.result(
                 self,
                 result,
