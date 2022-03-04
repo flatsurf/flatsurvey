@@ -376,14 +376,19 @@ class PickleCache:
         self._downloads = S3Cache(region=region)
 
     def __getitem__(self, url):
+        import weakref
+
         if url in self._cache:
-            cached = self._cache[url]()
+            cached = self._cache[url]
+
+            if isinstance(cached, weakref.ref):
+                cached = cached()
+
             if cached is None:
                 del self._cache[url]
             else:
                 return cached
 
-        import weakref
         from pickle import loads
         from zlib import decompress
 
@@ -393,7 +398,12 @@ class PickleCache:
         try:
             cached = loads(pickle)
             if cached is not None:
-                self._cache[url] = weakref.ref(cached)
+                try:
+                    ref = weakref.ref(cached)
+                except TypeError:
+                    # Builtin types cannot be weakly referenced
+                    ref = cached
+                self._cache[url] = ref
             return cached
         except Exception as e:
             print(f"Failed to restore {url}:\n{e}")

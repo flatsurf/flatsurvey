@@ -69,9 +69,37 @@ class CylinderPeriodicAsymptotics(Goal):
 
     async def consume_cache(self):
         r"""
-        TODO
+        Attempt to resolve this goal from previous cached runs.
+
+        This produces a summary of previous run when --cache-only is set, otherwise, it does nothing.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting.report import Report
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> cache = Cache()
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=cache, cached_only=True)
+
+        We inject some artificial results from previous runs::
+
+            TODO
         """
-        raise NotImplementedError
+        if not self._cache_only:
+            return
+
+        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+
+        distributions = [[d() for d in node["distribution"]] async for node in results.nodes()]
+
+        # We do not merge the distributions into a single distribution since
+        # they might be of unequal length and therefore the result distribution
+        # would be skewed.
+        await self._report.result(self, None, distributions=distributions)
+        self._resolved = Goal.COMPLETED
 
     @classmethod
     @click.command(
@@ -81,9 +109,9 @@ class CylinderPeriodicAsymptotics(Goal):
         help=__doc__.split("EXAMPLES")[0],
     )
     @Goal._cache_only_option
-    def click():
+    def click(cache_only):
         return {
-            "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)()],
+            "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)(cache_only=cache_only)],
             "goals": [CylinderPeriodicAsymptotics],
         }
 
@@ -97,22 +125,8 @@ class CylinderPeriodicAsymptotics(Goal):
     def reduce(self, results):
         r"""
         Given a list of historic results, return the resulting distribution.
-
-        EXAMPLES::
-
-            >>> CylinderPeriodicAsymptotics.reduce([False, 2, 1])
-            [1, 2]
-            >>> CylinderPeriodicAsymptotics.reduce([None, 2, 1])
-            warning: 1 undetermined components most likely minimal but might be very long cylinders.
-            [1, 2]
-
         """
-        undetermineds = len([r for r in results if r is None])
-        if undetermineds:
-            print(
-                f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
-            )
-        return sorted([r for r in results if r])
+        raise NotImplementedError("merging of distributions not been implemented yet")
 
     async def _consume(self, decomposition, cost):
         r"""
@@ -165,8 +179,17 @@ class CylinderPeriodicAsymptotics(Goal):
 
     async def report(self, result=None, **kwargs):
         if self._resolved != Goal.COMPLETED:
+            distribution = self._results
+
+            undetermineds = len([r for r in distribution if r is None])
+            if undetermineds:
+                print(
+                    f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
+                )
+            distribution = sorted([r for r in distribution if r])
+
             await self._report.result(
                 self,
                 result,
-                distribution=CylinderPeriodicAsymptotics.reduce(self._results),
+                distribution=distribution,
             )
