@@ -103,21 +103,50 @@ class CompletelyCylinderPeriodic(Goal):
 
     async def consume_cache(self):
         r"""
-        TODO
+        Attempt to resolve this goal from previous cached runs.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting.report import Report
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+
+            >>> cache = Cache()
+            >>> goal = CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=cache)
+
+        Try to resolve the goal from (no) cached results::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            False
+
+        TESTS:
+
+            >>> class MockResults:
+            ...     async def reduce(self): return False
+
+            >>> from unittest.mock import MagicMock
+            >>> cache.results = MagicMock(return_value=MockResults())
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            True
+
         """
-        results = self._cache.results(surface=self._surface, job=self)
+        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
 
         verdict = await results.reduce()
 
-        if verdict is not None:
-            self._report.log(self, "completely cylinder-periodic (cached)" if verdict else "not completely cylinder-periodic (cached)")
+        if verdict is not None or self._cache_only:
+            await self._report.result(self, verdict, cached=True)
             self._resolved = Goal.COMPLETED
-            return
-
-        if self._cache_only:
-            self._report.log(self, "probably completely cylinder-periodic (cached)")
-            self._resolved = Goal.COMPLETED
-            return
 
     @classmethod
     def reduce(self, results):

@@ -73,6 +73,27 @@ class Consumer:
         for producer in producers:
             producer.register_consumer(self)
 
+    @property
+    def resolved(self):
+        r"""
+        Return whether this consumer should be considered resolved, i.e.,
+        whether it has already reached a final verdict.
+
+        EXAMPLES:
+
+        Typicall, a :class:`Transformation` do never reached the resolved status::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface=surface)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> orientations.resolved
+            False
+
+        """
+        return self._resolved is Consumer.COMPLETED
+
     async def consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and
