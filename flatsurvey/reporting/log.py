@@ -169,7 +169,10 @@ class Log(Reporter):
 
         """
         shruggie = r"¯\_(ツ)_/¯"
-        self.log(source, shruggie if result is None else result, **kwargs)
+        result = shruggie if result is None else str(result)
+        if kwargs.get("cached", False):
+            result = f"{result} (cached)"
+        self.log(source, result, **kwargs)
 
     def command(self):
         command = ["log"]
