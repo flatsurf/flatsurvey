@@ -314,6 +314,11 @@ class GraphQL(Reporter):
             ...         assert asyncio.run(Cache().results(surface=surface, job=ccp).reduce()) == None, "expected unconclusive result"
 
         """
+        if kwargs.pop("cached", False):
+            # Do not write results to the GraphQL database if they have been
+            # computed from previous cached results.
+            return
+
         import sys
 
         argv = sys.argv
