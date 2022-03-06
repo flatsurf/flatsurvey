@@ -141,7 +141,7 @@ class CylinderPeriodicAsymptotics(Goal):
         r"""
         Given a list of historic results, return the resulting distribution.
         """
-        raise NotImplementedError("merging of distributions not been implemented yet")
+        raise NotImplementedError("merging of distributions not implemented yet")
 
     async def _consume(self, decomposition, cost):
         r"""
