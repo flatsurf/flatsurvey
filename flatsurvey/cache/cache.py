@@ -70,9 +70,19 @@ class Cache:
 
 class Results:
     r"""
-    Abstract base class for a list of results from a cache.
+    Base class for cached results.
 
-    TODO
+    Subclasses should implement ``__aiter__`` to yield these cached results.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
+        >>> cache = Cache()
+        >>> results = cache.results(job=CompletelyCylinderPeriodic)
+
+        >>> isinstance(results, Results)
+        True
+
     """
 
     def __init__(self, job):
