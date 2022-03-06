@@ -82,7 +82,7 @@ class CylinderPeriodicAsymptotics(Goal):
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> cache = Cache()
-            >>> goal = CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=cache, cached_only=True)
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
         We inject some artificial results from previous runs::
 
