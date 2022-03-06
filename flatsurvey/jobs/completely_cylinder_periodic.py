@@ -125,16 +125,17 @@ class CompletelyCylinderPeriodic(Goal):
             >>> goal.resolved
             False
 
-        TESTS:
-
-            >>> class MockResults:
-            ...     async def reduce(self): return False
-
-            >>> from unittest.mock import MagicMock
-            >>> cache.results = MagicMock(return_value=MockResults())
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
 
             >>> import asyncio
-            >>> asyncio.run(goal.consume_cache())
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"data": {"result": None}}
+            ...    yield {"data": {"result": False}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
@@ -155,11 +156,13 @@ class CompletelyCylinderPeriodic(Goal):
 
         EXAMPLES::
 
-            >>> CompletelyCylinderPeriodic.reduce([None, None])
-            >>> CompletelyCylinderPeriodic.reduce([None, False])
+            >>> CompletelyCylinderPeriodic.reduce([{'result': None}, {'result': None}])
+            >>> CompletelyCylinderPeriodic.reduce([{'result': None}, {'result': False}])
             False
 
         """
+        results = [result["result"] for result in results]
+
         assert not any(results)
         return False if any(result is False for result in results) else None
 
@@ -195,7 +198,7 @@ class CompletelyCylinderPeriodic(Goal):
 
         """
         if decomposition.minimalComponents():
-            self.report(False, decomposition=decomposition)
+            await self.report(False, decomposition=decomposition)
             return Goal.COMPLETED
 
         if all(

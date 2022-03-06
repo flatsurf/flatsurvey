@@ -45,6 +45,7 @@ from flatsurvey.aws.graphql import Client as GraphQLClient
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.cache.cache import Results
 
 
 class GraphQL:
@@ -88,7 +89,7 @@ class GraphQL:
         )
         delete = lambda node: self._create_delete(job=job, id=node["id"])
 
-        return Results(
+        return GraphQLResults(
             job=job,
             nodes=Nodes(
                 query=query, delete=delete, graphql_client=self._graphql, after=after
@@ -252,50 +253,15 @@ class Nodes:
         self._graphql_client.mutate(self._make_delete(node))
 
 
-class Results:
+class GraphQLResults(Results):
     def __init__(self, job, nodes, pickle_cache):
-        self._job = job
+        super().__init__(job)
         self._pickle_cache = pickle_cache
         self._nodes = nodes
 
     async def __aiter__(self):
         async for node in self._nodes:
             yield self._resolve(node)
-
-    async def nodes(self):
-        r"""
-        Return the nodes stored in the GraphQL database for these results.
-
-        Use ``results`` for a more condensed version that is stripped of
-        additional metadata.
-        """
-        async for node in self:
-            yield {
-                **node["data"],
-                "surface": node["surface"]["data"],
-                "timestamp": node["timestamp"],
-            }
-
-    async def results(self):
-        r"""
-        Return the objects that were registered as previous results in the
-        database.
-        """
-        async for node in self:
-            result = node["data"]["result"]
-            if result is not None:
-                result = node["data"]["result"]()
-                if result is not None:  # TODO: why is this needed? See #7.
-                    setattr(result, "erase", lambda: self._nodes.erase(node))
-                    yield result
-
-    async def reduce(self):
-        r"""
-        Combine all results to an overall verdict.
-
-        Return ``None`` if the results are inconclusive.
-        """
-        return self._job.reduce([node["data"] async for node in self])
 
     def _resolve(self, obj):
         r"""
@@ -364,7 +330,7 @@ class S3Cache:
             with self._s3_client_pool() as s3:
                 prefix = "s3://"
                 assert url.startswith(prefix)
-                bucket, key = url[len(prefix) :].split("/", 1)
+                bucket, key = url[len(prefix):].split("/", 1)
                 buffer = self._downloads[url] = BytesIO()
                 s3.download_fileobj(bucket, key, buffer)
                 buffer.seek(0)

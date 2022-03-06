@@ -50,9 +50,7 @@ EXAMPLES::
 
 import click
 from pinject import copy_args_to_internal_fields
-from sage.all import cached_method
 
-from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
@@ -107,19 +105,51 @@ class OrbitClosure(Goal):
 
     async def consume_cache(self):
         r"""
-        TODO
+        Try to resolve this goal from cached previous runs.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Report
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> from flatsurvey.cache import Cache
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> cache = Cache()
+            >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+
+        Try to resolve the goal from (no) cached results::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            False
+
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
+
+            >>> import asyncio
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"data": {"dense": None}}
+            ...    yield {"data": {"dense": True}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            True
+
         """
         results = self._cache.results(surface=self._surface, job=self)
 
-        if await results.reduce() is not None:
-            self._report.log(self, "dense orbit closure (cached)")
-            self._resolved = Goal.COMPLETED
-            return
+        verdict = await results.reduce()
 
-        if self._cache_only:
-            self._report.log(self, "probably non-dense orbit closure (cached)")
+        if verdict is not None or self._cache_only:
+            await self._report.result(self, result=None, dense=verdict, cached=True)
             self._resolved = Goal.COMPLETED
-            return
 
     @classmethod
     @click.command(
@@ -182,9 +212,9 @@ class OrbitClosure(Goal):
         if self._expansions != self.DEFAULT_EXPANSIONS:
             command.append(f"--expansions={self._expansions}")
         if self._deform != self.DEFAULT_DEFORM:
-            command.append(f"--deform")
+            command.append("--deform")
         if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append(f"--cache-only")
+            command.append("--cache-only")
         return command
 
     async def _consume(self, decomposition, cost):
@@ -263,7 +293,7 @@ class OrbitClosure(Goal):
                 self._expansions_performed += 1
 
                 self._report.log(
-                    self, f"Found too many cylinders without improvements."
+                    self, "Found too many cylinders without improvements."
                 )
 
                 if self._lower_bound == 0:
@@ -274,7 +304,7 @@ class OrbitClosure(Goal):
                 if self._upper_bound > self._lower_bound:
                     self._report.log(
                         self,
-                        f"Continuing search since connections seem to be increasing in length quickly.",
+                        "Continuing search since connections seem to be increasing in length quickly.",
                     )
                 else:
                     self._saddle_connections.randomize(self._lower_bound)
@@ -348,7 +378,7 @@ class OrbitClosure(Goal):
 
                         self._report.log(
                             self,
-                            f"Restarting OrbitClosure search with deformed surface.",
+                            "Restarting OrbitClosure search with deformed surface.",
                         )
 
                         from flatsurvey.surfaces import Deformation
@@ -367,7 +397,7 @@ class OrbitClosure(Goal):
         return not Goal.COMPLETED
 
     @classmethod
-    def reduce(self, results):
+    def reduce(cls, results):
         r"""
         Given a list of historic results, return a final verdict.
 
@@ -381,7 +411,7 @@ class OrbitClosure(Goal):
         """
         results = [result.get("dense", None) for result in results]
         assert not any([result is False for result in results])
-        return True if any(result == True for result in results) else None
+        return True if any(result for result in results) else None
 
     async def report(self):
         if self._resolved != Goal.COMPLETED:
@@ -392,7 +422,6 @@ class OrbitClosure(Goal):
                 dimension=orbit_closure.dimension(),
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,
-                dense=orbit_closure.dimension()
-                == self._surface.orbit_closure_dimension_upper_bound
+                dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound
                 or None,
             )

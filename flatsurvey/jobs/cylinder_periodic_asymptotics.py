@@ -88,7 +88,6 @@ class CylinderPeriodicAsymptotics(Goal):
 
         We mock some artificial results from previous runs::
 
-            >>> from collections import namedtuple
             >>> from unittest.mock import MagicMock
             >>> async def nodes(self):
             ...    yield { "distribution": [ lambda: 1, lambda: 2 ] }

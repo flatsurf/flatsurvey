@@ -117,6 +117,16 @@ class CylinderPeriodicDirection(Goal):
             self._resolved = Goal.COMPLETED
 
     @classmethod
+    def reduce(cls, results):
+        r"""
+        TODO
+        """
+        results = [result["result"] for result in results]
+
+        assert not any([result is False for result in results])
+        return True if any(result for result in results) else None
+
+    @classmethod
     @click.command(
         name="cylinder-periodic-direction",
         cls=GroupedCommand,

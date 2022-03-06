@@ -47,7 +47,7 @@ class Cache:
     actual cache explicitly on the command line.
     """
 
-    def results(self, surface, job, exact=False):
+    def results(self, job, surface=None, exact=False):
         r"""
         Return our previous verdicts on running ``job`` for ``surface``.
 
@@ -58,26 +58,79 @@ class Cache:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
-            >>> results = Cache().results(Ngon([1,1,1]), CompletelyCylinderPeriodic)
+            >>> results = Cache().results(surface=Ngon([1,1,1]), job=CompletelyCylinderPeriodic)
 
             >>> import asyncio
             >>> asyncio.run(results.reduce()) is None
             True
 
         """
-        return Nothing()
+        return Nothing(job=job)
 
 
-class Nothing:
+class Results:
     r"""
-    A missing cached result.
+    Abstract base class for a list of results from a cache.
+
+    TODO
     """
+
+    def __init__(self, job):
+        self._job = job
+
+    async def nodes(self):
+        r"""
+        Return the nodes stored in the GraphQL database for these results.
+
+        Use ``results`` for a more condensed version that is stripped of
+        additional metadata.
+
+        TODO
+        """
+        async for node in self:
+            yield {
+                **node["data"],
+                "surface": node["surface"]["data"],
+                "timestamp": node["timestamp"],
+            }
+
+    async def results(self):
+        r"""
+        Return the objects that were registered as previous results in the
+        database.
+
+        TODO
+        """
+        async for node in self:
+            result = node["data"]["result"]
+            if result is not None:
+                result = node["data"]["result"]()
+                if result is not None:  # TODO: why is this needed? See #7.
+                    # TODO: We should not use _nodes here.
+                    setattr(result, "erase", lambda: self._nodes.erase(node))
+                    yield result
 
     async def reduce(self):
         r"""
-        Return a verdict from the found cached results or ``None`` if no result
-        could be determined.
+        Combine all results to an overall verdict.
 
-        Always returns ``None`` because we do not have any results cached here.
+        Return ``None`` if the results are inconclusive.
+
+        TODO
         """
-        return None
+        return self._job.reduce([node["data"] async for node in self])
+
+
+class Nothing(Results):
+    r"""
+    A missing cached result.
+
+    TODO
+    """
+
+    async def __aiter__(self):
+        r"""
+        TODO
+        """
+        for i in ():
+            yield i
