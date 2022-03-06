@@ -98,7 +98,7 @@ class CompletelyCylinderPeriodic(Goal):
         if self._limit != self.DEFAULT_LIMIT:
             command.append(f"--limit={self._limit}")
         if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append(f"--cache-only")
+            command.append("--cache-only")
         return command
 
     async def consume_cache(self):
@@ -161,7 +161,7 @@ class CompletelyCylinderPeriodic(Goal):
 
         """
         assert not any(results)
-        return False if any(result == False for result in results) else None
+        return False if any(result is False for result in results) else None
 
     async def _consume(self, decomposition, cost):
         r"""
@@ -199,7 +199,7 @@ class CompletelyCylinderPeriodic(Goal):
             return Goal.COMPLETED
 
         if all(
-            [component.cylinder() == True for component in decomposition.components()]
+            [component.cylinder() for component in decomposition.components()]
         ):
             self._cylinder_periodic_directions += 1
             if (
