@@ -72,21 +72,49 @@ class CylinderPeriodicDirection(Goal):
 
     async def consume_cache(self):
         r"""
-        TODO
+        Attempt to resolve this goal from previous cached runs.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Report
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
+            >>> surface = Ngon((1, 1, 1))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> cache = Cache()
+            >>> goal = CylinderPeriodicDirection(report=Report([]), flow_decompositions=flow_decompositions, cache=cache)
+
+        Try to resolve the goal from (no) cached results::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            False
+
+        TESTS:
+
+            >>> class MockResults:
+            ...     async def reduce(self): return False
+
+            >>> from unittest.mock import MagicMock
+            >>> cache.results = MagicMock(return_value=MockResults())
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            True
+
         """
-        results = self._cache.results(surface=self._surface, job=self)
+        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
 
         verdict = await results.reduce()
 
-        if verdict is not None:
-            self._report.log(self, "cylinder-periodic direction (cached)" if verdict else "no cylinder-periodic direction (cached)")
+        if verdict is not None or self._cache_only:
+            await self._report.result(self, verdict, cached=True)
             self._resolved = Goal.COMPLETED
-            return
-
-        if self._cache_only:
-            self._report.log(self, "probably no cylinder-periodic direction (cached)")
-            self._resolved = Goal.COMPLETED
-            return
 
     @classmethod
     @click.command(
@@ -113,7 +141,7 @@ class CylinderPeriodicDirection(Goal):
         if self._limit != self.DEFAULT_LIMIT:
             command.append(f"--limit={self._limit}")
         if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append(f"--cache-only")
+            command.append("--cache-only")
         return command
 
     async def _consume(self, decomposition, cost):
@@ -144,12 +172,12 @@ class CylinderPeriodicDirection(Goal):
         self._directions += 1
 
         if all(
-            [component.cylinder() == True for component in decomposition.components()]
+            [component.cylinder() for component in decomposition.components()]
         ):
             await self.report(True, decomposition=decomposition)
             return Goal.COMPLETED
 
-        if self._directions >= limit:
+        if self._directions >= self._limit:
             await self.report()
             return Goal.COMPLETED
 
