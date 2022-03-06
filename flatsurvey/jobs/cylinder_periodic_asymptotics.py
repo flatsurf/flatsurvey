@@ -78,15 +78,30 @@ class CylinderPeriodicAsymptotics(Goal):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.reporting.log import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> cache = Cache()
-            >>> goal = CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+            >>> log = Log(surface)
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
-        We inject some artificial results from previous runs::
+        We mock some artificial results from previous runs::
 
-            TODO
+            >>> from collections import namedtuple
+            >>> from unittest.mock import MagicMock
+            >>> async def nodes(self):
+            ...    yield { "distribution": [ lambda: 1, lambda: 2 ] }
+            ...    yield { "distribution": [ lambda: 2 ] }
+            >>> cache.results = MagicMock()
+            >>> cache.results.return_value.nodes.return_value.__aiter__ = nodes
+
+        Now we can consume our artificial cache. Since we set ``cache_only`` above, it is reported immediately::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distributions: [[1, 2], [2]])
+
         """
         if not self._cache_only:
             return
@@ -118,7 +133,7 @@ class CylinderPeriodicAsymptotics(Goal):
     def command(self):
         command = ["cylinder-periodic-asymptotics"]
         if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append(f"--cache-only")
+            command.append("--cache-only")
         return command
 
     @classmethod
