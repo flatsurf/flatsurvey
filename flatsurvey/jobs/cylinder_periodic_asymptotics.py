@@ -97,6 +97,7 @@ class CylinderPeriodicAsymptotics(Goal):
             ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1]}}
             >>> with patch.object(Nothing, '__aiter__', results):
             ...    asyncio.run(goal.consume_cache())
+            [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (cached) (distributions: [[1, 2], [1]])
 
         The goal is marked as completed, since we had set ``cache_only`` above::
 
