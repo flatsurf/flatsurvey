@@ -170,7 +170,7 @@ class Log(Reporter):
         """
         shruggie = r"¯\_(ツ)_/¯"
         result = shruggie if result is None else str(result)
-        if kwargs.get("cached", False):
+        if kwargs.pop("cached", False):
             result = f"{result} (cached)"
         self.log(source, result, **kwargs)
 
