@@ -86,20 +86,22 @@ class CylinderPeriodicAsymptotics(Goal):
             >>> log = Log(surface)
             >>> goal = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
-        We mock some artificial results from previous runs::
-
-            >>> from unittest.mock import MagicMock
-            >>> async def nodes(self):
-            ...    yield { "distribution": [ lambda: 1, lambda: 2 ] }
-            ...    yield { "distribution": [ lambda: 2 ] }
-            >>> cache.results = MagicMock()
-            >>> cache.results.return_value.nodes.return_value.__aiter__ = nodes
-
-        Now we can consume our artificial cache. Since we set ``cache_only`` above, it is reported immediately::
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
 
             >>> import asyncio
-            >>> asyncio.run(goal.consume_cache())
-            [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distributions: [[1, 2], [2]])
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1, 2]}}
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1]}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+
+        The goal is marked as completed, since we had set ``cache_only`` above::
+
+            >>> goal.resolved
+            True
 
         """
         if not self._cache_only:
@@ -107,12 +109,12 @@ class CylinderPeriodicAsymptotics(Goal):
 
         results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
 
-        distributions = [[d() for d in node["distribution"]] async for node in results.nodes()]
+        distributions = [[d() if callable(d) else d for d in node["distribution"]] async for node in results.nodes()]
 
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution
         # would be skewed.
-        await self._report.result(self, None, distributions=distributions)
+        await self._report.result(self, None, distributions=distributions, cached=True)
         self._resolved = Goal.COMPLETED
 
     @classmethod
