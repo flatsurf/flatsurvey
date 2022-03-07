@@ -44,7 +44,20 @@ class Goal(Consumer):
     means that all consumers that are not a :class:`Producer` at the same time
     should most likely inherit from Goal.
 
-    TODO
+    EXAMPLES::
+
+        >>> from flatsurvey.surfaces import Ngon
+        >>> from flatsurvey.reporting import Report
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+        >>> from flatsurvey.cache import Cache
+        >>> from flatsurvey.jobs.orbit_closure import OrbitClosure
+        >>> surface = Ngon((1, 1, 1))
+        >>> connections = SaddleConnections(surface)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
+        >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+        >>> isinstance(goal, Goal)
+        True
+
     """
     DEFAULT_CACHE_ONLY = False
 
@@ -55,5 +68,6 @@ class Goal(Consumer):
         help="Do not perform any computation. Only query the cache.",
     )
 
+    @copy_args_to_internal_fields
     def __init__(self, producers, cache, cache_only=DEFAULT_CACHE_ONLY):
         super().__init__(producers=producers)
