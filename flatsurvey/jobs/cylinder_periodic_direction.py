@@ -93,16 +93,17 @@ class CylinderPeriodicDirection(Goal):
             >>> goal.resolved
             False
 
-        TESTS:
-
-            >>> class MockResults:
-            ...     async def reduce(self): return False
-
-            >>> from unittest.mock import MagicMock
-            >>> cache.results = MagicMock(return_value=MockResults())
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
 
             >>> import asyncio
-            >>> asyncio.run(goal.consume_cache())
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"data": {"result": None}}
+            ...    yield {"data": {"result": True}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
@@ -119,7 +120,14 @@ class CylinderPeriodicDirection(Goal):
     @classmethod
     def reduce(cls, results):
         r"""
-        TODO
+        Merge results of various runs into a final verdict.
+
+        EXAMPLES::
+
+            >>> CylinderPeriodicDirection.reduce([{"result": None}, {"result": None}])
+            >>> CylinderPeriodicDirection.reduce([{"result": True}, {"result": None}])
+            True
+
         """
         results = [result["result"] for result in results]
 
