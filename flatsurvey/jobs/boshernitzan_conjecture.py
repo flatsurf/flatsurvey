@@ -118,7 +118,9 @@ class BoshernitzanConjecture(Goal):
             True
 
         """
-        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+        results = self._cache.results(
+            surface=self._flow_decompositions._surface, job=self
+        )
 
         verdict = await results.reduce()
 
