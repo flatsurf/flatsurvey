@@ -85,7 +85,6 @@ class Ngon(Surface):
 
     """
 
-    # TODO: Default None probably makes things easier?
     def __init__(self, angles, length=None, lengths=None):
         self.angles = list(angles)
 
