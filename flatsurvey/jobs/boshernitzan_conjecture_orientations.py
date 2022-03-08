@@ -129,12 +129,12 @@ class BoshernitzanConjectureOrientations(Producer):
             >>> asyncio.run(orientations.produce())
             True
             >>> orientations._current
-            (-(2*c ~ 3.4641016), -2)
+            (-2*c, -2)
 
             >>> asyncio.run(orientations.produce())
             True
             >>> orientations._current
-            ((2*c ~ 3.4641016), -6)
+            (2*c, -6)
 
             >>> asyncio.run(orientations.produce())
             False
@@ -147,7 +147,7 @@ class BoshernitzanConjectureOrientations(Producer):
             >>> asyncio.run(orientations.produce())
             True
             >>> orientations._current
-            ((c0 ~ 1.4142136), -(c0 ~ 1.4142136))
+            (c0, -c0)
 
             >>> asyncio.run(orientations.produce())
             True

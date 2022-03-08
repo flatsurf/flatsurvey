@@ -112,7 +112,7 @@ class FlowDecompositions(Processor):
             >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> produce = decompositions.produce() # indirect doctest
             >>> asyncio.run(produce)
-            [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, -(2*c ~ 3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+            [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
             FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components

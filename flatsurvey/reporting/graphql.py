@@ -139,7 +139,7 @@ class GraphQL(Reporter):
             ...     assert log.s3(dumps(surface)) == url
 
             >>> url
-            's3://flatsurvey/pickles/266fdac09908480227d25f5e336052edb90e6694b7485750f00cceebbc234596.pickle.gz'
+            's3://flatsurvey/pickles/b396a2dbf52afb30c677c1ecc182b5b73bf024a82a906865ef774efc74f43b2b.pickle.gz'
 
         """
         import hashlib
@@ -191,7 +191,7 @@ class GraphQL(Reporter):
             ...     assert log._serialize(surface) == {
             ...         "angles": [1, 1, 1],
             ...         "description": "Ngon([1, 1, 1])",
-            ...         "pickle": "s3://flatsurvey/Ngon/266fdac09908480227d25f5e336052edb90e6694b7485750f00cceebbc234596.pickle.gz",
+            ...         "pickle": "s3://flatsurvey/Ngon/b396a2dbf52afb30c677c1ecc182b5b73bf024a82a906865ef774efc74f43b2b.pickle.gz",
             ...     }, f"Unexpected serialization: {log._serialize(surface)}"
 
         """

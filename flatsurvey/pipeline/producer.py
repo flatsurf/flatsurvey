@@ -51,6 +51,7 @@ class Producer:
     def __init__(self):
         self._consumers = set()
         self._current = None
+        self._exhausted = False
 
     async def produce(self):
         r"""
@@ -76,12 +77,17 @@ class Producer:
         """
         start = time.perf_counter()
         if self._produce() == Producer.EXHAUSTED:
+            self._exhausted = True
             return Producer.EXHAUSTED
         cost = time.perf_counter() - start
 
         await self._notify_consumers(cost)
 
         return not Producer.EXHAUSTED
+
+    @property
+    def exhausted(self):
+        return self._exhausted
 
     async def _notify_consumers(self, cost):
         r"""
