@@ -88,7 +88,7 @@ class BoshernitzanConjecture(Goal):
         help=__doc__.split("EXAMPLES")[0],
     )
     @Goal._cache_only_option
-    def click(limit, cache_only):
+    def click(cache_only):
         return {
             "bindings": [
                 PartialBindingSpec(BoshernitzanConjecture)(cache_only=cache_only)
