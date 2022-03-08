@@ -87,6 +87,28 @@ class Producer:
 
     @property
     def exhausted(self):
+        r"""
+        Return whether this producer has been exhausted.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface=surface, limit=0)
+
+        For a producer to be exhausted, it has to be asked to :meth:`produce`
+        at least once unsuccesfully. This is a bit unfortunate, but due to the
+        lazy implementation, there is currently no other way::
+
+            >>> import asyncio
+            >>> asyncio.run(connections.produce())
+            False
+
+            >>> connections.exhausted
+            True
+
+        """
         return self._exhausted
 
     async def _notify_consumers(self, cost):
