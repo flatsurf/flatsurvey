@@ -179,6 +179,38 @@ type CreateCompletelyCylinderPeriodicPayload {
   ): CompletelyCylinderPeriodicsEdge
 }
 
+# All input for the create `CylinderPeriodicAsymptotic` mutation.
+input CreateCylinderPeriodicAsymptoticInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The `CylinderPeriodicAsymptotic` to be created by this mutation.
+  cylinderPeriodicAsymptotic: CylinderPeriodicAsymptoticInput!
+}
+
+# The output of our create `CylinderPeriodicAsymptotic` mutation.
+type CreateCylinderPeriodicAsymptoticPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `CylinderPeriodicAsymptotic` that was created by this mutation.
+  cylinderPeriodicAsymptotic: CylinderPeriodicAsymptotic
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `CylinderPeriodicAsymptotic`.
+  surfaceBySurface: Surface
+
+  # An edge for our `CylinderPeriodicAsymptotic`. May be used by Relay 1.
+  cylinderPeriodicAsymptoticEdge(
+    # The method to use when ordering `CylinderPeriodicAsymptotic`.
+    orderBy: [CylinderPeriodicAsymptoticsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): CylinderPeriodicAsymptoticsEdge
+}
+
 # All input for the create `FlowDecomposition` mutation.
 input CreateFlowDecompositionInput {
   # An arbitrary string value with no semantic meaning. Will be included in the
@@ -336,6 +368,119 @@ type CreateUserPayload {
 # A location in a connection that can be used for resuming pagination.
 scalar Cursor
 
+type CylinderPeriodicAsymptotic implements Node {
+  # A globally unique identifier. Can be used in various places throughout the system to identify this single value.
+  nodeId: ID!
+  id: UUID!
+  timestamp: Datetime!
+  surface: UUID
+  data: JSON!
+
+  # Reads a single `Surface` that is related to this `CylinderPeriodicAsymptotic`.
+  surfaceBySurface: Surface
+}
+
+# A condition to be used against `CylinderPeriodicAsymptotic` object types. All
+# fields are tested for equality and combined with a logical ‘and.’
+input CylinderPeriodicAsymptoticCondition {
+  # Checks for equality with the object’s `id` field.
+  id: UUID
+
+  # Checks for equality with the object’s `timestamp` field.
+  timestamp: Datetime
+
+  # Checks for equality with the object’s `surface` field.
+  surface: UUID
+
+  # Checks for equality with the object’s `data` field.
+  data: JSON
+}
+
+# A filter to be used against `CylinderPeriodicAsymptotic` object types. All fields are combined with a logical ‘and.’
+input CylinderPeriodicAsymptoticFilter {
+  # Filter by the object’s `id` field.
+  id: UUIDFilter
+
+  # Filter by the object’s `timestamp` field.
+  timestamp: DatetimeFilter
+
+  # Filter by the object’s `surface` field.
+  surface: UUIDFilter
+
+  # Filter by the object’s `data` field.
+  data: JSONFilter
+
+  # Filter by the object’s `surfaceBySurface` relation.
+  surfaceBySurface: SurfaceFilter
+
+  # A related `surfaceBySurface` exists.
+  surfaceBySurfaceExists: Boolean
+
+  # Checks for all expressions in this list.
+  and: [CylinderPeriodicAsymptoticFilter!]
+
+  # Checks for any expressions in this list.
+  or: [CylinderPeriodicAsymptoticFilter!]
+
+  # Negates the expression.
+  not: CylinderPeriodicAsymptoticFilter
+}
+
+# An input for mutations affecting `CylinderPeriodicAsymptotic`
+input CylinderPeriodicAsymptoticInput {
+  id: UUID
+  timestamp: Datetime
+  surface: UUID
+  data: JSON!
+}
+
+# Represents an update to a `CylinderPeriodicAsymptotic`. Fields that are set will be updated.
+input CylinderPeriodicAsymptoticPatch {
+  id: UUID
+  timestamp: Datetime
+  surface: UUID
+  data: JSON
+}
+
+# A connection to a list of `CylinderPeriodicAsymptotic` values.
+type CylinderPeriodicAsymptoticsConnection {
+  # A list of `CylinderPeriodicAsymptotic` objects.
+  nodes: [CylinderPeriodicAsymptotic]!
+
+  # A list of edges which contains the `CylinderPeriodicAsymptotic` and cursor to aid in pagination.
+  edges: [CylinderPeriodicAsymptoticsEdge!]!
+
+  # Information to aid in pagination.
+  pageInfo: PageInfo!
+
+  # The count of *all* `CylinderPeriodicAsymptotic` you could get from the connection.
+  totalCount: Int!
+}
+
+# A `CylinderPeriodicAsymptotic` edge in the connection.
+type CylinderPeriodicAsymptoticsEdge {
+  # A cursor for use in pagination.
+  cursor: Cursor
+
+  # The `CylinderPeriodicAsymptotic` at the end of the edge.
+  node: CylinderPeriodicAsymptotic
+}
+
+# Methods to use when ordering `CylinderPeriodicAsymptotic`.
+enum CylinderPeriodicAsymptoticsOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  TIMESTAMP_ASC
+  TIMESTAMP_DESC
+  SURFACE_ASC
+  SURFACE_DESC
+  DATA_ASC
+  DATA_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
 # A point in time as described by the [ISO
 # 8601](https://en.wikipedia.org/wiki/ISO_8601) standard. May or may not include a timezone.
 scalar Datetime
@@ -415,6 +560,47 @@ type DeleteCompletelyCylinderPeriodicPayload {
     # The method to use when ordering `CompletelyCylinderPeriodic`.
     orderBy: [CompletelyCylinderPeriodicsOrderBy!] = [PRIMARY_KEY_ASC]
   ): CompletelyCylinderPeriodicsEdge
+}
+
+# All input for the `deleteCylinderPeriodicAsymptoticById` mutation.
+input DeleteCylinderPeriodicAsymptoticByIdInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+  id: UUID!
+}
+
+# All input for the `deleteCylinderPeriodicAsymptotic` mutation.
+input DeleteCylinderPeriodicAsymptoticInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The globally unique `ID` which will identify a single `CylinderPeriodicAsymptotic` to be deleted.
+  nodeId: ID!
+}
+
+# The output of our delete `CylinderPeriodicAsymptotic` mutation.
+type DeleteCylinderPeriodicAsymptoticPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `CylinderPeriodicAsymptotic` that was deleted by this mutation.
+  cylinderPeriodicAsymptotic: CylinderPeriodicAsymptotic
+  deletedCylinderPeriodicAsymptoticId: ID
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `CylinderPeriodicAsymptotic`.
+  surfaceBySurface: Surface
+
+  # An edge for our `CylinderPeriodicAsymptotic`. May be used by Relay 1.
+  cylinderPeriodicAsymptoticEdge(
+    # The method to use when ordering `CylinderPeriodicAsymptotic`.
+    orderBy: [CylinderPeriodicAsymptoticsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): CylinderPeriodicAsymptoticsEdge
 }
 
 # All input for the `deleteFlowDecompositionById` mutation.
@@ -908,6 +1094,12 @@ type Mutation {
     input: CreateCompletelyCylinderPeriodicInput!
   ): CreateCompletelyCylinderPeriodicPayload
 
+  # Creates a single `CylinderPeriodicAsymptotic`.
+  createCylinderPeriodicAsymptotic(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: CreateCylinderPeriodicAsymptoticInput!
+  ): CreateCylinderPeriodicAsymptoticPayload
+
   # Creates a single `FlowDecomposition`.
   createFlowDecomposition(
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
@@ -949,6 +1141,18 @@ type Mutation {
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     input: UpdateCompletelyCylinderPeriodicByIdInput!
   ): UpdateCompletelyCylinderPeriodicPayload
+
+  # Updates a single `CylinderPeriodicAsymptotic` using its globally unique id and a patch.
+  updateCylinderPeriodicAsymptotic(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: UpdateCylinderPeriodicAsymptoticInput!
+  ): UpdateCylinderPeriodicAsymptoticPayload
+
+  # Updates a single `CylinderPeriodicAsymptotic` using a unique key and a patch.
+  updateCylinderPeriodicAsymptoticById(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: UpdateCylinderPeriodicAsymptoticByIdInput!
+  ): UpdateCylinderPeriodicAsymptoticPayload
 
   # Updates a single `FlowDecomposition` using its globally unique id and a patch.
   updateFlowDecomposition(
@@ -1027,6 +1231,18 @@ type Mutation {
     # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
     input: DeleteCompletelyCylinderPeriodicByIdInput!
   ): DeleteCompletelyCylinderPeriodicPayload
+
+  # Deletes a single `CylinderPeriodicAsymptotic` using its globally unique id.
+  deleteCylinderPeriodicAsymptotic(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: DeleteCylinderPeriodicAsymptoticInput!
+  ): DeleteCylinderPeriodicAsymptoticPayload
+
+  # Deletes a single `CylinderPeriodicAsymptotic` using a unique key.
+  deleteCylinderPeriodicAsymptoticById(
+    # The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    input: DeleteCylinderPeriodicAsymptoticByIdInput!
+  ): DeleteCylinderPeriodicAsymptoticPayload
 
   # Deletes a single `FlowDecomposition` using its globally unique id.
   deleteFlowDecomposition(
@@ -1280,6 +1496,34 @@ type Query implements Node {
     filter: CompletelyCylinderPeriodicFilter
   ): CompletelyCylinderPeriodicsConnection
 
+  # Reads and enables pagination through a set of `CylinderPeriodicAsymptotic`.
+  allCylinderPeriodicAsymptotics(
+    # Only read the first `n` values of the set.
+    first: Int
+
+    # Only read the last `n` values of the set.
+    last: Int
+
+    # Skip the first `n` values from our `after` cursor, an alternative to cursor
+    # based pagination. May not be used with `last`.
+    offset: Int
+
+    # Read all values in the set before (above) this cursor.
+    before: Cursor
+
+    # Read all values in the set after (below) this cursor.
+    after: Cursor
+
+    # The method to use when ordering `CylinderPeriodicAsymptotic`.
+    orderBy: [CylinderPeriodicAsymptoticsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    # A condition to be used in determining which values should be returned by the collection.
+    condition: CylinderPeriodicAsymptoticCondition
+
+    # A filter to be used in determining which values should be returned by the collection.
+    filter: CylinderPeriodicAsymptoticFilter
+  ): CylinderPeriodicAsymptoticsConnection
+
   # Reads and enables pagination through a set of `FlowDecomposition`.
   allFlowDecompositions(
     # Only read the first `n` values of the set.
@@ -1420,6 +1664,7 @@ type Query implements Node {
     filter: UserFilter
   ): UsersConnection
   completelyCylinderPeriodicById(id: UUID!): CompletelyCylinderPeriodic
+  cylinderPeriodicAsymptoticById(id: UUID!): CylinderPeriodicAsymptotic
   flowDecompositionById(id: UUID!): FlowDecomposition
   orbitClosureById(id: UUID!): OrbitClosure
   surfaceById(id: UUID!): Surface
@@ -1432,6 +1677,12 @@ type Query implements Node {
     # The globally unique `ID` to be used in selecting a single `CompletelyCylinderPeriodic`.
     nodeId: ID!
   ): CompletelyCylinderPeriodic
+
+  # Reads a single `CylinderPeriodicAsymptotic` using its globally unique `ID`.
+  cylinderPeriodicAsymptotic(
+    # The globally unique `ID` to be used in selecting a single `CylinderPeriodicAsymptotic`.
+    nodeId: ID!
+  ): CylinderPeriodicAsymptotic
 
   # Reads a single `FlowDecomposition` using its globally unique `ID`.
   flowDecomposition(
@@ -1722,6 +1973,34 @@ type Surface implements Node {
     # A filter to be used in determining which values should be returned by the collection.
     filter: UndeterminedIntervalExchangeTransformationFilter
   ): UndeterminedIntervalExchangeTransformationsConnection!
+
+  # Reads and enables pagination through a set of `CylinderPeriodicAsymptotic`.
+  cylinderPeriodicAsymptoticsBySurface(
+    # Only read the first `n` values of the set.
+    first: Int
+
+    # Only read the last `n` values of the set.
+    last: Int
+
+    # Skip the first `n` values from our `after` cursor, an alternative to cursor
+    # based pagination. May not be used with `last`.
+    offset: Int
+
+    # Read all values in the set before (above) this cursor.
+    before: Cursor
+
+    # Read all values in the set after (below) this cursor.
+    after: Cursor
+
+    # The method to use when ordering `CylinderPeriodicAsymptotic`.
+    orderBy: [CylinderPeriodicAsymptoticsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    # A condition to be used in determining which values should be returned by the collection.
+    condition: CylinderPeriodicAsymptoticCondition
+
+    # A filter to be used in determining which values should be returned by the collection.
+    filter: CylinderPeriodicAsymptoticFilter
+  ): CylinderPeriodicAsymptoticsConnection!
   angles: [Int]
   name: String
   vertices: Int
@@ -1782,6 +2061,12 @@ input SurfaceFilter {
 
   # Some related `undeterminedIntervalExchangeTransformationsBySurface` exist.
   undeterminedIntervalExchangeTransformationsBySurfaceExist: Boolean
+
+  # Filter by the object’s `cylinderPeriodicAsymptoticsBySurface` relation.
+  cylinderPeriodicAsymptoticsBySurface: SurfaceToManyCylinderPeriodicAsymptoticFilter
+
+  # Some related `cylinderPeriodicAsymptoticsBySurface` exist.
+  cylinderPeriodicAsymptoticsBySurfaceExist: Boolean
 
   # Checks for all expressions in this list.
   and: [SurfaceFilter!]
@@ -1854,6 +2139,18 @@ input SurfaceToManyCompletelyCylinderPeriodicFilter {
 
   # No related `CompletelyCylinderPeriodic` matches the filter criteria. All fields are combined with a logical ‘and.’
   none: CompletelyCylinderPeriodicFilter
+}
+
+# A filter to be used against many `CylinderPeriodicAsymptotic` object types. All fields are combined with a logical ‘and.’
+input SurfaceToManyCylinderPeriodicAsymptoticFilter {
+  # Every related `CylinderPeriodicAsymptotic` matches the filter criteria. All fields are combined with a logical ‘and.’
+  every: CylinderPeriodicAsymptoticFilter
+
+  # Some related `CylinderPeriodicAsymptotic` matches the filter criteria. All fields are combined with a logical ‘and.’
+  some: CylinderPeriodicAsymptoticFilter
+
+  # No related `CylinderPeriodicAsymptotic` matches the filter criteria. All fields are combined with a logical ‘and.’
+  none: CylinderPeriodicAsymptoticFilter
 }
 
 # A filter to be used against many `FlowDecomposition` object types. All fields are combined with a logical ‘and.’
@@ -2062,6 +2359,52 @@ type UpdateCompletelyCylinderPeriodicPayload {
     # The method to use when ordering `CompletelyCylinderPeriodic`.
     orderBy: [CompletelyCylinderPeriodicsOrderBy!] = [PRIMARY_KEY_ASC]
   ): CompletelyCylinderPeriodicsEdge
+}
+
+# All input for the `updateCylinderPeriodicAsymptoticById` mutation.
+input UpdateCylinderPeriodicAsymptoticByIdInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # An object where the defined keys will be set on the `CylinderPeriodicAsymptotic` being updated.
+  cylinderPeriodicAsymptoticPatch: CylinderPeriodicAsymptoticPatch!
+  id: UUID!
+}
+
+# All input for the `updateCylinderPeriodicAsymptotic` mutation.
+input UpdateCylinderPeriodicAsymptoticInput {
+  # An arbitrary string value with no semantic meaning. Will be included in the
+  # payload verbatim. May be used to track mutations by the client.
+  clientMutationId: String
+
+  # The globally unique `ID` which will identify a single `CylinderPeriodicAsymptotic` to be updated.
+  nodeId: ID!
+
+  # An object where the defined keys will be set on the `CylinderPeriodicAsymptotic` being updated.
+  cylinderPeriodicAsymptoticPatch: CylinderPeriodicAsymptoticPatch!
+}
+
+# The output of our update `CylinderPeriodicAsymptotic` mutation.
+type UpdateCylinderPeriodicAsymptoticPayload {
+  # The exact same `clientMutationId` that was provided in the mutation input,
+  # unchanged and unused. May be used by a client to track mutations.
+  clientMutationId: String
+
+  # The `CylinderPeriodicAsymptotic` that was updated by this mutation.
+  cylinderPeriodicAsymptotic: CylinderPeriodicAsymptotic
+
+  # Our root query field type. Allows us to run any query from our mutation payload.
+  query: Query
+
+  # Reads a single `Surface` that is related to this `CylinderPeriodicAsymptotic`.
+  surfaceBySurface: Surface
+
+  # An edge for our `CylinderPeriodicAsymptotic`. May be used by Relay 1.
+  cylinderPeriodicAsymptoticEdge(
+    # The method to use when ordering `CylinderPeriodicAsymptotic`.
+    orderBy: [CylinderPeriodicAsymptoticsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): CylinderPeriodicAsymptoticsEdge
 }
 
 # All input for the `updateFlowDecompositionById` mutation.

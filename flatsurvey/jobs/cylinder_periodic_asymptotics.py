@@ -12,13 +12,14 @@ you should limit the length of saddle connections considered.
     Determines the maximum circumference of all cylinders in each cylinder
     periodic direction.
     Options:
-      --help   Show this message and exit.
+      --cache-only  Do not perform any computation. Only query the cache.
+      --help        Show this message and exit.
 
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2021 Julian Rüth
+#        Copyright (C) 2021-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,12 +38,12 @@ you should limit the length of saddle connections considered.
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline import Consumer
+from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class CylinderPeriodicAsymptotics(Consumer):
+class CylinderPeriodicAsymptotics(Goal):
     r"""
     Determines the maximum circumference of all cylinders in each cylinder
     periodic direction.
@@ -51,19 +52,80 @@ class CylinderPeriodicAsymptotics(Consumer):
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting.report import Report
+        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions)
+        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
         cylinder-periodic-asymptotics
 
     """
 
     @copy_args_to_internal_fields
-    def __init__(self, report, flow_decompositions):
-        super().__init__(producers=[flow_decompositions])
+    def __init__(
+        self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY
+    ):
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._results = []
+
+    async def consume_cache(self):
+        r"""
+        Attempt to resolve this goal from previous cached runs.
+
+        This produces a summary of previous run when --cache-only is set, otherwise, it does nothing.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting.report import Report
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> cache = Cache()
+            >>> log = Log(surface)
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
+
+            >>> import asyncio
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1, 2]}}
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1]}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+            [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (cached) (distributions: [[1, 2], [1]])
+
+        The goal is marked as completed, since we had set ``cache_only`` above::
+
+            >>> goal.resolved
+            True
+
+        """
+        if not self._cache_only:
+            return
+
+        results = self._cache.results(
+            surface=self._flow_decompositions._surface, job=self
+        )
+
+        distributions = [
+            [d() if callable(d) else d for d in node["distribution"]]
+            async for node in results.nodes()
+        ]
+
+        # We do not merge the distributions into a single distribution since
+        # they might be of unequal length and therefore the result distribution
+        # would be skewed.
+        await self._report.result(self, None, distributions=distributions, cached=True)
+        self._resolved = Goal.COMPLETED
 
     @classmethod
     @click.command(
@@ -72,35 +134,27 @@ class CylinderPeriodicAsymptotics(Consumer):
         group="Goals",
         help=__doc__.split("EXAMPLES")[0],
     )
-    def click():
+    @Goal._cache_only_option
+    def click(cache_only):
         return {
-            "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)()],
+            "bindings": [
+                PartialBindingSpec(CylinderPeriodicAsymptotics)(cache_only=cache_only)
+            ],
             "goals": [CylinderPeriodicAsymptotics],
         }
 
     def command(self):
-        return ["cylinder-periodic-asymptotics"]
+        command = ["cylinder-periodic-asymptotics"]
+        if self._cache_only != self.DEFAULT_CACHE_ONLY:
+            command.append("--cache-only")
+        return command
 
     @classmethod
     def reduce(self, results):
         r"""
         Given a list of historic results, return the resulting distribution.
-
-        EXAMPLES::
-
-            >>> CylinderPeriodicAsymptotics.reduce([False, 2, 1])
-            [1, 2]
-            >>> CylinderPeriodicAsymptotics.reduce([None, 2, 1])
-            warning: 1 undetermined components most likely minimal but might be very long cylinders.
-            [1, 2]
-
         """
-        undetermineds = len([r for r in results if r is None])
-        if undetermineds:
-            print(
-                f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
-            )
-        return sorted([r for r in results if r])
+        raise NotImplementedError("merging of distributions not implemented yet")
 
     async def _consume(self, decomposition, cost):
         r"""
@@ -110,11 +164,12 @@ class CylinderPeriodicAsymptotics(Consumer):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions)
+            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
 
         Investigate in a single direction::
 
@@ -148,12 +203,21 @@ class CylinderPeriodicAsymptotics(Consumer):
                 max(float_height(component) for component in decomposition.components())
             )
 
-        return not Consumer.COMPLETED
+        return not Goal.COMPLETED
 
     async def report(self, result=None, **kwargs):
-        if self._resolved != Consumer.COMPLETED:
+        if self._resolved != Goal.COMPLETED:
+            distribution = self._results
+
+            undetermineds = len([r for r in distribution if r is None])
+            if undetermineds:
+                print(
+                    f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
+                )
+            distribution = sorted([r for r in distribution if r])
+
             await self._report.result(
                 self,
                 result,
-                distribution=CylinderPeriodicAsymptotics.reduce(self._results),
+                distribution=distribution,
             )

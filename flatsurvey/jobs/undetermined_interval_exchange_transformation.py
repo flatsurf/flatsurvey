@@ -11,13 +11,14 @@ EXAMPLES::
     Options:
       --limit INTEGER  Zorich induction steps to perform before giving up  [default:
                        256]
+      --cache-only     Do not perform any computation. Only query the cache.
       --help           Show this message and exit.
 
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2021 Julian Rüth
+#        Copyright (C) 2021-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -37,16 +38,6 @@ import time
 
 import click
 import cppyy
-import pyeantic
-import pyexactreal
-import pyintervalxt
-from pinject import copy_args_to_internal_fields
-from sage.all import cached_method
-
-from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-from flatsurvey.pipeline import Consumer
-from flatsurvey.pipeline.util import PartialBindingSpec
-from flatsurvey.ui.group import GroupedCommand
 
 # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
 # i.e., when serializing an IET of unknown type (as is this one because
@@ -54,6 +45,15 @@ from flatsurvey.ui.group import GroupedCommand
 # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
 # be smart about registering the right types in cppyy. (If possible.) See #10.
 # TODO: Expose something like this construction() in intervalxt. See #10.
+import pyeantic
+import pyexactreal
+import pyintervalxt
+from pinject import copy_args_to_internal_fields
+
+from flatsurvey.pipeline import Goal
+from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
+
 cppyy.cppdef(
     r"""
 #include <boost/type_erasure/any_cast.hpp>
@@ -82,7 +82,7 @@ template <typename T> int degree(T& iet) {
 )
 
 
-class UndeterminedIntervalExchangeTransformation(Consumer):
+class UndeterminedIntervalExchangeTransformation(Goal):
     r"""
     Tracks undetermined Interval Exchange Transformations.
 
@@ -110,9 +110,63 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         flow_decompositions,
         saddle_connection_orientations,
         cache,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
         limit=DEFAULT_LIMIT,
     ):
-        super().__init__(producers=[flow_decompositions])
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
+
+    async def consume_cache(self):
+        r"""
+        Attempt to resolve this goal from previous cached runs.
+
+        This can't really "resolve" this goal but it will print some IETs that
+        we found in the past if `--cache-only`` has been set.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting.report import Report
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=saddle_connection_orientations)
+            >>> cache = Cache()
+            >>> log = Log(surface)
+            >>> goal = UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
+
+        We mock some artificial results from previous runs and consume that
+        artificial cache. Since we set ``--cache-only``, a result is reported
+        immediately::
+
+            >>> import asyncio
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
+            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+            [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])
+
+        The goal is marked as completed, since we had set ``cache_only`` above::
+
+            >>> goal.resolved
+            True
+
+        """
+        if not self._cache_only:
+            return
+
+        results = self._cache.results(surface=self._surface, job=self)
+
+        iets = [node["result"] async for node in results.nodes()]
+
+        await self._report.result(self, None, iets=iets, cached=True)
+        self._resolved = Goal.COMPLETED
 
     @classmethod
     @click.command(
@@ -128,6 +182,7 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         show_default=True,
         help="Zorich induction steps to perform before giving up",
     )
+    @Goal._cache_only_option
     def click(limit):
         return {
             "goals": [UndeterminedIntervalExchangeTransformation],
@@ -142,6 +197,8 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
         command = ["undetermined-iet"]
         if self._limit != UndeterminedIntervalExchangeTransformation.DEFAULT_LIMIT:
             command += ["--limit", str(self._limit)]
+        if self._cache_only != self.DEFAULT_CACHE_ONLY:
+            command.append("--cache-only")
         return command
 
     async def _consume(self, decomposition, cost):
@@ -187,12 +244,13 @@ class UndeterminedIntervalExchangeTransformation(Consumer):
                 orientation=self._saddle_connection_orientations._current,
             )
 
-        return not Consumer.COMPLETED
+        return not Goal.COMPLETED
 
     @classmethod
     def reduce(self, results):
         r"""
         Given a list of historic results, return a final verdict.
 
+        This goal does not support this operation.
         """
-        return None
+        raise NotImplementedError

@@ -2,12 +2,13 @@ service: flatsurvey-data-store-api
 
 provider:
   name: aws
-  runtime: nodejs10.x
+  runtime: nodejs14.x
   region: eu-central-1
   memorySize: 2048
   versionFunctions: true
-  apiKeys:
-    - postgraphile-dev-apikey
+  apiGateway:
+    apiKeys:
+      - postgraphile-dev-apikey
   vpc:
     securityGroupIds:
       - sg-93f761ee

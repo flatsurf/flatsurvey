@@ -32,7 +32,7 @@ EXAMPLES::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -50,15 +50,13 @@ EXAMPLES::
 
 import click
 from pinject import copy_args_to_internal_fields
-from sage.all import cached_method
 
-from flatsurvey.jobs.flow_decomposition import FlowDecompositions
-from flatsurvey.pipeline import Consumer
+from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class OrbitClosure(Consumer):
+class OrbitClosure(Goal):
     r"""
     Determines the GL₂(R) orbit closure of ``surface``.
 
@@ -78,7 +76,6 @@ class OrbitClosure(Consumer):
     DEFAULT_LIMIT = 32
     DEFAULT_EXPANSIONS = 4
     DEFAULT_DEFORM = False
-    DEFAULT_CACHE_ONLY = False
 
     @copy_args_to_internal_fields
     def __init__(
@@ -91,9 +88,11 @@ class OrbitClosure(Consumer):
         limit=DEFAULT_LIMIT,
         expansions=DEFAULT_EXPANSIONS,
         deform=DEFAULT_DEFORM,
-        cache_only=DEFAULT_CACHE_ONLY,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
     ):
-        super().__init__(producers=[flow_decompositions])
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._cylinders_without_increase = 0
         self._directions_with_cylinders = 0
@@ -106,18 +105,53 @@ class OrbitClosure(Consumer):
         self._lower_bound = pyflatsurf.flatsurf.Bound(0)
         self._upper_bound = pyflatsurf.flatsurf.Bound(0)
 
-    async def init(self):
+    async def consume_cache(self):
+        r"""
+        Try to resolve this goal from cached previous runs.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Report
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> from flatsurvey.cache import Cache
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> cache = Cache()
+            >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+
+        Try to resolve the goal from (no) cached results::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            False
+
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
+
+            >>> import asyncio
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"data": {"dense": None}}
+            ...    yield {"data": {"dense": True}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            True
+
+        """
         results = self._cache.results(surface=self._surface, job=self)
 
-        if await results.reduce() is not None:
-            self._report.log(self, "dense orbit closure (cached)")
-            self._resolved = Consumer.COMPLETED
-            return
+        verdict = await results.reduce()
 
-        if self._cache_only:
-            self._report.log(self, "probably non-dense orbit closure (cached)")
-            self._resolved = Consumer.COMPLETED
-            return
+        if verdict is not None or self._cache_only:
+            await self._report.result(self, result=None, dense=verdict, cached=True)
+            self._resolved = Goal.COMPLETED
 
     @classmethod
     @click.command(
@@ -145,12 +179,7 @@ class OrbitClosure(Consumer):
         default=DEFAULT_DEFORM,
         help="When set, we deform the input surface as soon as we found a third dimension in the tangent space and restart. This is often beneficial if the input surface has lots of symmetries and also when the Boshernitzan criterion can rarely be applied due to SAF=0.",
     )
-    @click.option(
-        "--cache-only",
-        default=DEFAULT_CACHE_ONLY,
-        is_flag=True,
-        help="Do not perform any computation. Only query the cache.",
-    )
+    @Goal._cache_only_option
     def click(limit, expansions, deform, cache_only):
         return {
             "goals": [OrbitClosure],
@@ -185,9 +214,9 @@ class OrbitClosure(Consumer):
         if self._expansions != self.DEFAULT_EXPANSIONS:
             command.append(f"--expansions={self._expansions}")
         if self._deform != self.DEFAULT_DEFORM:
-            command.append(f"--deform")
+            command.append("--deform")
         if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append(f"--cache-only")
+            command.append("--cache-only")
         return command
 
     async def _consume(self, decomposition, cost):
@@ -210,7 +239,7 @@ class OrbitClosure(Consumer):
 
             >>> import asyncio
             >>> resolve = oc.resolve()
-            >>> assert asyncio.run(resolve) == Consumer.COMPLETED
+            >>> assert asyncio.run(resolve) == Goal.COMPLETED
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 4/6
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 6/6
             [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
@@ -257,7 +286,7 @@ class OrbitClosure(Consumer):
             == self._surface.orbit_closure_dimension_upper_bound
         ):
             await self.report()
-            return Consumer.COMPLETED
+            return Goal.COMPLETED
 
         if self._cylinders_without_increase >= self._limit:
             await self.report()
@@ -265,9 +294,7 @@ class OrbitClosure(Consumer):
             if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
 
-                self._report.log(
-                    self, f"Found too many cylinders without improvements."
-                )
+                self._report.log(self, "Found too many cylinders without improvements.")
 
                 if self._lower_bound == 0:
                     self._lower_bound = self._upper_bound
@@ -277,7 +304,7 @@ class OrbitClosure(Consumer):
                 if self._upper_bound > self._lower_bound:
                     self._report.log(
                         self,
-                        f"Continuing search since connections seem to be increasing in length quickly.",
+                        "Continuing search since connections seem to be increasing in length quickly.",
                     )
                 else:
                     self._saddle_connections.randomize(self._lower_bound)
@@ -286,9 +313,9 @@ class OrbitClosure(Consumer):
                         f"Now considering directions coming from saddle connections of length more than {self._lower_bound}",
                     )
                 self._cylinders_without_increase = 0
-                return not Consumer.COMPLETED
+                return not Goal.COMPLETED
 
-            return Consumer.COMPLETED
+            return Goal.COMPLETED
 
         if (
             dimension != orbit_closure.dimension()
@@ -351,7 +378,7 @@ class OrbitClosure(Consumer):
 
                         self._report.log(
                             self,
-                            f"Restarting OrbitClosure search with deformed surface.",
+                            "Restarting OrbitClosure search with deformed surface.",
                         )
 
                         from flatsurvey.surfaces import Deformation
@@ -367,10 +394,10 @@ class OrbitClosure(Consumer):
                     print("Cannot deform. No tangent vector can be used to deform.")
                     break
 
-        return not Consumer.COMPLETED
+        return not Goal.COMPLETED
 
     @classmethod
-    def reduce(self, results):
+    def reduce(cls, results):
         r"""
         Given a list of historic results, return a final verdict.
 
@@ -384,10 +411,10 @@ class OrbitClosure(Consumer):
         """
         results = [result.get("dense", None) for result in results]
         assert not any([result is False for result in results])
-        return True if any(result == True for result in results) else None
+        return True if any(result for result in results) else None
 
     async def report(self):
-        if self._resolved != Consumer.COMPLETED:
+        if self._resolved != Goal.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
             await self._report.result(
                 self,

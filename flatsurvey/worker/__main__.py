@@ -55,7 +55,7 @@ TESTS::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -203,11 +203,11 @@ class Worker:
         r"""
         Run until all our goals are resolved.
 
+        TODO
         """
         try:
-            # TODO: This is a weird hack.
             for goal in self._goals:
-                await goal.init()
+                await goal.consume_cache()
             for goal in self._goals:
                 await goal.resolve()
         finally:

@@ -22,7 +22,7 @@ fairly trivial to change that and allow for other similar systems as well.
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class Cache:
     actual cache explicitly on the command line.
     """
 
-    def results(self, surface, job, exact=False):
+    def results(self, job, surface=None, exact=False):
         r"""
         Return our previous verdicts on running ``job`` for ``surface``.
 
@@ -58,26 +58,145 @@ class Cache:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
-            >>> results = Cache().results(Ngon([1,1,1]), CompletelyCylinderPeriodic)
+            >>> results = Cache().results(surface=Ngon([1,1,1]), job=CompletelyCylinderPeriodic)
 
             >>> import asyncio
             >>> asyncio.run(results.reduce()) is None
             True
 
         """
-        return Nothing()
+        return Nothing(job=job)
 
 
-class Nothing:
+class Results:
     r"""
-    A missing cached result.
+    Base class for cached results.
+
+    Subclasses should implement ``__aiter__`` to yield these cached results.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
+        >>> cache = Cache()
+        >>> results = cache.results(job=CompletelyCylinderPeriodic)
+
+        >>> isinstance(results, Results)
+        True
+
     """
+
+    def __init__(self, job):
+        self._job = job
+
+    async def nodes(self):
+        r"""
+        Return the nodes stored in the cache for these results.
+
+        Use :meth:`results` for a more condensed version that is stripped of
+        additional metadata.
+
+        EXAMPLES:
+
+        We query the nodes of some mock cached data::
+
+            >>> cache = Cache()
+
+            >>> async def results(self):
+            ...    yield {"data": {"result": None}, "surface": {"data": {}}, "timestamp": None}
+
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    from flatsurvey.jobs import CompletelyCylinderPeriodic
+            ...    results = cache.results(job=CompletelyCylinderPeriodic)
+            ...    async def to_list(generator): return [item async for item in generator]
+            ...    import asyncio
+            ...    asyncio.run(to_list(results.nodes()))
+            [{'result': None, 'surface': {}, 'timestamp': None}]
+
+        """
+        async for node in self:
+            yield {
+                **node["data"],
+                "surface": node["surface"]["data"],
+                "timestamp": node["timestamp"],
+            }
+
+    async def results(self):
+        r"""
+        Return the objects that were registered as previous results.
+
+        EXAAMPLES:
+
+        We query the nodes of some mock cached data::
+
+            >>> cache = Cache()
+
+            >>> async def results(self):
+            ...    yield {"data": {"result": None}, "surface": {"data": {}}, "timestamp": None}
+
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    from flatsurvey.jobs import CompletelyCylinderPeriodic
+            ...    results = cache.results(job=CompletelyCylinderPeriodic)
+            ...    async def to_list(generator): return [item async for item in generator]
+            ...    import asyncio
+            ...    asyncio.run(to_list(results.results()))
+            [None]
+
+        """
+        async for node in self:
+            result = node["data"]["result"]
+            if callable(result):
+                result = result()
+            yield result
 
     async def reduce(self):
         r"""
-        Return a verdict from the found cached results or ``None`` if no result
-        could be determined.
+        Combine all results to an overall verdict.
 
-        Always returns ``None`` because we do not have any results cached here.
+        Return ``None`` if the results are inconclusive.
+
+        EXAAMPLES:
+
+        We query the nodes of some mock cached data::
+
+            >>> cache = Cache()
+
+            >>> async def results(self):
+            ...    yield {"data": {"result": False, "surface": {"data": {}}, "timestamp": None}}
+
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    from flatsurvey.jobs import CompletelyCylinderPeriodic
+            ...    results = cache.results(job=CompletelyCylinderPeriodic)
+            ...    import asyncio
+            ...    asyncio.run(results.reduce())
+            False
+
         """
-        return None
+        return self._job.reduce([node["data"] async for node in self])
+
+
+class Nothing(Results):
+    r"""
+    A missing cached result.
+
+    EXAMPLES::
+
+        >>> cache = Cache()
+
+        >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
+        >>> isinstance(cache.results(job=CompletelyCylinderPeriodic), Nothing)
+        True
+
+    """
+
+    async def __aiter__(self):
+        r"""
+        Return an asynchrononous iterator over no results.
+        """
+        for i in ():
+            yield i

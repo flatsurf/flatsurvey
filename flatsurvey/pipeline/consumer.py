@@ -13,7 +13,7 @@ Any goal of a computation implements the Consumer interface::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -68,17 +68,31 @@ class Consumer:
         # COMPLETED.
         self._resolved = not Consumer.COMPLETED
 
-        # Some consumers need to be resolved because they have been mentioned
-        # explicitly in the invocation. When that's the case, we mark_required().
-        self._required = False
-
         # Register ourselves with each produces so we get notified of any
         # objects they generate.
         for producer in producers:
             producer.register_consumer(self)
 
-    async def init(self):
-        pass
+    @property
+    def resolved(self):
+        r"""
+        Return whether this consumer should be considered resolved, i.e.,
+        whether it has already reached a final verdict.
+
+        EXAMPLES:
+
+        Typicall, a :class:`Transformation` do never reached the resolved status::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface=surface)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> orientations.resolved
+            False
+
+        """
+        return self._resolved is Consumer.COMPLETED
 
     async def consume(self, product, cost):
         r"""
@@ -159,28 +173,6 @@ class Consumer:
                 return not Consumer.COMPLETED
 
         return Consumer.COMPLETED
-
-    def mark_required(self):
-        r"""
-        Mark this as a required goal of the computation, i.e., a worker must
-        not terminate until this has been resolved.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
-            >>> from flatsurvey.cache import Cache
-            >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
-            >>> oc.mark_required()
-            orbit-closure
-
-        """
-        self._required = True
-        return self
 
     def command(self):
         r"""

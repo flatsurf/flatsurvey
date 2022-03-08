@@ -85,8 +85,15 @@ class Ngon(Surface):
 
     """
 
-    def __init__(self, angles, length="exact-real", lengths=None):
+    def __init__(self, angles, length=None, lengths=None):
         self.angles = list(angles)
+
+        if length is None:
+            if len(self.angles) == 3:
+                length = "e-antic"
+            else:
+                length = "exact-real"
+
         self.length = length
         if lengths is not None:
             self._lengths.set_cache(tuple(lengths))

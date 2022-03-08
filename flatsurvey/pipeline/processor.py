@@ -83,7 +83,7 @@ class Processor(Producer, Consumer):
             True
 
             >>> orientations._current
-            (-6, -(2*c ~ 3.4641016))
+            (-6, (-2*c ~ -3.4641016))
 
         """
         self._current = None

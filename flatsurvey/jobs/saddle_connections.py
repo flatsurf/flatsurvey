@@ -17,7 +17,7 @@ The saddle connections on a translation surface.
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ The saddle connections on a translation surface.
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline import Processor, Producer
+from flatsurvey.pipeline import Producer
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 

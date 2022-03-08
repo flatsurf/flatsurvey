@@ -12,7 +12,7 @@ targeted by an edge. (And Processors when they are both.)
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,5 +29,6 @@ targeted by an edge. (And Processors when they are both.)
 # *********************************************************************
 
 from .consumer import Consumer
+from .goal import Goal
 from .processor import Processor
 from .producer import Producer
