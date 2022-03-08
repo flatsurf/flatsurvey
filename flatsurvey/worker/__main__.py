@@ -71,9 +71,6 @@ TESTS::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import collections
-import sys
-
 import click
 import pinject
 
@@ -81,7 +78,6 @@ import flatsurvey.cache
 import flatsurvey.jobs
 import flatsurvey.reporting
 import flatsurvey.surfaces
-from flatsurvey.pipeline import Consumer
 from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
@@ -147,7 +143,7 @@ def process(commands, debug):
                 continue
 
             break
-    except:
+    except Exception:
         if debug:
             pdb.post_mortem()
         raise
