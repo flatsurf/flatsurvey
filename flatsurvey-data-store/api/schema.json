@@ -4004,6 +4004,27 @@
       },
       {
         "kind": "class",
+        "id": "4788233",
+        "name": "boshernitzan_conjecture",
+        "classKind": "r",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "typeId": "4788235",
+        "isSelectable": true,
+        "isDeletable": true,
+        "isInsertable": true,
+        "isUpdatable": true,
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "aclDeletable": true,
+        "comment": null,
+        "tags": {},
+        "isExtensionConfigurationTable": false
+      },
+      {
+        "kind": "class",
         "id": "282641",
         "name": "completely_cylinder_periodic",
         "classKind": "r",
@@ -35830,6 +35851,78 @@
         "columnLevelSelectGrant": false,
         "comment": null,
         "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "4788233",
+        "num": 1,
+        "name": "id",
+        "description": null,
+        "typeId": "2950",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": true,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "4788233",
+        "num": 2,
+        "name": "timestamp",
+        "description": null,
+        "typeId": "1184",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": true,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "4788233",
+        "num": 3,
+        "name": "surface",
+        "description": null,
+        "typeId": "2950",
+        "typeModifier": null,
+        "isNotNull": false,
+        "hasDefault": false,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "attribute",
+        "classId": "4788233",
+        "num": 4,
+        "name": "data",
+        "description": null,
+        "typeId": "3802",
+        "typeModifier": null,
+        "isNotNull": true,
+        "hasDefault": false,
+        "identity": "",
+        "aclSelectable": true,
+        "aclInsertable": true,
+        "aclUpdatable": true,
+        "columnLevelSelectGrant": false,
+        "comment": null,
+        "tags": {}
       }
     ],
     "type": [
@@ -41973,6 +42066,28 @@
       },
       {
         "kind": "type",
+        "id": "4788235",
+        "name": "boshernitzan_conjecture",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "type": "c",
+        "category": "C",
+        "domainIsNotNull": false,
+        "arrayItemTypeId": null,
+        "typeLength": -1,
+        "isPgArray": false,
+        "classId": "4788233",
+        "domainBaseTypeId": null,
+        "domainTypeModifier": null,
+        "domainHasDefault": false,
+        "enumVariants": null,
+        "rangeSubTypeId": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "type",
         "id": "282643",
         "name": "completely_cylinder_periodic",
         "description": null,
@@ -42321,6 +42436,38 @@
         "name": "cylinder_periodic_asymptotics_surface_fkey",
         "type": "f",
         "classId": "4780041",
+        "foreignClassId": "77846",
+        "description": null,
+        "keyAttributeNums": [
+          3
+        ],
+        "foreignKeyAttributeNums": [
+          1
+        ],
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "constraint",
+        "id": "4788242",
+        "name": "boshernitzan_conjecture_pkey",
+        "type": "p",
+        "classId": "4788233",
+        "foreignClassId": null,
+        "description": null,
+        "keyAttributeNums": [
+          1
+        ],
+        "foreignKeyAttributeNums": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "constraint",
+        "id": "4788243",
+        "name": "boshernitzan_conjecture_surface_fkey",
+        "type": "f",
+        "classId": "4788233",
         "foreignClassId": "77846",
         "description": null,
         "keyAttributeNums": [
@@ -46413,6 +46560,33 @@
         "name": "cylinder_periodic_asymptotics_pkey",
         "namespaceName": "flatsurvey",
         "classId": "4780041",
+        "numberOfAttributes": 1,
+        "isUnique": true,
+        "isPrimary": true,
+        "isImmediate": true,
+        "isReplicaIdentity": false,
+        "isValid": true,
+        "isPartial": false,
+        "attributeNums": [
+          1
+        ],
+        "indexType": "btree",
+        "attributePropertiesAsc": [
+          true
+        ],
+        "attributePropertiesNullsFirst": [
+          false
+        ],
+        "description": null,
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "index",
+        "id": "4788241",
+        "name": "boshernitzan_conjecture_pkey",
+        "namespaceName": "flatsurvey",
+        "classId": "4788233",
         "numberOfAttributes": 1,
         "isUnique": true,
         "isPrimary": true,
