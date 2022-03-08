@@ -90,7 +90,9 @@ class OrbitClosure(Goal):
         deform=DEFAULT_DEFORM,
         cache_only=Goal.DEFAULT_CACHE_ONLY,
     ):
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._cylinders_without_increase = 0
         self._directions_with_cylinders = 0
@@ -292,9 +294,7 @@ class OrbitClosure(Goal):
             if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
 
-                self._report.log(
-                    self, "Found too many cylinders without improvements."
-                )
+                self._report.log(self, "Found too many cylinders without improvements.")
 
                 if self._lower_bound == 0:
                     self._lower_bound = self._upper_bound
@@ -422,6 +422,7 @@ class OrbitClosure(Goal):
                 dimension=orbit_closure.dimension(),
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,
-                dense=orbit_closure.dimension() == self._surface.orbit_closure_dimension_upper_bound
+                dense=orbit_closure.dimension()
+                == self._surface.orbit_closure_dimension_upper_bound
                 or None,
             )

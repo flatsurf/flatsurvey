@@ -32,9 +32,9 @@ EXAMPLES:
 # *********************************************************************
 
 import click
+from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline.consumer import Consumer
-from pinject import copy_args_to_internal_fields
 
 
 class Goal(Consumer):

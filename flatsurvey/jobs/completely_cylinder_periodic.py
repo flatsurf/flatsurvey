@@ -67,8 +67,17 @@ class CompletelyCylinderPeriodic(Goal):
     DEFAULT_LIMIT = None
 
     @copy_args_to_internal_fields
-    def __init__(self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY, limit=DEFAULT_LIMIT):
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+    def __init__(
+        self,
+        report,
+        flow_decompositions,
+        cache,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
+        limit=DEFAULT_LIMIT,
+    ):
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._undetermined_directions = 0
         self._cylinder_periodic_directions = 0
@@ -89,7 +98,11 @@ class CompletelyCylinderPeriodic(Goal):
     @Goal._cache_only_option
     def click(limit, cache_only):
         return {
-            "bindings": [PartialBindingSpec(CompletelyCylinderPeriodic)(limit=limit, cache_only=cache_only)],
+            "bindings": [
+                PartialBindingSpec(CompletelyCylinderPeriodic)(
+                    limit=limit, cache_only=cache_only
+                )
+            ],
             "goals": [CompletelyCylinderPeriodic],
         }
 
@@ -141,7 +154,9 @@ class CompletelyCylinderPeriodic(Goal):
             True
 
         """
-        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+        results = self._cache.results(
+            surface=self._flow_decompositions._surface, job=self
+        )
 
         verdict = await results.reduce()
 
@@ -201,9 +216,7 @@ class CompletelyCylinderPeriodic(Goal):
             await self.report(False, decomposition=decomposition)
             return Goal.COMPLETED
 
-        if all(
-            [component.cylinder() for component in decomposition.components()]
-        ):
+        if all([component.cylinder() for component in decomposition.components()]):
             self._cylinder_periodic_directions += 1
             if (
                 self._limit is not None

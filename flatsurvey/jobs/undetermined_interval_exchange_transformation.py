@@ -38,12 +38,6 @@ import time
 
 import click
 import cppyy
-import pyintervalxt
-from pinject import copy_args_to_internal_fields
-
-from flatsurvey.pipeline import Goal
-from flatsurvey.pipeline.util import PartialBindingSpec
-from flatsurvey.ui.group import GroupedCommand
 
 # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
 # i.e., when serializing an IET of unknown type (as is this one because
@@ -51,7 +45,15 @@ from flatsurvey.ui.group import GroupedCommand
 # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
 # be smart about registering the right types in cppyy. (If possible.) See #10.
 # TODO: Expose something like this construction() in intervalxt. See #10.
-import pyeantic, pyexactreal
+import pyeantic
+import pyexactreal
+import pyintervalxt
+from pinject import copy_args_to_internal_fields
+
+from flatsurvey.pipeline import Goal
+from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.ui.group import GroupedCommand
+
 cppyy.cppdef(
     r"""
 #include <boost/type_erasure/any_cast.hpp>
@@ -111,7 +113,9 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         cache_only=Goal.DEFAULT_CACHE_ONLY,
         limit=DEFAULT_LIMIT,
     ):
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
     async def consume_cache(self):
         r"""

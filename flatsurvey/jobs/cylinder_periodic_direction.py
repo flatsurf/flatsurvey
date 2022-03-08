@@ -65,8 +65,17 @@ class CylinderPeriodicDirection(Goal):
     DEFAULT_LIMIT = None
 
     @copy_args_to_internal_fields
-    def __init__(self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY, limit=DEFAULT_LIMIT):
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+    def __init__(
+        self,
+        report,
+        flow_decompositions,
+        cache,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
+        limit=DEFAULT_LIMIT,
+    ):
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._directions = 0
 
@@ -109,7 +118,9 @@ class CylinderPeriodicDirection(Goal):
             True
 
         """
-        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+        results = self._cache.results(
+            surface=self._flow_decompositions._surface, job=self
+        )
 
         verdict = await results.reduce()
 
@@ -189,9 +200,7 @@ class CylinderPeriodicDirection(Goal):
         """
         self._directions += 1
 
-        if all(
-            [component.cylinder() for component in decomposition.components()]
-        ):
+        if all([component.cylinder() for component in decomposition.components()]):
             await self.report(True, decomposition=decomposition)
             return Goal.COMPLETED
 

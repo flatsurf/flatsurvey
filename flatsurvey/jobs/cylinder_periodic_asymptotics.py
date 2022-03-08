@@ -62,8 +62,12 @@ class CylinderPeriodicAsymptotics(Goal):
     """
 
     @copy_args_to_internal_fields
-    def __init__(self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY):
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+    def __init__(
+        self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY
+    ):
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
         self._results = []
 
@@ -108,9 +112,14 @@ class CylinderPeriodicAsymptotics(Goal):
         if not self._cache_only:
             return
 
-        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+        results = self._cache.results(
+            surface=self._flow_decompositions._surface, job=self
+        )
 
-        distributions = [[d() if callable(d) else d for d in node["distribution"]] async for node in results.nodes()]
+        distributions = [
+            [d() if callable(d) else d for d in node["distribution"]]
+            async for node in results.nodes()
+        ]
 
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution
@@ -128,7 +137,9 @@ class CylinderPeriodicAsymptotics(Goal):
     @Goal._cache_only_option
     def click(cache_only):
         return {
-            "bindings": [PartialBindingSpec(CylinderPeriodicAsymptotics)(cache_only=cache_only)],
+            "bindings": [
+                PartialBindingSpec(CylinderPeriodicAsymptotics)(cache_only=cache_only)
+            ],
             "goals": [CylinderPeriodicAsymptotics],
         }
 

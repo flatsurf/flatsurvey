@@ -57,13 +57,28 @@ class BoshernitzanConjecture(Goal):
         boshernitzan-conjecture
 
     """
-    @copy_args_to_internal_fields
-    def __init__(self, flow_decompositions, saddle_connection_orientations, report, cache, cache_only=Goal.DEFAULT_CACHE_ONLY):
-        from flatsurvey.jobs import BoshernitzanConjectureOrientations
-        if not isinstance(saddle_connection_orientations, BoshernitzanConjectureOrientations):
-            raise TypeError("must iterate over boshernitzan-conjecture-orientations to test Boshenitzan's conjecture")
 
-        super().__init__(producers=[flow_decompositions], cache=cache, cache_only=cache_only)
+    @copy_args_to_internal_fields
+    def __init__(
+        self,
+        flow_decompositions,
+        saddle_connection_orientations,
+        report,
+        cache,
+        cache_only=Goal.DEFAULT_CACHE_ONLY,
+    ):
+        from flatsurvey.jobs import BoshernitzanConjectureOrientations
+
+        if not isinstance(
+            saddle_connection_orientations, BoshernitzanConjectureOrientations
+        ):
+            raise TypeError(
+                "must iterate over boshernitzan-conjecture-orientations to test Boshenitzan's conjecture"
+            )
+
+        super().__init__(
+            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+        )
 
     @classmethod
     @click.command(
@@ -75,7 +90,9 @@ class BoshernitzanConjecture(Goal):
     @Goal._cache_only_option
     def click(limit, cache_only):
         return {
-            "bindings": [PartialBindingSpec(BoshernitzanConjecture)(cache_only=cache_only)],
+            "bindings": [
+                PartialBindingSpec(BoshernitzanConjecture)(cache_only=cache_only)
+            ],
             "goals": [BoshernitzanConjecture],
         }
 
@@ -105,7 +122,10 @@ class BoshernitzanConjecture(Goal):
         """
         results = [result["result"] for result in results]
 
-        assert not (any(result is True for result in results) and any(result is False for result in results))
+        assert not (
+            any(result is True for result in results)
+            and any(result is False for result in results)
+        )
 
         if any(result is False for result in results):
             return False

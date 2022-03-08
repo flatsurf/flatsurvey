@@ -42,10 +42,10 @@ import click
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.aws.graphql import Client as GraphQLClient
+from flatsurvey.cache.cache import Results
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.reporting.graphql import GraphQL as GraphQLReporter
 from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.cache.cache import Results
 
 
 class GraphQL:
@@ -330,7 +330,7 @@ class S3Cache:
             with self._s3_client_pool() as s3:
                 prefix = "s3://"
                 assert url.startswith(prefix)
-                bucket, key = url[len(prefix):].split("/", 1)
+                bucket, key = url[len(prefix) :].split("/", 1)
                 buffer = self._downloads[url] = BytesIO()
                 s3.download_fileobj(bucket, key, buffer)
                 buffer.seek(0)

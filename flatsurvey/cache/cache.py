@@ -193,6 +193,7 @@ class Nothing(Results):
         True
 
     """
+
     async def __aiter__(self):
         r"""
         Return an asynchrononous iterator over no results.

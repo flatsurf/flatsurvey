@@ -29,6 +29,6 @@ targeted by an edge. (And Processors when they are both.)
 # *********************************************************************
 
 from .consumer import Consumer
+from .goal import Goal
 from .processor import Processor
 from .producer import Producer
-from .goal import Goal
