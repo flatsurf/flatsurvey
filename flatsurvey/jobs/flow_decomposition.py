@@ -46,7 +46,7 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
-from ..pipeline import Consumer, Processor
+from ..pipeline import Processor
 
 
 class FlowDecompositions(Processor):
@@ -87,8 +87,6 @@ class FlowDecompositions(Processor):
     )
     def click(limit):
         return {
-            # TODO: This should not be a goal but something else. Do the same for other processors. See #9.
-            "goals": [FlowDecompositions],
             "bindings": [PartialBindingSpec(FlowDecompositions)(limit=limit)],
         }
 
