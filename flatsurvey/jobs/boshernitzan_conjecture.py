@@ -80,6 +80,52 @@ class BoshernitzanConjecture(Goal):
             producers=[flow_decompositions], cache=cache, cache_only=cache_only
         )
 
+    async def consume_cache(self):
+        r"""
+        Try to resolve this goal from cached previous runs.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting.report import Report
+            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
+            >>> surface = Ngon((1, 1, 1))
+            >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
+            >>> goal = BoshernitzanConjecture(report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+
+        Try to resolve the goal from (no) cached results::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            False
+
+        We mock some artificial results from previous runs and consume that
+        artificial cache::
+
+            >>> import asyncio
+            >>> from unittest.mock import patch
+            >>> from flatsurvey.cache.cache import Nothing
+            >>> async def results(self):
+            ...    yield {"data": {"result": None}}
+            ...    yield {"data": {"result": True}}
+            >>> with patch.object(Nothing, '__aiter__', results):
+            ...    asyncio.run(goal.consume_cache())
+
+            >>> goal.resolved
+            True
+
+        """
+        results = self._cache.results(surface=self._flow_decompositions._surface, job=self)
+
+        verdict = await results.reduce()
+
+        if verdict is not None or self._cache_only:
+            await self._report.result(self, result=verdict, cached=True)
+            self._resolved = Goal.COMPLETED
+
     @classmethod
     @click.command(
         name="boshernitzan-conjecture",
