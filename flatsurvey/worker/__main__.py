@@ -147,7 +147,7 @@ def process(commands, debug):
                 continue
 
             break
-    except:
+    except Exception:
         if debug:
             pdb.post_mortem()
         raise
