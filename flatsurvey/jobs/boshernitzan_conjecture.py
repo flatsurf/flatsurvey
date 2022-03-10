@@ -198,33 +198,14 @@ class BoshernitzanConjecture(Goal):
             >>> log = Log(surface=surface)
             >>> goal = BoshernitzanConjecture(report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
 
-        Investigate in a single direction::
+        We investigate in a single direction and conclude that Boshernitzan's
+        conjecture holds for this triangle::
 
             >>> import asyncio
             >>> produce = orientations.produce()
             >>> asyncio.run(produce)
-            True
-
-        Since we have not found any direction that is not cylinder periodic
-        (since there are none), we cannot tell yet whether Boshernitzan's
-        conjectures hold::
-
-            >>> report = goal.report()
-            >>> asyncio.run(report)
-            [Ngon([1, 1, 1])] [BoshernitzanConjecture] ¯\_(ツ)_/¯
-
-        If we try to investigate in another direction, we find that we have
-        considered all possible directions::
-
-            >>> produce = orientations.produce()
-            >>> asyncio.run(produce)
-            False
-
-        So, we conclude that the Boshernitzan's conjecture holds for this
-        surface::
-
-            >>> asyncio.run(goal.report())
             [Ngon([1, 1, 1])] [BoshernitzanConjecture] True
+            True
 
         """
         if decomposition.undeterminedComponents():
