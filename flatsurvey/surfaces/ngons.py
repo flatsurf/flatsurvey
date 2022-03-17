@@ -260,10 +260,14 @@ class Ngon(Surface):
 
         for (sign, x, y) in S.label_iterator():
             from sage.all import matrix
-            symmetry = matrix([
-                [x, y],
-                [-y, x],
-            ], immutable=True)
+
+            symmetry = matrix(
+                [
+                    [x, y],
+                    [-y, x],
+                ],
+                immutable=True,
+            )
             symmetries.append(symmetry)
 
         for symmetry in symmetries:
@@ -271,7 +275,9 @@ class Ngon(Surface):
 
         symmetries = set(symmetries)
 
-        assert any(m == 1 for m in symmetries), f"The identity matrix must be contained in the symmetries but is not in {symmetries}."
+        assert any(
+            m == 1 for m in symmetries
+        ), f"The identity matrix must be contained in the symmetries but is not in {symmetries}."
 
         for a in symmetries:
             for b in symmetries:

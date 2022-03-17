@@ -115,7 +115,7 @@ class BoshernitzanConjectureOrientations(Producer):
             ['a']
 
         ::
-            
+
             >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 34))).assertions
             ['b']
 
@@ -215,23 +215,33 @@ class BoshernitzanConjectureOrientations(Producer):
         # Assert that the directions are in S¹(2d')
         for z in directions:
             from sage.all import lcm
-            v= self._pow(z, 2*lcm(2, d))
 
-            assert v[0] > 0 and v[1] == 0, f"{z} is not in S¹(2d') for angles {a, b, c} since {v} != (1, 0)"
+            v = self._pow(z, 2 * lcm(2, d))
+
+            assert (
+                v[0] > 0 and v[1] == 0
+            ), f"{z} is not in S¹(2d') for angles {a, b, c} since {v} != (1, 0)"
 
         # Assert that the directions span S¹(2d')
-        directions_with_symmetries = list(symmetry * direction for direction in directions for symmetry in symmetries)
+        directions_with_symmetries = list(
+            symmetry * direction for direction in directions for symmetry in symmetries
+        )
         for direction in directions_with_symmetries:
             direction.set_immutable()
 
         directions_with_symmetries = set(directions_with_symmetries)
 
         if d % 2 == 0 or "c" in self.assertions:
-            assert len(directions_with_symmetries) == 2*lcm(2, d), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated {2*lcm(2, d)} directions but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
+            assert len(directions_with_symmetries) == 2 * lcm(
+                2, d
+            ), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated {2*lcm(2, d)} directions but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
         else:
-            relevant_directions = [v for v in directions_with_symmetries if self._pow(v, lcm(2, d))[0] < 0]
-            assert len(relevant_directions) >= lcm(2, d), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated S¹(2d')\S¹(d') but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
-
+            relevant_directions = [
+                v for v in directions_with_symmetries if self._pow(v, lcm(2, d))[0] < 0
+            ]
+            assert len(relevant_directions) >= lcm(
+                2, d
+            ), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated S¹(2d')\S¹(d') but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
 
         # Assert that the directions are independent modulo symmetries of the triangle.
         for direction in directions:
@@ -239,24 +249,27 @@ class BoshernitzanConjectureOrientations(Producer):
                 image = symmetry * direction
                 if image == direction:
                     continue
-                assert symmetry * direction not in directions, f"directions {direction} and {symmetry * direction} from {directions} must be independent generators in S¹(2d') with angles {a, b, c} but they are connected by {symmetry} which is one of the {len(symmetries)} unfolding symmetries"
+                assert (
+                    symmetry * direction not in directions
+                ), f"directions {direction} and {symmetry * direction} from {directions} must be independent generators in S¹(2d') with angles {a, b, c} but they are connected by {symmetry} which is one of the {len(symmetries)} unfolding symmetries"
 
         return directions
 
     @classmethod
     def _pow(self, z, n):
         from sage.all import vector
+
         def mul(a, b):
-            return vector((a[0]*b[0] - a[1]*b[1], a[0]*b[1] + a[1]*b[0]))
+            return vector((a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]))
 
         if n == 0:
             return vector(z.base_ring(), (1, 0))
         elif n < 0:
             raise NotImplementedError
         elif n % 2 == 0:
-            return self._pow(mul(z, z), n//2)
+            return self._pow(mul(z, z), n // 2)
         else:
-            return mul(self._pow(z, n-1), z)
+            return mul(self._pow(z, n - 1), z)
 
     def _produce(self):
         r"""

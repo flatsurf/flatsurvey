@@ -84,7 +84,8 @@ class BoshernitzanConjecture(Goal):
         )
 
         self._verdict = {
-            assertion: None for assertion in self._saddle_connection_orientations.assertions
+            assertion: None
+            for assertion in self._saddle_connection_orientations.assertions
         }
 
     async def consume_cache(self):
@@ -127,8 +128,9 @@ class BoshernitzanConjecture(Goal):
         """
         for assertion in self._verdict:
             results = self._cache.results(
-                surface=self._surface, job=self,
-                filter=f'assertion: {{ equalTo: "{assertion}" }}'
+                surface=self._surface,
+                job=self,
+                filter=f'assertion: {{ equalTo: "{assertion}" }}',
             )
 
             verdict = await results.reduce()
@@ -136,7 +138,9 @@ class BoshernitzanConjecture(Goal):
             if verdict is not None or self._cache_only:
                 self._verdict[assertion] = verdict
 
-                await self._report_assertion(result=verdict, assertion=assertion, cached=True)
+                await self._report_assertion(
+                    result=verdict, assertion=assertion, cached=True
+                )
 
         if self._cache_only:
             self._resolved = Goal.COMPLETED
@@ -189,11 +193,15 @@ class BoshernitzanConjecture(Goal):
 
         assertion = results[0]["assertion"]
         if any(result["assertion"] != assertion for result in results):
-            raise ValueError("cannot consolidate results relating to different conjectures")
+            raise ValueError(
+                "cannot consolidate results relating to different conjectures"
+            )
 
         results = [result["result"] for result in results]
 
-        if (any(result is True for result in results) and any(result is False for result in results)):
+        if any(result is True for result in results) and any(
+            result is False for result in results
+        ):
             raise ValueError("historic results are contradictory")
 
         if any(result is False for result in results):
@@ -249,7 +257,10 @@ class BoshernitzanConjecture(Goal):
                 assert d % 2 == 1
 
                 from flatsurvey.jobs import BoshernitzanConjectureOrientations
-                pow = BoshernitzanConjectureOrientations._pow(self._saddle_connection_orientations._current, 2*d)
+
+                pow = BoshernitzanConjectureOrientations._pow(
+                    self._saddle_connection_orientations._current, 2 * d
+                )
                 if pow[0] > 0 and pow[1] == 0:
                     continue
 
@@ -282,5 +293,8 @@ class BoshernitzanConjecture(Goal):
             raise NotImplementedError
 
         for assertion in self._verdict:
-            if self._verdict[assertion] is None and self._saddle_connection_orientations.exhausted:
+            if (
+                self._verdict[assertion] is None
+                and self._saddle_connection_orientations.exhausted
+            ):
                 await self._report_assertion(result=True, assertion=assertion, **kwargs)
