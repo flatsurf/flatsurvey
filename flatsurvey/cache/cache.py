@@ -47,7 +47,7 @@ class Cache:
     actual cache explicitly on the command line.
     """
 
-    def results(self, job, surface=None, exact=False):
+    def results(self, job, **kwargs):
         r"""
         Return our previous verdicts on running ``job`` for ``surface``.
 

@@ -44,6 +44,7 @@ type BoshernitzanConjecture implements Node {
 
   # Reads a single `Surface` that is related to this `BoshernitzanConjecture`.
   surfaceBySurface: Surface
+  assertion: String
 }
 
 # A condition to be used against `BoshernitzanConjecture` object types. All fields
@@ -75,6 +76,9 @@ input BoshernitzanConjectureFilter {
 
   # Filter by the object’s `data` field.
   data: JSONFilter
+
+  # Filter by the object’s `assertion` field.
+  assertion: StringFilter
 
   # Filter by the object’s `surfaceBySurface` relation.
   surfaceBySurface: SurfaceFilter

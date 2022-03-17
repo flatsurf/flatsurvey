@@ -224,6 +224,69 @@ class Ngon(Surface):
 
         return equivalents
 
+    @property
+    def unfolding_symmetries(self):
+        r"""
+        Return the symmetries of this polygon that are present in the unfolding
+        as orthogonal matrices.
+
+        This does not include symmetries of the polygon itself.
+
+        EXAMPLES::
+
+            >>> S = Ngon((1, 1, 1))
+            >>> S.unfolding_symmetries
+            {[  -1/2  1/2*c]
+            [-1/2*c   -1/2], [1 0]
+            [0 1], [  -1/2 -1/2*c]
+            [ 1/2*c   -1/2]}
+
+        ::
+
+            >>> S = Ngon((1, 1, 2))
+            >>> S.unfolding_symmetries
+            {[-1  0]
+            [ 0 -1], [1 0]
+            [0 1], [ 0  1]
+            [-1  0], [ 0 -1]
+            [ 1  0]}
+
+        """
+        S = self._surface()
+
+        symmetries = []
+
+        assert (0, 1, 0) in S.label_iterator()
+
+        for (sign, x, y) in S.label_iterator():
+            from sage.all import matrix
+
+            symmetry = matrix(
+                [
+                    [x, y],
+                    [-y, x],
+                ],
+                immutable=True,
+            )
+            symmetries.append(symmetry)
+
+        for symmetry in symmetries:
+            symmetry.set_immutable()
+
+        symmetries = set(symmetries)
+
+        assert any(
+            m == 1 for m in symmetries
+        ), f"The identity matrix must be contained in the symmetries but is not in {symmetries}."
+
+        for a in symmetries:
+            for b in symmetries:
+                other = a * ~b
+                other.set_immutable()
+                assert other in symmetries
+
+        return symmetries
+
     def _reference(self):
         if len(self.angles) == 3:
             a, b, c = self.angles
