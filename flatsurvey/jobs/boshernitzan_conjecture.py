@@ -258,7 +258,7 @@ class BoshernitzanConjecture(Goal):
 
                 if verdict is None:
                     self._verdict[assertion] = False
-                    self._report_assertion(result=False, assertion=assertion)
+                    await self._report_assertion(result=False, assertion=assertion)
 
                 continue
 

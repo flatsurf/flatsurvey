@@ -96,23 +96,28 @@ class BoshernitzanConjectureOrientations(Producer):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import BoshernitzanConjectureOrientations
-            >>> surface = Ngon((1, 1, 1))
-            >>> surface.assertions
+            >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 1))).assertions
+            ['b', 'c']
 
         ::
 
-            >>> surface = Ngon((1, 1, 2))
-            >>> surface.assertions
+            >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 2))).assertions
+            ['a', 'c', 'e']
 
         ::
 
-            >>> surface = Ngon((1, 1, 22))
-            >>> surface.assertions
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 6))).assertions
+            ['b']
 
         ::
 
-            >>> surface = Ngon((1, 1, 23))
-            >>> surface.assertions
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 33))).assertions
+            ['a']
+
+        ::
+            
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 34))).assertions
+            ['b']
 
         """
         a, b, c = sorted(self._surface.angles)
@@ -142,23 +147,28 @@ class BoshernitzanConjectureOrientations(Producer):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import BoshernitzanConjectureOrientations
-            >>> surface = Ngon((1, 1, 1))
-            >>> surface.directions
+            >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 1)))._directions
+            [(4, 0), (0, 4)]
 
         ::
 
-            >>> surface = Ngon((1, 1, 2))
-            >>> surface.directions
+            >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 2)))._directions
+            [(0, 2), (1, -1)]
 
         ::
 
-            >>> surface = Ngon((1, 1, 22))
-            >>> surface.directions
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 6)))._directions
+            [(0, 32)]
 
         ::
 
-            >>> surface = Ngon((1, 1, 23))
-            >>> surface.directions
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 33)))._directions
+            [(0, 256), (-128*c^17 + 2176*c^15 - 15360*c^13 + 58368*c^11 - 129280*c^9 + 167936*c^7 - 120192*c^5 + 39040*c^3 - 2688*c, -128*c^14 + 2048*c^12 - 13184*c^10 + 43520*c^8 - 77568*c^6 + 71552*c^4 - 28800*c^2 + 2432)]
+
+        ::
+
+            >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 34)))._directions
+            [(0, 256)]
 
         """
         directions = []
@@ -216,7 +226,12 @@ class BoshernitzanConjectureOrientations(Producer):
 
         directions_with_symmetries = set(directions_with_symmetries)
 
-        assert len(directions_with_symmetries) == 2*lcm(2, d), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated {2*lcm(2, d)} directions but it generates {directions_with_symmetries}"
+        if d % 2 == 0 or "c" in self.assertions:
+            assert len(directions_with_symmetries) == 2*lcm(2, d), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated {2*lcm(2, d)} directions but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
+        else:
+            relevant_directions = [v for v in directions_with_symmetries if self._pow(v, lcm(2, d))[0] < 0]
+            assert len(relevant_directions) >= lcm(2, d), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated S¹(2d')\S¹(d') but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
+
 
         # Assert that the directions are independent modulo symmetries of the triangle.
         for direction in directions:
