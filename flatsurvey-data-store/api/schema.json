@@ -42483,6 +42483,32 @@
     "procedure": [
       {
         "kind": "procedure",
+        "id": "4902921",
+        "name": "boshernitzan_conjecture_assertion",
+        "description": null,
+        "namespaceId": "73745",
+        "namespaceName": "flatsurvey",
+        "isStrict": false,
+        "returnsSet": false,
+        "isStable": true,
+        "returnTypeId": "25",
+        "argTypeIds": [
+          "4788235"
+        ],
+        "argModes": [],
+        "argNames": [
+          "b"
+        ],
+        "inputArgsCount": 1,
+        "argDefaultsNum": 0,
+        "cost": 100,
+        "aclExecutable": true,
+        "language": "sql",
+        "comment": null,
+        "tags": {}
+      },
+      {
+        "kind": "procedure",
         "id": "327691",
         "name": "flow_decomposition_cylinders",
         "description": null,

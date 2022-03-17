@@ -92,7 +92,28 @@ class BoshernitzanConjectureOrientations(Producer):
         r"""
         The parts of Boshernitzan's conjecture to which this surface applies.
 
-        TODO
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import BoshernitzanConjectureOrientations
+            >>> surface = Ngon((1, 1, 1))
+            >>> surface.assertions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 2))
+            >>> surface.assertions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 22))
+            >>> surface.assertions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 23))
+            >>> surface.assertions
+
         """
         a, b, c = sorted(self._surface.angles)
         d = a + b + c
@@ -117,7 +138,28 @@ class BoshernitzanConjectureOrientations(Producer):
         r"""
         Return the directions in $S^1(2d')$.
 
-        TODO
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import BoshernitzanConjectureOrientations
+            >>> surface = Ngon((1, 1, 1))
+            >>> surface.directions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 2))
+            >>> surface.directions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 22))
+            >>> surface.directions
+
+        ::
+
+            >>> surface = Ngon((1, 1, 23))
+            >>> surface.directions
+
         """
         directions = []
 
