@@ -7,7 +7,8 @@ EXAMPLES::
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "boshernitzan-conjecture", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker boshernitzan-conjecture [OPTIONS]
-      Determines whether Boshernitzan's conjecture holds for a surface.
+      Determines whether Conjecture 2.2 in Boshernitzan's *Billiards and Rational
+      Periodic Directions in Polygons* holds for this surface.
     Options:
       --cache-only  Do not perform any computation. Only query the cache.
       --help        Show this message and exit.
@@ -43,7 +44,8 @@ from flatsurvey.ui.group import GroupedCommand
 
 class BoshernitzanConjecture(Goal):
     r"""
-    Determines whether Boshernitzan's conjecture holds for a surface.
+    Determines whether Conjecture 2.2 in Boshernitzan's *Billiards and Rational
+    Periodic Directions in Polygons* holds for this surface.
 
     EXAMPLES::
 
@@ -53,7 +55,7 @@ class BoshernitzanConjecture(Goal):
         >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
         >>> surface = Ngon((1, 1, 1))
         >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-        >>> BoshernitzanConjecture(report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+        >>> BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
         boshernitzan-conjecture
 
     """
@@ -61,6 +63,7 @@ class BoshernitzanConjecture(Goal):
     @copy_args_to_internal_fields
     def __init__(
         self,
+        surface,
         flow_decompositions,
         saddle_connection_orientations,
         report,
@@ -80,6 +83,10 @@ class BoshernitzanConjecture(Goal):
             producers=[flow_decompositions], cache=cache, cache_only=cache_only
         )
 
+        self._verdict = {
+            assertion: None for assertion in self._saddle_connection_orientations.assertions
+        }
+
     async def consume_cache(self):
         r"""
         Try to resolve this goal from cached previous runs.
@@ -92,7 +99,7 @@ class BoshernitzanConjecture(Goal):
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-            >>> goal = BoshernitzanConjecture(report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
 
         Try to resolve the goal from (no) cached results::
 
@@ -109,8 +116,8 @@ class BoshernitzanConjecture(Goal):
             >>> from unittest.mock import patch
             >>> from flatsurvey.cache.cache import Nothing
             >>> async def results(self):
-            ...    yield {"data": {"result": None}}
-            ...    yield {"data": {"result": True}}
+            ...    yield {"data": {"assertion": "ignored", "result": None}}
+            ...    yield {"data": {"assertion": "ignored", "result": True}}
             >>> with patch.object(Nothing, '__aiter__', results):
             ...    asyncio.run(goal.consume_cache())
 
@@ -118,14 +125,23 @@ class BoshernitzanConjecture(Goal):
             True
 
         """
-        results = self._cache.results(
-            surface=self._flow_decompositions._surface, job=self
-        )
+        for assertion in self._verdict:
+            results = self._cache.results(
+                surface=self._surface, job=self,
+                filter=f'assertion: {{ equalTo: "{assertion}" }}'
+            )
 
-        verdict = await results.reduce()
+            verdict = await results.reduce()
 
-        if verdict is not None or self._cache_only:
-            await self._report.result(self, result=verdict, cached=True)
+            if verdict is not None or self._cache_only:
+                self._verdict[assertion] = verdict
+
+                await self._report.result(self, result=verdict, assertion=assertion, cached=True)
+
+        if self._cache_only:
+            self._resolved = Goal.COMPLETED
+
+        if all([verdict is not None for (assertion, verdict) in self._verdict.items()]):
             self._resolved = Goal.COMPLETED
 
     @classmethod
@@ -157,23 +173,28 @@ class BoshernitzanConjecture(Goal):
 
         EXAMPLES::
 
-            >>> BoshernitzanConjecture.reduce([{'result': None}, {'result': None}])
-            >>> BoshernitzanConjecture.reduce([{'result': None}, {'result': False}])
+            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': None}])
+            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': False}])
             False
-            >>> BoshernitzanConjecture.reduce([{'result': None}, {'result': True}])
+            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': True}])
             True
-            >>> BoshernitzanConjecture.reduce([{'result': False}, {'result': True}])
+            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': False}, {'assertion': 'ignored', 'result': True}])
             Traceback (most recent call last):
             ...
-            AssertionError
+            ValueError: historic results are contradictory
 
         """
+        if not results:
+            return None
+
+        assertion = results[0]["assertion"]
+        if any(result["assertion"] != assertion for result in results):
+            raise ValueError("cannot consolidate results relating to different conjectures")
+
         results = [result["result"] for result in results]
 
-        assert not (
-            any(result is True for result in results)
-            and any(result is False for result in results)
-        )
+        if (any(result is True for result in results) and any(result is False for result in results)):
+            raise ValueError("historic results are contradictory")
 
         if any(result is False for result in results):
             return False
@@ -196,38 +217,69 @@ class BoshernitzanConjecture(Goal):
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
             >>> log = Log(surface=surface)
-            >>> goal = BoshernitzanConjecture(report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
 
-        We investigate in a single direction and conclude that Boshernitzan's
-        conjecture holds for this triangle::
+        We investigate all directions and conclude that Boshernitzan's
+        conjecture holds for this triangle (note that we do not check the
+        isosceles portion of conjecture (e) it is contained in the
+        right-triangle portion when checking (1, 1, 2))::
 
             >>> import asyncio
-            >>> produce = orientations.produce()
-            >>> asyncio.run(produce)
-            [Ngon([1, 1, 1])] [BoshernitzanConjecture] True
+            >>> asyncio.run(orientations.produce())
             True
+            >>> asyncio.run(orientations.produce())
+            True
+            >>> asyncio.run(orientations.produce())
+            False
+
+            >>> asyncio.run(goal.report())
+            [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: b)
+            [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: c)
 
         """
         if decomposition.undeterminedComponents():
-            await self.report(None)
+            for assertion, verdict in self._verdict.items():
+                if verdict is None:
+                    await self._report_assertion(result=None, assertion=assertion)
             return Goal.COMPLETED
 
-        if decomposition.minimalComponents():
-            # Continue until all Boshernitzan conjecture directions have been checked.
-            return not Goal.COMPLETED
+        for assertion, verdict in self._verdict.items():
+            if assertion == "b":
+                d = sum(self._surface.angles)
+                assert d % 2 == 1
 
-        assert all(component.cylinder() for component in decomposition.components())
+                from flatsurvey.jobs import BoshernitzanConjectureOrientations
+                pow = BoshernitzanConjectureOrientations._pow(self._saddle_connection_orientations._current, 2*d)
+                if pow[0] > 0 and pow[1] == 0:
+                    continue
 
-        await self.report(True)
-        return Goal.COMPLETED
+            if decomposition.minimalComponents():
+                assert verdict is not True
+
+                if verdict is None:
+                    self._verdict[assertion] = False
+                    self._report_assertion(result=False, assertion=assertion)
+
+                continue
+
+            assert all(component.cylinder() for component in decomposition.components())
+
+        if all(verdict is not None for verdict in self._verdict.values()):
+            return Goal.COMPLETED
+
+        return not Goal.COMPLETED
+
+    async def _report_assertion(self, assertion, result=None, **kwargs):
+        if result is None and self._verdict[assertion] is None and self._saddle_connection_orientations.exhausted:
+            result = True
+
+        await self._report.result(
+            self,
+            result,
+            assertion=assertion,
+            **kwargs,
+        )
 
     async def report(self, result=None, **kwargs):
-        if self._resolved != Goal.COMPLETED:
-            if result is None and self._saddle_connection_orientations.exhausted:
-                result = False
-
-            await self._report.result(
-                self,
-                result,
-                **kwargs,
-            )
+        for assertion in self._verdict:
+            await self._report_assertion(result=result, assertion=assertion, **kwargs)
