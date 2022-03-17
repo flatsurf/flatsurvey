@@ -136,7 +136,7 @@ class BoshernitzanConjecture(Goal):
             if verdict is not None or self._cache_only:
                 self._verdict[assertion] = verdict
 
-                await self._report.result(self, result=verdict, assertion=assertion, cached=True)
+                await self._report_assertion(result=verdict, assertion=assertion, cached=True)
 
         if self._cache_only:
             self._resolved = Goal.COMPLETED
@@ -269,10 +269,7 @@ class BoshernitzanConjecture(Goal):
 
         return not Goal.COMPLETED
 
-    async def _report_assertion(self, assertion, result=None, **kwargs):
-        if result is None and self._verdict[assertion] is None and self._saddle_connection_orientations.exhausted:
-            result = True
-
+    async def _report_assertion(self, assertion, result, **kwargs):
         await self._report.result(
             self,
             result,
@@ -281,5 +278,9 @@ class BoshernitzanConjecture(Goal):
         )
 
     async def report(self, result=None, **kwargs):
+        if result is not None:
+            raise NotImplementedError
+
         for assertion in self._verdict:
-            await self._report_assertion(result=result, assertion=assertion, **kwargs)
+            if self._verdict[assertion] is None and self._saddle_connection_orientations.exhausted:
+                await self._report_assertion(result=True, assertion=assertion, **kwargs)
