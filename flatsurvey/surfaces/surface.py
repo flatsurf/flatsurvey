@@ -27,7 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from sage.all import cached_method
+from functools import cache
 
 
 class Surface:
@@ -57,7 +57,7 @@ class Surface:
         """
         return None
 
-    @cached_method
+    @cache
     def orbit_closure(self):
         r"""
         Return the orbit closure of this surface (as has been determined so far.)
@@ -104,7 +104,7 @@ class Surface:
 
         return self.orbit_closure()._surface
 
-    @cached_method
+    @cache
     def surface(self):
         r"""
         Return the underlying translation surface without marked points.

@@ -30,7 +30,7 @@ EXAMPLES::
 from collections import defaultdict
 
 import click
-from sage.all import QQ, IntegerVectors, cached_method, libgap
+from functools import cache
 
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
@@ -72,6 +72,7 @@ class ThurstonVeech(Surface):
     def orbit_closure_dimension_upper_bound(self):
         o = self.origami()
 
+        from sage.all import QQ
         if self._surface().base_ring() is QQ:
             # arithmetic Teichmueller curve
             return 2
@@ -101,6 +102,7 @@ class ThurstonVeech(Surface):
             >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
         """
+        from sage.all import QQ
         # TODO: known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
@@ -109,15 +111,16 @@ class ThurstonVeech(Surface):
         # automorphisms... Something needs to be done for each block of
         # the monodromy. See #13.
         A = self.orientable_automorphisms()
+        from sage.all import libgap
         if not libgap.IsTrivial(A):
             oo = self.origami().quotient(A)
             return "Translation covering of {}".format(oo.stratum())
 
-    @cached_method
+    @cache
     def origami(self):
         return self._thurston_veech()._o
 
-    @cached_method
+    @cache
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
 
@@ -128,11 +131,11 @@ class ThurstonVeech(Surface):
         vp = [i + 1 for i in self.vp]
         return ThurstonVeech(hp, vp)
 
-    @cached_method
+    @cache
     def _surface(self):
         return self._thurston_veech()(self.hm, self.vm)
 
-    @cached_method
+    @cache
     def orientable_automorphisms(self):
         r"""
         EXAMPLES::
@@ -160,6 +163,7 @@ class ThurstonVeech(Surface):
         o = self.origami()
         n = o.nb_squares()
 
+        from sage.all import libgap
         M = libgap.Group([o.r(), o.u()])
         Sn = libgap.SymmetricGroup(n)
         A = libgap.Centralizer(Sn, M)
@@ -335,6 +339,7 @@ class ThurstonVeechs:
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
 
+                        from sage.all import IntegerVectors
                         for mh in IntegerVectors(
                             multiplicities_limit, c.ncyls(), min_part=1
                         ):
