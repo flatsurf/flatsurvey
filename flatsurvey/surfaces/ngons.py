@@ -62,7 +62,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from functools import cache
+from sage.misc.cachefunc import cached_method
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
@@ -483,7 +483,7 @@ class Ngon(Surface):
     def _flatsurvey_characteristics(self):
         return {"angles": [int(a) for a in self.angles]}
 
-    @cache
+    @cached_method
     def _lengths(self):
         r"""
         Determine random lengths for the sides of the original n-gon.
@@ -543,7 +543,7 @@ class Ngon(Surface):
 
         raise Exception("giving up on", E)
 
-    @cache
+    @cached_method
     def polygon(self):
         r"""
         Return an actual n-gon with concrete lengths selected.
@@ -560,7 +560,7 @@ class Ngon(Surface):
 
         return E(self._lengths())
 
-    @cache
+    @cached_method
     def _surface(self):
         from flatsurf import similarity_surfaces
 

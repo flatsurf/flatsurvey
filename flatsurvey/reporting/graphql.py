@@ -45,7 +45,7 @@ actually write to the real AWS.
 
 import click
 from pinject import copy_args_to_internal_fields
-from functools import cache
+from sage.misc.cachefunc import cached_method
 
 from flatsurvey.aws.graphql import Client as GraphQLClient
 from flatsurvey.pipeline.util import PartialBindingSpec
@@ -83,7 +83,7 @@ class GraphQL(Reporter):
     ):
         self._graphql = GraphQLClient(endpoint=endpoint, key=key)
 
-    @cache
+    @cached_method
     def _s3(self):
         s3 = GraphQL.s3_client(self._region)
         if not any(b["Name"] == self._bucket for b in s3.list_buckets()["Buckets"]):

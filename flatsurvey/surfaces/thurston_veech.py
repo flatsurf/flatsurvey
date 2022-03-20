@@ -30,7 +30,7 @@ EXAMPLES::
 from collections import defaultdict
 
 import click
-from functools import cache
+from sage.misc.cachefunc import cached_method
 
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
@@ -116,11 +116,11 @@ class ThurstonVeech(Surface):
             oo = self.origami().quotient(A)
             return "Translation covering of {}".format(oo.stratum())
 
-    @cache
+    @cached_method
     def origami(self):
         return self._thurston_veech()._o
 
-    @cache
+    @cached_method
     def _thurston_veech(self):
         from flatsurf.geometry.thurston_veech import ThurstonVeech
 
@@ -131,11 +131,11 @@ class ThurstonVeech(Surface):
         vp = [i + 1 for i in self.vp]
         return ThurstonVeech(hp, vp)
 
-    @cache
+    @cached_method
     def _surface(self):
         return self._thurston_veech()(self.hm, self.vm)
 
-    @cache
+    @cached_method
     def orientable_automorphisms(self):
         r"""
         EXAMPLES::
