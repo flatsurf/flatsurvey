@@ -44,6 +44,7 @@ from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
+
 class UndeterminedIntervalExchangeTransformation(Goal):
     r"""
     Tracks undetermined Interval Exchange Transformations.

@@ -73,6 +73,7 @@ class ThurstonVeech(Surface):
         o = self.origami()
 
         from sage.all import QQ
+
         if self._surface().base_ring() is QQ:
             # arithmetic Teichmueller curve
             return 2
@@ -103,6 +104,7 @@ class ThurstonVeech(Surface):
             True
         """
         from sage.all import QQ
+
         # TODO: known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
@@ -112,6 +114,7 @@ class ThurstonVeech(Surface):
         # the monodromy. See #13.
         A = self.orientable_automorphisms()
         from sage.all import libgap
+
         if not libgap.IsTrivial(A):
             oo = self.origami().quotient(A)
             return "Translation covering of {}".format(oo.stratum())
@@ -164,6 +167,7 @@ class ThurstonVeech(Surface):
         n = o.nb_squares()
 
         from sage.all import libgap
+
         M = libgap.Group([o.r(), o.u()])
         Sn = libgap.SymmetricGroup(n)
         A = libgap.Centralizer(Sn, M)
@@ -340,6 +344,7 @@ class ThurstonVeechs:
                             continue
 
                         from sage.all import IntegerVectors
+
                         for mh in IntegerVectors(
                             multiplicities_limit, c.ncyls(), min_part=1
                         ):
