@@ -241,7 +241,7 @@ class BoshernitzanConjectureOrientations(Producer):
             ]
             assert len(relevant_directions) >= lcm(
                 2, d
-            ), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated S¹(2d')\S¹(d') but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
+            ), f"{directions} does not generate the expected subset of S¹(2d'). Expected that this generated S¹(2d')\\S¹(d') but it generates {len(directions_with_symmetries)}, namely {directions_with_symmetries}"
 
         # Assert that the directions are independent modulo symmetries of the triangle.
         for direction in directions:
