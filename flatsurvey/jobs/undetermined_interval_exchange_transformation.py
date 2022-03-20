@@ -37,7 +37,6 @@ EXAMPLES::
 import time
 
 import click
-
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline import Goal
@@ -180,7 +179,6 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         # be smart about registering the right types in cppyy. (If possible.) See #10.
         # TODO: Expose something like this construction() in intervalxt. See #10.
         import cppyy
-
         import pyeantic
         import pyexactreal
         import pyintervalxt
