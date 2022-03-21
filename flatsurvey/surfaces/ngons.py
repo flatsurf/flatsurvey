@@ -261,13 +261,15 @@ class Ngon(Surface):
         for (sign, x, y) in S.label_iterator():
             from sage.all import matrix
 
-            symmetries.add(matrix(
-                [
-                    [x, y],
-                    [-y, x],
-                ],
-                immutable=True,
-            ))
+            symmetries.add(
+                matrix(
+                    [
+                        [x, y],
+                        [-y, x],
+                    ],
+                    immutable=True,
+                )
+            )
 
         return symmetries
 
