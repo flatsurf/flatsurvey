@@ -83,9 +83,7 @@ class BoshernitzanConjectureOrientations(Producer):
                 "Special directions for Boshernitzan Conjecture only implemented for triangles"
             )
 
-        directions = self._directions
-
-        self._producer = iter(directions)
+        self._producer = None
 
     @property
     def assertions(self):
@@ -359,6 +357,9 @@ class BoshernitzanConjectureOrientations(Producer):
             False
 
         """
+        if self._producer is None:
+            self._producer = iter(self._directions)
+
         try:
             self._current = next(self._producer)
             return not Producer.EXHAUSTED
