@@ -97,11 +97,9 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).flat_triangulation()
-            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (-6, (2*c ~ 3.4641016)), 2: (0, (-4*c ~ -6.9282032)), 3: (6, (2*c ~ 3.4641016))}
+            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (0, (-4*c ~ -6.9282032)), 2: (6, (2*c ~ 3.4641016)), 3: (-6, (2*c ~ 3.4641016))}
 
         """
-        from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf
-
         return self.orbit_closure()._surface
 
     @cached_method
@@ -118,18 +116,7 @@ class Surface:
         """
         S = self._surface()
         if self._eliminate_marked_points:
-            from flatsurf.geometry.pyflatsurf_conversion import (
-                from_pyflatsurf,
-                to_pyflatsurf,
-            )
-
-            S = to_pyflatsurf(S)
-            S.delaunay()
-            S = from_pyflatsurf(S)
             S = S.erase_marked_points()
-            S = to_pyflatsurf(S)
-            S.delaunay()
-            S = from_pyflatsurf(S)
         return S
 
     def _surface(self):
