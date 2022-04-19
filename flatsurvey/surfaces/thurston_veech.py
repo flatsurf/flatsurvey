@@ -255,9 +255,15 @@ class ThurstonVeech(Surface):
         horizontal_multiplicities,
         vertical_multiplicities,
     ):
+        import json
+        hp = json.loads(horizontal_permutation)
+        vp = json.loads(vertical_permutation)
+        hm = json.loads(horizontal_multiplicities)
+        vm = json.loads(vertical_multiplicities)
+
         return {
             "bindings": [
-                PartialBindingSpec(ThurstonVeech, name="surface")(hp=horizontal_permutation, vp=vertical_permutation, hm=horizontal_multiplicities, vm=vertical_multiplicities)
+                PartialBindingSpec(ThurstonVeech, name="surface")(hp=hp, vp=vp, hm=hm, vm=vm)
             ]
         }
 
