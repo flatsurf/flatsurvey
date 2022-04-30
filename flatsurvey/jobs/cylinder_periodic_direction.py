@@ -208,7 +208,7 @@ class CylinderPeriodicDirection(Goal):
             await self.report(True, decomposition=decomposition)
             return Goal.COMPLETED
 
-        if self._directions >= self._limit:
+        if self._limit is not None and self._directions >= self._limit:
             await self.report()
             return Goal.COMPLETED
 
