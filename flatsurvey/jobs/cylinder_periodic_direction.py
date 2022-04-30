@@ -159,9 +159,13 @@ class CylinderPeriodicDirection(Goal):
         help="stop search after having looked at that many flow decompositions  [default: no limit]",
     )
     @Goal._cache_only_option
-    def click(limit):
+    def click(limit, cache_only):
         return {
-            "bindings": [PartialBindingSpec(CylinderPeriodicDirection)(limit=limit)],
+            "bindings": [
+                PartialBindingSpec(CylinderPeriodicDirection)(
+                    limit=limit, cache_only=cache_only
+                )
+            ],
             "goals": [CylinderPeriodicDirection],
         }
 
