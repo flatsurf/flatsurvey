@@ -32,6 +32,7 @@ from collections import defaultdict
 import click
 from sage.all import QQ, IntegerVectors, cached_method, libgap
 
+from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
 
@@ -254,7 +255,20 @@ class ThurstonVeech(Surface):
         horizontal_multiplicities,
         vertical_multiplicities,
     ):
-        pass
+        import json
+
+        hp = json.loads(horizontal_permutation)
+        vp = json.loads(vertical_permutation)
+        hm = json.loads(horizontal_multiplicities)
+        vm = json.loads(vertical_multiplicities)
+
+        return {
+            "bindings": [
+                PartialBindingSpec(ThurstonVeech, name="surface")(
+                    hp=hp, vp=vp, hm=hm, vm=vm
+                )
+            ]
+        }
 
 
 class ThurstonVeechs:
