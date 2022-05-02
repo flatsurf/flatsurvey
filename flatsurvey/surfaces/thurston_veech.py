@@ -5,7 +5,7 @@ EXAMPLES::
 
     >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
     >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
-    TranslationSurface built from 6 polygons
+    TranslationSurface built from 3 polygons
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -32,6 +32,7 @@ from collections import defaultdict
 import click
 from sage.misc.cachefunc import cached_method
 
+from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
 
@@ -48,7 +49,7 @@ class ThurstonVeech(Surface):
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
         >>> S = TV.surface()
         >>> S
-        TranslationSurface built from 6 polygons
+        TranslationSurface built from 3 polygons
         >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
     """
@@ -262,7 +263,20 @@ class ThurstonVeech(Surface):
         horizontal_multiplicities,
         vertical_multiplicities,
     ):
-        pass
+        import json
+
+        hp = json.loads(horizontal_permutation)
+        vp = json.loads(vertical_permutation)
+        hm = json.loads(horizontal_multiplicities)
+        vm = json.loads(vertical_multiplicities)
+
+        return {
+            "bindings": [
+                PartialBindingSpec(ThurstonVeech, name="surface")(
+                    hp=hp, vp=vp, hm=hm, vm=vm
+                )
+            ]
+        }
 
 
 class ThurstonVeechs:
