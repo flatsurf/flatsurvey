@@ -30,7 +30,7 @@ EXAMPLES::
 from collections import defaultdict
 
 import click
-from sage.all import QQ, IntegerVectors, cached_method, libgap
+from sage.misc.cachefunc import cached_method
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.surfaces.surface import Surface
@@ -73,6 +73,8 @@ class ThurstonVeech(Surface):
     def orbit_closure_dimension_upper_bound(self):
         o = self.origami()
 
+        from sage.all import QQ
+
         if self._surface().base_ring() is QQ:
             # arithmetic Teichmueller curve
             return 2
@@ -102,6 +104,8 @@ class ThurstonVeech(Surface):
             >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
         """
+        from sage.all import QQ
+
         # TODO: known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
@@ -110,6 +114,8 @@ class ThurstonVeech(Surface):
         # automorphisms... Something needs to be done for each block of
         # the monodromy. See #13.
         A = self.orientable_automorphisms()
+        from sage.all import libgap
+
         if not libgap.IsTrivial(A):
             oo = self.origami().quotient(A)
             return "Translation covering of {}".format(oo.stratum())
@@ -160,6 +166,8 @@ class ThurstonVeech(Surface):
         """
         o = self.origami()
         n = o.nb_squares()
+
+        from sage.all import libgap
 
         M = libgap.Group([o.r(), o.u()])
         Sn = libgap.SymmetricGroup(n)
@@ -348,6 +356,8 @@ class ThurstonVeechs:
                         cd1 = o1.cylinder_decomposition()
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
                             continue
+
+                        from sage.all import IntegerVectors
 
                         for mh in IntegerVectors(
                             multiplicities_limit, c.ncyls(), min_part=1
