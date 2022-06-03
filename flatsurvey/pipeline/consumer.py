@@ -151,11 +151,11 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> surface = Ngon((1, 3, 5))
             >>> connections = SaddleConnections(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+            >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache(pickles=Pickles()))
 
             >>> import asyncio
             >>> resolve = oc.resolve()
@@ -207,12 +207,12 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> surface = Ngon((1, 3, 5))
             >>> connections = SaddleConnections(surface)
             >>> log = Log(surface=surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache(pickles=Pickles()))
 
             >>> import asyncio
             >>> report = oc.report()

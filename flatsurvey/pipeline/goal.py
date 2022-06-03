@@ -49,12 +49,12 @@ class Goal(Consumer):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-        >>> from flatsurvey.cache import Cache
+        >>> from flatsurvey.cache import Cache, Pickles
         >>> from flatsurvey.jobs.orbit_closure import OrbitClosure
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+        >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache(pickles=Pickles()))
         >>> isinstance(goal, Goal)
         True
 

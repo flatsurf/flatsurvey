@@ -52,11 +52,11 @@ class CylinderPeriodicAsymptotics(Goal):
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.cache import Cache
+        >>> from flatsurvey.cache import Cache, Pickles
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
+        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache(pickles=Pickles()))
         cylinder-periodic-asymptotics
 
     """
@@ -81,26 +81,38 @@ class CylinderPeriodicAsymptotics(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting.report import Report
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.reporting.log import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> cache = Cache()
-            >>> log = Log(surface)
-            >>> goal = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
         We mock some artificial results from previous runs and consume that
         artificial cache::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
+            >>> from io import StringIO
+            >>> cache = Cache(pickles=Pickles, jsons=[StringIO(
+            ... '''{"cylinder-periodic-asymptotics": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "distribution": [1, 2]
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "distribution": [1]
+            ... }]}''')])
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([Log(surface)]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+
             >>> async def results(self):
             ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1, 2]}}
             ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1]}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (cached) (distributions: [[1, 2], [1]])
 
         The goal is marked as completed, since we had set ``cache_only`` above::
@@ -113,12 +125,12 @@ class CylinderPeriodicAsymptotics(Goal):
             return
 
         results = self._cache.results(
-            surface=self._flow_decompositions._surface, job=self
-        )
+            job=self,
+            predicate=self._flow_decompositions._surface.cache_predicate)
 
         distributions = [
             [d() if callable(d) else d for d in node["distribution"]]
-            async for node in results.nodes()
+            for node in results
         ]
 
         # We do not merge the distributions into a single distribution since
@@ -164,12 +176,12 @@ class CylinderPeriodicAsymptotics(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
+            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache(pickles=Pickles()))
 
         Investigate in a single direction::
 

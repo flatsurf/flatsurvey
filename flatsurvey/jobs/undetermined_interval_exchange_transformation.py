@@ -91,12 +91,12 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, SaddleConnectionOrientations
-        >>> from flatsurvey.cache import Cache
+        >>> from flatsurvey.cache import Cache, Pickles
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
         >>> orientations = SaddleConnectionOrientations(connections)
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=orientations)
-        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=Cache())
+        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=Cache(pickles=Pickles()))
         undetermined-iet
 
     """
@@ -128,28 +128,37 @@ class UndeterminedIntervalExchangeTransformation(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting.report import Report
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.reporting.log import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=saddle_connection_orientations)
-            >>> cache = Cache()
             >>> log = Log(surface)
-            >>> goal = UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
+            >>> make_goal = lambda cache: UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 
         We mock some artificial results from previous runs and consume that
         artificial cache. Since we set ``--cache-only``, a result is reported
         immediately::
 
             >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
-            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> goal = make_goal(Cache(jsons=[StringIO(
+            ... '''{"undetermined-iet": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": "IET(…)"
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": "IET(…)"
+            ... }]}''')], pickles=Pickles()))
+
+            >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])
 
         The goal is marked as completed, since we had set ``cache_only`` above::
@@ -161,9 +170,9 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         if not self._cache_only:
             return
 
-        results = self._cache.results(surface=self._surface, job=self)
+        results = self._cache.results(job=self, predicate=self._surface.cache_predicate)
 
-        iets = [node["result"] async for node in results.nodes()]
+        iets = [result["result"] for result in results]
 
         await self._report.result(self, None, iets=iets, cached=True)
         self._resolved = Goal.COMPLETED

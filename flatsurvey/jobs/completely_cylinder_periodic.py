@@ -56,11 +56,11 @@ class CompletelyCylinderPeriodic(Goal):
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.cache import Cache
+        >>> from flatsurvey.cache import Cache, Pickles
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
+        >>> CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache(pickles=Pickles()))
         completely-cylinder-periodic
 
     """
@@ -120,19 +120,19 @@ class CompletelyCylinderPeriodic(Goal):
 
         EXAMPLES::
 
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
 
-            >>> cache = Cache()
-            >>> goal = CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=cache)
+            >>> make_goal = lambda cache: CompletelyCylinderPeriodic(report=Report([]), flow_decompositions=flow_decompositions, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
+            >>> goal = make_goal(Cache(pickles=Pickles()))
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -141,22 +141,28 @@ class CompletelyCylinderPeriodic(Goal):
         We mock some artificial results from previous runs and consume that
         artificial cache::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"data": {"result": None}}
-            ...    yield {"data": {"result": False}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> goal = make_goal(Cache(jsons=[StringIO(
+            ... '''{"completely-cylinder-periodic": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": null
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": false
+            ... }]}''')], pickles=Pickles()))
+            >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
         """
-        results = self._cache.results(
-            surface=self._flow_decompositions._surface, job=self
-        )
+        results = self._cache.results(job=self, predicate=self._flow_decompositions._surface.cache_predicate)
 
         verdict = await results.reduce()
 
@@ -189,12 +195,12 @@ class CompletelyCylinderPeriodic(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache
+            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
+            >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache(pickles=Pickles()))
 
         Investigate in a single direction::
 

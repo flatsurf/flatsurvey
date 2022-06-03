@@ -499,7 +499,7 @@ class Ngon(Surface):
             # TODO: Do this properly in sage-flatsurf. See #11.
             from random import shuffle
 
-            from sage.all import VectorSpace, free_module_element, span
+            from sage.all import free_module_element, span
 
             U = L.ambient_space().subspace([])
 
@@ -521,13 +521,28 @@ class Ngon(Surface):
             lengths = random_lengths()
             try:
                 E(lengths)
-            except ValueError as e:
+            except ValueError:
                 continue
             while min(lengths) < 1:
-                lengths = tuple(l * 2 for l in lengths)
+                lengths = tuple(length * 2 for length in lengths)
             return lengths
 
         raise Exception("giving up on", E)
+
+    def cache_predicate(self, exact=False):
+        def predicate(result):
+            surface = result["surface"]
+            if surface["type"] != "Ngon":
+                return False
+            if surface["angles"] != self.angles:
+                return False
+
+            if exact:
+                raise NotImplementedError
+
+            return True
+
+        return predicate
 
     @cached_method
     def polygon(self):
