@@ -125,8 +125,8 @@ class CylinderPeriodicAsymptotics(Goal):
             return
 
         results = self._cache.results(
-            job=self,
-            predicate=self._flow_decompositions._surface.cache_predicate)
+            job=self, predicate=self._flow_decompositions._surface.cache_predicate
+        )
 
         distributions = [
             [d() if callable(d) else d for d in node["distribution"]]

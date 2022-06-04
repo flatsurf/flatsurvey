@@ -50,4 +50,5 @@ class Json(Reporter):
             ],
             "reporters": [Json],
         }
+
     pass

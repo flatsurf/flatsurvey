@@ -139,6 +139,7 @@ class BoshernitzanConjecture(Goal):
 
         """
         for assertion in self._verdict:
+
             def predicate(result):
                 if not self._surface.cache_predicate(result):
                     return False

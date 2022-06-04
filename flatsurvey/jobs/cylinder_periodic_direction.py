@@ -127,8 +127,8 @@ class CylinderPeriodicDirection(Goal):
 
         """
         results = self._cache.results(
-            job=self,
-            predicate=self._flow_decompositions._surface.cache_predicate)
+            job=self, predicate=self._flow_decompositions._surface.cache_predicate
+        )
 
         verdict = await results.reduce()
 
