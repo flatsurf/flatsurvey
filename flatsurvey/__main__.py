@@ -332,7 +332,7 @@ class Scheduler:
             <Task ...>
 
         """
-        # TODO: This is a bit of a hack: Without it, the _run never actually
+        # This is a bit of a hack: Without it, the _run never actually
         # runs and we just enqueue forever (we do not need 1 for this, 0
         # works.) Without it, we schedule too many tasks but the load does not
         # go up quickly enough. See #5.
@@ -348,7 +348,7 @@ class Scheduler:
         r"""
         Run ``command``.
 
-        # TODO: Currently, pytest fails to test these with a "fileno" error, see #4.
+        # Currently, pytest fails to test these with a "fileno" error, see #4.
         # >>> scheduler = Scheduler(generators=[], goals=[], reporters=[], bindings=[], load=None)
         # >>> asyncio.run(scheduler._run(["echo", "hello world"]))
         # hello world
@@ -372,26 +372,23 @@ class Scheduler:
         from plumbum import BG, local
         from plumbum.commands.processes import ProcessExecutionError
 
-        # TODO: This is a hack. We should have better monitoring.
-        # short = ([arg for arg in command if "output" in arg] + [str(command)])[0]
-        # print("... spawning for", short)
-
         start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG
 
         try:
             while not task.ready():
                 await asyncio.sleep(1)
-            # TODO: Better monitoring.
-            # print("ooo completed for", short)
 
             if task.stdout:
+                # We should have better monitoring, see #41.
                 print("*** task produced output on stdout: ")
                 print(task.stdout)
         except ProcessExecutionError as e:
+            # We should have better monitoring, see #41.
             print("xxx process crashed ", " ".join(command))
             print(e)
 
+        # We should have better monitoring, see #41.
         print("*** terminated after %s wall time" % (datetime.datetime.now() - start,))
 
 
