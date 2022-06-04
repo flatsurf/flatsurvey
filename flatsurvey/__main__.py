@@ -9,7 +9,7 @@ python -m survey ngons -n 4 orbit-closure
 
 TESTS::
 
-    >>> from .test.cli import invoke
+    >>> from flatsurvey.test.cli import invoke
     >>> invoke(survey) # doctest: +NORMALIZE_WHITESPACE
     Usage: survey [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
       Run a survey on the `objects` until all the `goals` are reached.
@@ -133,7 +133,7 @@ def process(subcommands, dry_run=False, load=None):
     We start an orbit-closure computation for a single triangle without waiting
     for the system load to be low::
 
-        >>> from .test.cli import invoke
+        >>> from flatsurvey.test.cli import invoke
         >>> invoke(survey, "--load=0", "ngons", "-n", "3", "--limit=3", "--literature=include", "orbit-closure")  # doctest: +ELLIPSIS
         All jobs have been scheduled. Now waiting for jobs to finish.
         ...

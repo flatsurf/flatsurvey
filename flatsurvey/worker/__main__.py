@@ -8,7 +8,7 @@ python -m survey.worker ngon -a 1 -a 2 -a 3 -a 4 orbit-closure
 
 TESTS::
     
-    >>> from ..test.cli import invoke
+    >>> from flatsurvey.test.cli import invoke
     >>> invoke(worker) # doctest: +NORMALIZE_WHITESPACE
     Usage: worker [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
       Explore a surface.
@@ -114,7 +114,7 @@ def process(commands, debug):
     We compute the orbit closure of the unfolding of a equilateral triangle,
     i.e., the torus::
 
-        >>> from ..test.cli import invoke
+        >>> from flatsurvey.test.cli import invoke
         >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
         [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
         [Ngon([1, 1, 1])] [OrbitClosure] dimension: 2/2

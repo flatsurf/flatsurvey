@@ -19,7 +19,7 @@
 
 from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
 
-from .surface import Surface
+from flatsurvey.surfaces.surface import Surface
 
 
 class TranslationSurface(Surface):

@@ -4,12 +4,12 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
-from .boshernitzan_conjecture import BoshernitzanConjecture
-from .boshernitzan_conjecture_orientations import BoshernitzanConjectureOrientations
-from .completely_cylinder_periodic import CompletelyCylinderPeriodic
-from .cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
-from .cylinder_periodic_direction import CylinderPeriodicDirection
-from .flow_decomposition import FlowDecompositions
+from flatsurvey.jobs.boshernitzan_conjecture import BoshernitzanConjecture
+from flatsurvey.jobs.boshernitzan_conjecture_orientations import BoshernitzanConjectureOrientations
+from flatsurvey.jobs.completely_cylinder_periodic import CompletelyCylinderPeriodic
+from flatsurvey.jobs.cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
+from flatsurvey.jobs.cylinder_periodic_direction import CylinderPeriodicDirection
+from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -29,10 +29,10 @@ from .flow_decomposition import FlowDecompositions
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
-from .orbit_closure import OrbitClosure
-from .saddle_connection_orientations import SaddleConnectionOrientations
-from .saddle_connections import SaddleConnections
-from .undetermined_interval_exchange_transformation import (
+from flatsurvey.jobs.orbit_closure import OrbitClosure
+from flatsurvey.jobs.saddle_connection_orientations import SaddleConnectionOrientations
+from flatsurvey.jobs.saddle_connections import SaddleConnections
+from flatsurvey.jobs.undetermined_interval_exchange_transformation import (
     UndeterminedIntervalExchangeTransformation,
 )
 

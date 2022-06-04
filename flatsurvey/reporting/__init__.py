@@ -20,9 +20,9 @@ A package providing ways to report progress and result of a computation.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from .json import Json
-from .log import Log
-from .report import Report
-from .yaml import Yaml
+from flatsurvey.reporting.json import Json
+from flatsurvey.reporting.log import Log
+from flatsurvey.reporting.report import Report
+from flatsurvey.reporting.yaml import Yaml
 
 commands = [Log.click, Yaml.click, Json.click, Report.click]

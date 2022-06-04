@@ -46,7 +46,7 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
-from ..pipeline import Processor
+from flatsurvey.pipeline import Processor
 
 
 class FlowDecompositions(Processor):

@@ -18,9 +18,8 @@
 # *********************************************************************
 
 import flatsurvey.worker.restart
-from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
 
-from .surface import Surface
+from flatsurvey.surfaces.surface import Surface
 
 
 class Deformation(Surface):
