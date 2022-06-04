@@ -389,3 +389,15 @@ class ThurstonVeechs:
 
                                 seen.add(tv)
                                 yield tv
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech.origami": ThurstonVeech.origami.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech._thurston_veech": ThurstonVeech._thurston_veech.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech._surface": ThurstonVeech._surface.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech.orientable_automorphisms": ThurstonVeech.orientable_automorphisms.__doc__,
+}

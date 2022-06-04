@@ -69,7 +69,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1), 'exact-real').orbit_closure()
-            GL(2,R)-orbit closure of dimension at least 2 in H_1(0^3) (ambient dimension 4)
+            GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2)
 
         """
         from flatsurf import GL2ROrbitClosure
@@ -114,7 +114,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).surface()
-
+            TranslationSurface built from 2 polygons
 
         """
         S = self._surface()
@@ -187,3 +187,11 @@ class Surface:
 
         """
         return {}
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.orbit_closure": Surface.orbit_closure.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.surface": Surface.surface.__doc__,
+}

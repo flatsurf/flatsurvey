@@ -478,6 +478,7 @@ class Ngon(Surface):
         EXAMPLES::
 
             >>> Ngon((1, 2, 3))._lengths()
+            (8, 2/3*c, 2*c)
 
         """
         from flatsurf import EquiangularPolygons
@@ -552,8 +553,8 @@ class Ngon(Surface):
 
         EXAMPLES::
 
-            TODO: Why does this doctest not run? See #12.
-            >>> Ngon(1, 1, 1).polygon()
+            >>> Ngon((1, 1, 1)).polygon()
+            Polygon: (0, 0), (4, 0), (2, 2*c)
 
         """
         from flatsurf import EquiangularPolygons
@@ -815,3 +816,14 @@ def partitions(total, n):
             for partition in partitions(total - a, n - 1):
                 if a <= partition[0]:
                     yield [a] + partition
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    'Ngon._lengths': Ngon._lengths.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    'Ngon._polygon': Ngon.polygon.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    'Ngon._surface': Ngon._surface.__doc__,
+
+}
