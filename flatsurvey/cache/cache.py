@@ -43,6 +43,8 @@ from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
+# TODO: Actually implement this.
+
 class Cache:
     r"""
     A cache of previous results stored in local JSON files.
