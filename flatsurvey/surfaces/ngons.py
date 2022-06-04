@@ -86,6 +86,8 @@ class Ngon(Surface):
     """
 
     def __init__(self, angles, length=None, lengths=None):
+        super().__init__()
+
         self.angles = list(angles)
 
         if length is None:
@@ -104,7 +106,6 @@ class Ngon(Surface):
             )
 
         self._name = "-".join([str(a) for a in angles])
-        self._eliminate_marked_points = True
 
     def equivalents(self):
         from sage.all import gcd
@@ -496,7 +497,7 @@ class Ngon(Surface):
         L = E.lengths_polytope()
 
         def random_lengths():
-            # TODO: Do this properly in sage-flatsurf. See #11.
+            # Do this properly in sage-flatsurf. See #11.
             from random import shuffle
 
             from sage.all import free_module_element, span

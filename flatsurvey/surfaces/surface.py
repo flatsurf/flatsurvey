@@ -42,6 +42,9 @@ class Surface:
 
     """
 
+    def __init__(self, eliminate_marked_points=True):
+        self._eliminate_marked_points = eliminate_marked_points
+
     def reference(self):
         r"""
         Return a literature reference where this surface has been studied, a practically identical (but simpler) surface, or ``None``.

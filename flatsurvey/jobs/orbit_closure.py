@@ -352,11 +352,11 @@ class OrbitClosure(Goal):
                 for tangent in tangents:
                     import cppyy
 
-                    # TODO: What is a good vector to use to deform? See #3.
+                    # What is a good vector to use to deform? See #3.
                     # n = upper_bound(tangent) * scale
                     n = upper_bound(tangent) // 4
 
-                    # TODO: What is a good bound here? See #3.
+                    # What is a good bound here? See #3.
                     # if n > 1e20:
                     #     print("Cannot deform. Deformation would lead to too much coefficient blowup.")
                     #     continue
@@ -367,7 +367,7 @@ class OrbitClosure(Goal):
                         orbit_closure.V2(x / n, x / (2 * n)).vector for x in tangent
                     ]
                     try:
-                        # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient. See #3.
+                        # Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient. See #3.
                         deformed = orbit_closure._surface + deformation
 
                         self._report.log(

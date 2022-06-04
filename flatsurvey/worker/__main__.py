@@ -199,7 +199,7 @@ class Worker:
         r"""
         Run until all our goals are resolved.
 
-        TODO
+        TODO: doctest me.
         """
         try:
             for goal in self._goals:

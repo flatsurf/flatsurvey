@@ -181,12 +181,12 @@ class UndeterminedIntervalExchangeTransformation(Goal):
 
         cls._hacks_enabled = True
 
-        # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
+        # Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
         # i.e., when serializing an IET of unknown type (as is this one because
         # (a) it comes from C++ and was not constructed in Python and (b) it
         # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
         # be smart about registering the right types in cppyy. (If possible.) See #10.
-        # TODO: Expose something like this construction() in intervalxt. See #10.
+        # Expose something like this construction() in intervalxt. See #10.
         import cppyy
         import pyeantic
         import pyexactreal
@@ -254,7 +254,7 @@ class UndeterminedIntervalExchangeTransformation(Goal):
                 list(construction[0]), list(construction[1])
             )
 
-            # TODO: pyintervalxt fails to serialize IETs. See #10.
+            # pyintervalxt fails to serialize IETs. See #10.
             await self._report.result(
                 self,
                 str(iet),

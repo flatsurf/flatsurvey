@@ -55,6 +55,8 @@ class ThurstonVeech(Surface):
     """
 
     def __init__(self, hp, vp, hm, vm):
+        super().__init__()
+
         if len(hp) != len(vp):
             raise ValueError(
                 "hp and vp must be zero based permutations of the same size"
@@ -65,9 +67,6 @@ class ThurstonVeech(Surface):
             raise ValueError("hm and vm must be positive vectors")
         self.hm = hm
         self.vm = vm
-
-        # TODO: Move this to the super() invocation instead.
-        self._eliminate_marked_points = True
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -106,11 +105,11 @@ class ThurstonVeech(Surface):
         """
         from sage.all import QQ
 
-        # TODO: known exotic loci. See #13.
+        # Add more known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
 
-        # TODO: some of the quotient might come from something else than
+        # Some of the quotient might come from something else than
         # automorphisms... Something needs to be done for each block of
         # the monodromy. See #13.
         A = self.orientable_automorphisms()
@@ -350,8 +349,8 @@ class ThurstonVeechs:
 
                         if o0 > o1 or o0 > o2 and o0 > o3:
                             continue
-                        # TODO: in case of equality above, we will generate the same
-                        # origami twice.
+                        # TODO: in case of equality above, we will generate the
+                        # same origami twice.
 
                         cd1 = o1.cylinder_decomposition()
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
