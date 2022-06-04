@@ -28,4 +28,6 @@ jobs:
       - name: doctest
         shell: bash -l {0}
         run: |
+          # Make sure that initialization message does not show up in doctest output.
+          python -c 'import cppyy'
           pytest -n auto -x --doctest-modules flatsurvey

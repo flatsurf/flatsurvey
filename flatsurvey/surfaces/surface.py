@@ -27,7 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from sage.all import cached_method
+from sage.misc.cachefunc import cached_method
 
 
 class Surface:

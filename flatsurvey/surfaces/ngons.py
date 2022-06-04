@@ -62,7 +62,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from sage.all import cached_method
+from sage.misc.cachefunc import cached_method
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand

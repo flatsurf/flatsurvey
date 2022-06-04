@@ -37,49 +37,11 @@ EXAMPLES::
 import time
 
 import click
-import cppyy
-
-# TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
-# i.e., when serializing an IET of unknown type (as is this one because
-# (a) it comes from C++ and was not constructed in Python and (b) it
-# has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
-# be smart about registering the right types in cppyy. (If possible.) See #10.
-# TODO: Expose something like this construction() in intervalxt. See #10.
-import pyeantic
-import pyexactreal
-import pyintervalxt
 from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
-
-cppyy.cppdef(
-    r"""
-#include <boost/type_erasure/any_cast.hpp>
-
-template <typename T> std::tuple<std::vector<eantic::renf_elem_class>, std::vector<int> > construction(T& iet) {
-    std::vector<eantic::renf_elem_class> lengths;
-    std::vector<int> permutation;
-    const auto top = iet.top();
-    const auto bottom = iet.bottom();
-    for (auto& label : top) {
-        lengths.push_back(boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label)));
-    }
-    for (auto& label : bottom) {
-        permutation.push_back(std::find(std::begin(top), std::end(top), label) - std::begin(top));
-    }
-
-    return std::make_tuple(lengths, permutation);
-}
-
-template <typename T> int degree(T& iet) {
-    auto label = *std::begin(iet.top());
-    auto length = boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label));
-    return length.parent().degree();
-}
-"""
-)
 
 
 class UndeterminedIntervalExchangeTransformation(Goal):
@@ -210,6 +172,53 @@ class UndeterminedIntervalExchangeTransformation(Goal):
             command.append("--cache-only")
         return command
 
+    _hacks_enabled = False
+
+    @classmethod
+    def _enable_hacks(cls):
+        if cls._hacks_enabled:
+            return
+
+        cls._hacks_enabled = True
+
+        # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
+        # i.e., when serializing an IET of unknown type (as is this one because
+        # (a) it comes from C++ and was not constructed in Python and (b) it
+        # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
+        # be smart about registering the right types in cppyy. (If possible.) See #10.
+        # TODO: Expose something like this construction() in intervalxt. See #10.
+        import cppyy
+        import pyeantic
+        import pyexactreal
+        import pyintervalxt
+
+        cppyy.cppdef(
+            r"""
+        #include <boost/type_erasure/any_cast.hpp>
+
+        template <typename T> std::tuple<std::vector<eantic::renf_elem_class>, std::vector<int> > construction(T& iet) {
+            std::vector<eantic::renf_elem_class> lengths;
+            std::vector<int> permutation;
+            const auto top = iet.top();
+            const auto bottom = iet.bottom();
+            for (auto& label : top) {
+                lengths.push_back(boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label)));
+            }
+            for (auto& label : bottom) {
+                permutation.push_back(std::find(std::begin(top), std::end(top), label) - std::begin(top));
+            }
+
+            return std::make_tuple(lengths, permutation);
+        }
+
+        template <typename T> int degree(T& iet) {
+            auto label = *std::begin(iet.top());
+            auto length = boost::type_erasure::any_cast<eantic::renf_elem_class>(iet.lengths()->forget().get(label));
+            return length.parent().degree();
+        }
+        """
+        )
+
     async def _consume(self, decomposition, cost):
         r"""
         Track any undetermined IETs in this ``decomposition``.
@@ -222,6 +231,8 @@ class UndeterminedIntervalExchangeTransformation(Goal):
                 continue
 
             iet = component.dynamicalComponent().iet()
+
+            UndeterminedIntervalExchangeTransformation._enable_hacks()
 
             # Forget the surface structure of this IET
             construction = cppyy.gbl.construction(iet)
@@ -242,6 +253,7 @@ class UndeterminedIntervalExchangeTransformation(Goal):
             iet = pyintervalxt.IntervalExchangeTransformation(
                 list(construction[0]), list(construction[1])
             )
+
             # TODO: pyintervalxt fails to serialize IETs. See #10.
             await self._report.result(
                 self,
