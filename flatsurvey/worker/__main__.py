@@ -198,8 +198,6 @@ class Worker:
     async def start(self):
         r"""
         Run until all our goals are resolved.
-
-        TODO: doctest me.
         """
         try:
             for goal in self._goals:
