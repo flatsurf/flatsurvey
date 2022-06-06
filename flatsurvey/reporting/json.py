@@ -1,6 +1,6 @@
-# TODO: Implement me.
+# TODO: Test this for everything that calls result().
 r"""
-Writes results as machine readable JSON files.
+Writes results as JSON files.
 
 EXAMPLES::
 
@@ -8,12 +8,30 @@ EXAMPLES::
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "json", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker json [OPTIONS]
-      Writes results as machine readable JSON files.
+      Writes results as JSON files.
     Options:
       --output FILENAME  [default: derived from surface name]
       --help             Show this message and exit.
 
 """
+# *********************************************************************
+#  This file is part of flatsurvey.
+#
+#        Copyright (C) 2022 Julian Rüth
+#
+#  flatsurvey is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  flatsurvey is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
+# *********************************************************************
 
 import click
 
@@ -22,7 +40,7 @@ from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
 
 
-# TODO: Should we just parse & dump the YAML?
+# TODO: Parse & dump the YAML?
 class Json(Reporter):
     @classmethod
     @click.command(
@@ -50,5 +68,3 @@ class Json(Reporter):
             ],
             "reporters": [Json],
         }
-
-    pass

@@ -1,5 +1,5 @@
 r"""
-Writes computation results as machine readable YAML files.
+Writes computation results as YAML files.
 
 EXAMPLES::
 
@@ -35,28 +35,9 @@ EXAMPLES::
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.ui.group import GroupedCommand
-
-
-class Pickle:
-    def __init__(self, raw):
-        self._raw = raw
-
-    @classmethod
-    def to_yaml(cls, representer, data):
-        import base64
-
-        return representer.represent_scalar(
-            "tag:yaml.org,2002:binary",
-            base64.encodebytes(data._raw).decode("ascii"),
-            style="",
-        )
-
-    @classmethod
-    def from_yaml(self, constructor, obj):
-        raise NotImplementedError
 
 
 class Yaml(Reporter):
@@ -88,63 +69,76 @@ class Yaml(Reporter):
 
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
-        import sys
-
-        self._stream = stream or sys.stdout
+        super().__init__()
 
         self._data = {"surface": surface}
+
+        import sys
+        self._stream = stream or sys.stdout
 
         from ruamel.yaml import YAML
 
         self._yaml = YAML()
         self._yaml.width = 2**16
         self._yaml.representer.default_flow_style = None
-        self._yaml.representer.add_representer(None, Yaml._represent_undefined)
+        self._yaml.representer.add_representer(type(None), Yaml._represent_as_null)
+        self._yaml.representer.add_representer(None, Yaml._represent_as_pickle)
         self._yaml.register_class(type(self._data["surface"]))
-        self._yaml.register_class(Pickle)
+        self._yaml.register_class(Yaml.Pickle)
 
     @classmethod
-    def _represent_undefined(cls, representer, data):
+    def _represent_as_null(cls, representer, data):
+        r"""
+        Return a YAML serialization as ``null``.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+
+        This is registered for ``None``::
+
+            >>> log = Yaml(surface)
+
+            >>> log._data["result"] = log._render(None)
+
+            >>> log.flush()
+            surface:
+            ...
+            result:
+
+        """
+        return representer.represent_scalar('tag:yaml.org,2002:null', '')
+
+    @classmethod
+    def _represent_as_pickle(cls, representer, data):
+        r"""
+        Return a YAML serialization by serializing to a pickle.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+
+        This is registered for any type that does not implement YAML serialization::
+
+            >>> log = Yaml(surface)
+
+            >>> log._data["result"] = log._render(log)
+
+            >>> log.flush()
+            surface:
+            ...
+            result: {pickle: !!binary ...
+
+        """
         import pickle
 
         return representer.represent_data(
             {
-                "pickle": Pickle(pickle.dumps(data)),
-                "repr": repr(data),
+                "pickle": Yaml.Pickle(pickle.dumps(data)),
             }
         )
-
-    def _render(self, *args, **kwargs):
-        if len(args) == 0:
-            return self._render(kwargs)
-
-        if len(args) > 1:
-            return self._render(args, **kwargs)
-
-        value = args[0]
-        if not kwargs:
-            from sage.all import ZZ
-
-            if type(value) is type(ZZ()):
-                value = int(value)
-            if hasattr(type(value), "to_yaml"):
-                self._yaml.representer.add_representer(type(value), type(value).to_yaml)
-            return value
-
-        value = self._render(value)
-        ret = self._render(kwargs)
-        if isinstance(value, dict):
-            ret.update(value)
-        else:
-            ret["value"] = value
-
-            from pickle import dumps
-
-            try:
-                dumps(value)
-            except Exception as e:
-                ret["value"] = "Failed: " + str(e)
-        return ret
 
     async def result(self, source, result, **kwargs):
         r"""
@@ -180,6 +174,60 @@ class Yaml(Reporter):
         """
         self._data.setdefault(str(source), [])
         self._data[str(source)].append(self._render(result, **kwargs))
+
+    def _render(self, *args, **kwargs):
+        r"""
+        Return the arguments in a way that YAML serialization can make more sense of.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> log = Yaml(surface)
+
+        Rewrites SageMath integers as Python integers::
+
+            >>> from sage.all import ZZ
+
+            >>> log._render(ZZ(1))
+            1
+
+        Combines arguments and keyword arguments::
+
+            >>> log._render(1, 2, 3, a=4, b=5)
+            {'a': 4, 'b': 5, 'value': (1, 2, 3)}
+
+        """
+        if len(args) == 0:
+            return self._render(kwargs)
+
+        if len(args) > 1:
+            return self._render(args, **kwargs)
+
+        value = args[0]
+
+        if kwargs:
+            ret = self._render(kwargs)
+            value = self._render(value)
+            if isinstance(value, dict):
+                ret.update(value)
+            else:
+                ret["value"] = value
+
+            return ret
+
+        from sage.all import ZZ
+
+        if isinstance(value, type(ZZ())):
+            return int(value)
+
+        if hasattr(type(value), "to_yaml"):
+            self._yaml.representer.add_representer(type(value), type(value).to_yaml)
+        else:
+            # Will write out pickle.
+            pass
+
+        return value
 
     def flush(self):
         r"""
@@ -230,3 +278,25 @@ class Yaml(Reporter):
         if self._stream is not sys.stdout:
             command.append(f"--output={self._stream.name}")
         return command
+
+    class Pickle:
+        r"""
+        Wrapper for objects that should be stored as their pickles in the YAML output.
+        """
+        @copy_args_to_internal_fields
+        def __init__(self, raw):
+            pass
+
+        @classmethod
+        def to_yaml(cls, representer, data):
+            import base64
+
+            return representer.represent_scalar(
+                "tag:yaml.org,2002:binary",
+                base64.encodebytes(data._raw).decode("ascii"),
+                style="",
+            )
+
+        @classmethod
+        def from_yaml(self, constructor, obj):
+            raise NotImplementedError
