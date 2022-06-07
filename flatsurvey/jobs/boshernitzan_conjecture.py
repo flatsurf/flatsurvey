@@ -261,6 +261,28 @@ class BoshernitzanConjecture(Goal):
             [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: b)
             [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: c)
 
+        TESTS:
+
+        Test that correct JSON output is produced::
+
+            >>> from flatsurvey.reporting import Json
+            >>> surface = Ngon((1, 1, 1))
+            >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
+            >>> log = Json(surface=surface)
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
+
+            >>> import asyncio
+            >>> asyncio.run(orientations.produce())
+            True
+            >>> asyncio.run(orientations.produce())
+            True
+            >>> asyncio.run(orientations.produce())
+            False
+
+            >>> asyncio.run(goal.report())
+            >>> log.flush()
+            {"boshernitzan-conjecture": [{"assertion": "b", "value": true}, {"assertion": "c", "value": true}]}
+
         """
         if decomposition.undeterminedComponents():
             for assertion, verdict in self._verdict.items():
@@ -323,7 +345,8 @@ class BoshernitzanConjecture(Goal):
 
             >>> import asyncio
             >>> asyncio.run(goal.report())
-            EXPECT JSON OUTPUT
+            >>> log.flush()
+            {}
 
         """
         if result is not None:

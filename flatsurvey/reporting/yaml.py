@@ -99,7 +99,7 @@ class Yaml(Reporter):
 
             >>> log = Yaml(surface)
 
-            >>> log._data["result"] = log._render(None)
+            >>> log._data["result"] = log._simplify(None)
 
             >>> log.flush()
             surface:
@@ -123,7 +123,7 @@ class Yaml(Reporter):
 
             >>> log = Yaml(surface)
 
-            >>> log._data["result"] = log._render(log)
+            >>> log._data["result"] = log._simplify(log)
 
             >>> log.flush()
             surface:
@@ -172,11 +172,11 @@ class Yaml(Reporter):
 
         """
         self._data.setdefault(str(source), [])
-        self._data[str(source)].append(self._render(result, **kwargs))
+        self._data[str(source)].append(self._simplify(result, **kwargs))
 
-    def _render(self, *args, **kwargs):
+    def _simplify_unknown(self, value):
         r"""
-        Return the arguments in a way that YAML serialization can make more sense of.
+        Return the argument in a way that YAML serialization can make sense of.
 
         EXAMPLES::
 
@@ -184,47 +184,12 @@ class Yaml(Reporter):
             >>> surface = Ngon((1, 1, 1))
             >>> log = Yaml(surface)
 
-        Rewrites SageMath integers as Python integers::
-
-            >>> from sage.all import ZZ
-
-            >>> log._render(ZZ(1))
-            1
-
-        Combines arguments and keyword arguments::
-
-            >>> log._render(1, 2, 3, a=4, b=5)
-            {'a': 4, 'b': 5, 'value': (1, 2, 3)}
+        TODO: Actually test something
 
         """
-        if len(args) == 0:
-            return self._render(kwargs)
-
-        if len(args) > 1:
-            return self._render(args, **kwargs)
-
-        value = args[0]
-
-        if kwargs:
-            ret = self._render(kwargs)
-            value = self._render(value)
-            if isinstance(value, dict):
-                ret.update(value)
-            else:
-                ret["value"] = value
-
-            return ret
-
-        from sage.all import ZZ
-
-        if isinstance(value, type(ZZ())):
-            return int(value)
-
         if hasattr(type(value), "to_yaml"):
             self._yaml.representer.add_representer(type(value), type(value).to_yaml)
-        else:
-            # Will write out pickle.
-            pass
+            return value
 
         return value
 

@@ -40,11 +40,15 @@ from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
 
 
-# TODO: Parse & dump the YAML?
 class Json(Reporter):
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
         super().__init__()
+
+        import sys
+        self._stream = stream or sys.stdout
+
+        self._data = {"surface": surface}
 
     @classmethod
     @click.command(
@@ -72,3 +76,12 @@ class Json(Reporter):
             ],
             "reporters": [Json],
         }
+
+    async def result(self, source, result, **kwargs):
+        self._data.setdefault(str(source), [])
+        self._data[str(source)].append(self._simplify(result, **kwargs))
+
+    def flush(self):
+        import json
+        self._stream.write(json.dumps(self._data))
+        self._stream.flush()
