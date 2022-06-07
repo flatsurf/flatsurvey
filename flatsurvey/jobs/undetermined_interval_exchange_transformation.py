@@ -136,6 +136,7 @@ class UndeterminedIntervalExchangeTransformation(Goal):
 
         iets = [result["result"] for result in results]
 
+        # TODO: Test JSON output.
         await self._report.result(self, None, iets=iets, cached=True)
         self._resolved = Goal.COMPLETED
 
@@ -255,6 +256,7 @@ class UndeterminedIntervalExchangeTransformation(Goal):
             )
 
             # pyintervalxt fails to serialize IETs. See #10.
+            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 str(iet),

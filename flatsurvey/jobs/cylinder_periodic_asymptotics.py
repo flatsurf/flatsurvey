@@ -136,6 +136,7 @@ class CylinderPeriodicAsymptotics(Goal):
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution
         # would be skewed.
+        # TODO: Test JSON output.
         await self._report.result(self, None, distributions=distributions, cached=True)
         self._resolved = Goal.COMPLETED
 
@@ -228,6 +229,7 @@ class CylinderPeriodicAsymptotics(Goal):
                 )
             distribution = sorted([r for r in distribution if r])
 
+            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 result,

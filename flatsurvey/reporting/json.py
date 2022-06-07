@@ -1,4 +1,3 @@
-# TODO: Test this for everything that calls result().
 r"""
 Writes results as JSON files.
 

@@ -302,6 +302,7 @@ class BoshernitzanConjecture(Goal):
         return not Goal.COMPLETED
 
     async def _report_assertion(self, assertion, result, **kwargs):
+        # TODO: Test JSON output.
         await self._report.result(
             self,
             result,

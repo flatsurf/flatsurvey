@@ -158,6 +158,7 @@ class OrbitClosure(Goal):
         verdict = await results.reduce()
 
         if verdict is not None or self._cache_only:
+            # TODO: Test JSON output.
             await self._report.result(self, result=None, dense=verdict, cached=True)
             self._resolved = Goal.COMPLETED
 
@@ -424,6 +425,7 @@ class OrbitClosure(Goal):
     async def report(self):
         if self._resolved != Goal.COMPLETED:
             orbit_closure = self._surface.orbit_closure()
+            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 orbit_closure,

@@ -169,6 +169,7 @@ class CompletelyCylinderPeriodic(Goal):
         verdict = await results.reduce()
 
         if verdict is not None or self._cache_only:
+            # TODO: Test JSON output.
             await self._report.result(self, verdict, cached=True)
             self._resolved = Goal.COMPLETED
 
@@ -240,6 +241,7 @@ class CompletelyCylinderPeriodic(Goal):
 
     async def report(self, result=None, **kwargs):
         if self._resolved != Goal.COMPLETED:
+            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 result,

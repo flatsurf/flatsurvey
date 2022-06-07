@@ -122,6 +122,7 @@ class FlowDecompositions(Processor):
         )
         cost += time.perf_counter() - start
 
+        # TODO: Test JSON output.
         await self._report.result(
             self,
             # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274
