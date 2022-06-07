@@ -63,13 +63,11 @@ class OrbitClosure(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-        >>> from flatsurvey.cache import Cache, Pickles
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache(pickles=Pickles()))
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+        >>> OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
         orbit-closure
 
     """
@@ -91,7 +89,7 @@ class OrbitClosure(Goal):
         cache_only=Goal.DEFAULT_CACHE_ONLY,
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
         )
 
         self._cylinders_without_increase = 0
@@ -112,18 +110,17 @@ class OrbitClosure(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> from flatsurvey.cache import Cache, Pickles
             >>> surface = Ngon((1, 1, 1))
             >>> connections = SaddleConnections(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> make_goal = lambda cache: OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> make_goal = lambda cache: OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
-            >>> goal = make_goal(Cache(pickles=Pickles()))
+            >>> goal = make_goal(None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -237,12 +234,11 @@ class OrbitClosure(Goal):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-            >>> from flatsurvey.cache import Cache, Pickles
             >>> surface = Ngon((1, 3, 5))
             >>> connections = SaddleConnections(surface)
             >>> log = Log(surface=surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache(pickles=Pickles()))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
         Run until we find the orbit closure, i.e., investigate in two directions::
 

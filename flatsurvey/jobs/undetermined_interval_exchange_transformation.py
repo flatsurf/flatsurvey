@@ -51,14 +51,12 @@ class UndeterminedIntervalExchangeTransformation(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, SaddleConnectionOrientations
-        >>> from flatsurvey.cache import Cache, Pickles
         >>> surface = Ngon((1, 1, 1))
         >>> connections = SaddleConnections(surface)
         >>> orientations = SaddleConnectionOrientations(connections)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=orientations)
-        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=Cache(pickles=Pickles()))
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=orientations)
+        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=None)
         undetermined-iet
 
     """
@@ -76,7 +74,7 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
         )
 
     async def consume_cache(self):
@@ -89,13 +87,13 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=saddle_connection_orientations)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
             >>> log = Log(surface)
             >>> make_goal = lambda cache: UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 

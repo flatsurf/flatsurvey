@@ -33,6 +33,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
+from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.reporting.reporter import Reporter
@@ -41,6 +42,10 @@ from flatsurvey.ui.group import GroupedCommand
 
 # TODO: Parse & dump the YAML?
 class Json(Reporter):
+    @copy_args_to_internal_fields
+    def __init__(self, surface, stream=None):
+        super().__init__()
+
     @classmethod
     @click.command(
         name="json",

@@ -56,10 +56,9 @@ class FlowDecompositions(Processor):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+        >>> FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
         flow-decompositions
 
     """
@@ -69,7 +68,7 @@ class FlowDecompositions(Processor):
     def __init__(
         self, surface, report, saddle_connection_orientations, limit=DEFAULT_LIMIT
     ):
-        super().__init__(producers=[saddle_connection_orientations])
+        super().__init__(producers=[saddle_connection_orientations], report=report)
 
     @classmethod
     @click.command(

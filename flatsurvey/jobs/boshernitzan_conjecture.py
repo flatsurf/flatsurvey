@@ -50,12 +50,10 @@ class BoshernitzanConjecture(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.cache import Cache, Pickles
         >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
         >>> surface = Ngon((1, 1, 1))
         >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-        >>> BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache(pickles=Pickles()))
+        >>> BoshernitzanConjecture(surface=surface, report=None, flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
         boshernitzan-conjecture
 
     """
@@ -80,7 +78,7 @@ class BoshernitzanConjecture(Goal):
             )
 
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
         )
 
         self._verdict = {
@@ -96,16 +94,15 @@ class BoshernitzanConjecture(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.cache import Cache, Pickles
-            >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-            >>> make_goal = lambda cache: BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=cache)
+            >>> make_goal = lambda cache: BoshernitzanConjecture(surface=surface, report=None, flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
-            >>> goal = make_goal(Cache(pickles=Pickles()))
+            >>> goal = make_goal(None)
 
             >>> asyncio.run(goal.consume_cache())
 
@@ -241,12 +238,11 @@ class BoshernitzanConjecture(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache, Pickles
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
             >>> log = Log(surface=surface)
-            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache(pickles=Pickles()))
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
 
         We investigate all directions and conclude that Boshernitzan's
         conjecture holds for this triangle (note that we do not check the
@@ -302,7 +298,6 @@ class BoshernitzanConjecture(Goal):
         return not Goal.COMPLETED
 
     async def _report_assertion(self, assertion, result, **kwargs):
-        # TODO: Test JSON output.
         await self._report.result(
             self,
             result,
@@ -311,6 +306,26 @@ class BoshernitzanConjecture(Goal):
         )
 
     async def report(self, result=None, **kwargs):
+        r"""
+        Report a ``result`` for the current surface.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Json, Report
+            >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
+            >>> surface = Ngon((1, 1, 1))
+            >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
+            >>> log = Json(surface=surface)
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
+
+        Report that no conclusion could be reached::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.report())
+            EXPECT JSON OUTPUT
+
+        """
         if result is not None:
             raise NotImplementedError
 
