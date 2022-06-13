@@ -141,3 +141,7 @@ class Report:
 
     def deform(self, deformation):
         return {"bindings": [PartialBindingSpec(Report)(ignore=self._ignore)]}
+
+    def flush(self):
+        for reporter in self._reporters:
+            reporter.flush()

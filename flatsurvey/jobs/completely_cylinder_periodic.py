@@ -124,12 +124,12 @@ class CompletelyCylinderPeriodic(Goal):
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
 
-            >>> make_goal = lambda cache: CompletelyCylinderPeriodic(report=None, flow_decompositions=flow_decompositions, cache=cache)
+            >>> make_goal = lambda cache, report: CompletelyCylinderPeriodic(report=report, flow_decompositions=flow_decompositions, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
-            >>> goal = make_goal(None)
+            >>> goal = make_goal(None, None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -137,6 +137,9 @@ class CompletelyCylinderPeriodic(Goal):
 
         We mock some artificial results from previous runs and consume that
         artificial cache::
+
+            >>> from flatsurvey.reporting import Report, Json
+            >>> log = Report([Json(surface)])
 
             >>> from io import StringIO
             >>> goal = make_goal(Cache(jsons=[StringIO(
@@ -152,11 +155,16 @@ class CompletelyCylinderPeriodic(Goal):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": false
-            ... }]}''')], pickles=Pickles()))
+            ... }]}''')], pickles=Pickles()), log)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
+
+        The cached verdict can be reported back in JSON format::
+
+            >>> log.flush()
+            {"surface": {...}, "completely-cylinder-periodic": [{"cached": true, "value": false}]}
 
         """
         results = self._cache.results(
@@ -166,7 +174,6 @@ class CompletelyCylinderPeriodic(Goal):
         verdict = await results.reduce()
 
         if verdict is not None or self._cache_only:
-            # TODO: Test JSON output.
             await self._report.result(self, verdict, cached=True)
             self._resolved = Goal.COMPLETED
 
@@ -236,8 +243,29 @@ class CompletelyCylinderPeriodic(Goal):
         return not Goal.COMPLETED
 
     async def report(self, result=None, **kwargs):
+        r"""
+        Report whether this surface is completely cylinder periodic.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Json, Report
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 11))
+            >>> report = Report([Json(surface)])
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> ccp = CompletelyCylinderPeriodic(report=report, flow_decompositions=flow_decompositions, cache=None)
+
+        Report that we found a direction that is not a cylinder::
+
+            >>> import asyncio
+            >>> asyncio.run(ccp.report(result=False))
+
+            >>> report.flush()
+            {"surface": {...}, "completely-cylinder-periodic": [{"cylinder_periodic_directions": 0, "undetermined_directions": 0, "value": false}]}
+
+        """
         if self._resolved != Goal.COMPLETED:
-            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 result,
