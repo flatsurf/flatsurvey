@@ -1,5 +1,10 @@
 r"""
-# TOOO
+Access a database of pickles storing parts of previous computations.
+
+This modules supplements :module:`flatsurvey.cache.Cache`. The cache in JSON
+files contains references to pickles. These pickles are resolved here.
+
+TODO: Examples
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -25,6 +30,8 @@ import click
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
+
+# TODO: Actually implement this.
 
 class Pickles:
     @classmethod

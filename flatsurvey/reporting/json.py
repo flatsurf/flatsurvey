@@ -7,7 +7,7 @@ EXAMPLES::
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "json", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker json [OPTIONS]
-      Writes results as JSON files.
+      Writes results in JSON format.
     Options:
       --output FILENAME  [default: derived from surface name]
       --help             Show this message and exit.
@@ -41,6 +41,18 @@ from flatsurvey.ui.group import GroupedCommand
 
 
 class Json(Reporter):
+    r"""
+    Writes results in JSON format.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.reporting.json import Json
+        >>> from flatsurvey.surfaces import Ngon
+        >>> surface = Ngon((1, 1, 1))
+        >>> Json(surface)
+        json
+
+    """
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
         super().__init__()
@@ -77,11 +89,96 @@ class Json(Reporter):
             "reporters": [Json],
         }
 
+    def command(self):
+        r"""
+        Return the command line command used to create this reporter.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting.json import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json(surface)
+
+            >>> json.command()
+            ['json']
+
+        """
+        import sys
+
+        command = ["json"]
+        if self._stream is not sys.stdout:
+            command.append(f"--output={self._stream.name}")
+        return command
+
     async def result(self, source, result, **kwargs):
+        r"""
+        Report a ``result`` for ``source``.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting.json import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json(surface)
+
+            >>> import asyncio
+            >>> asyncio.run(json.result(source=None, result=True))
+
+        """
         self._data.setdefault(str(source), [])
         self._data[str(source)].append(self._simplify(result, **kwargs))
 
+    def _serialize_to_pickle(self, obj):
+        r"""
+        Return a JSON serializable version of ``obj``.
+
+        Called for objects that cannot be otherwised encoded as JSON.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting.json import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json(surface)
+
+            >>> json._serialize_to_pickle(True)
+            {'type': 'bool', 'pickle': 'gASILg=='}
+
+        """
+        from pickle import dumps
+        import base64
+
+        characteristics = {}
+
+        if hasattr(obj, "_flatsurvey_characteristics"):
+            characteristics = obj._flatsurvey_characteristics()
+
+        characteristics.setdefault("type", type(obj).__name__)
+        characteristics.setdefault("pickle", base64.encodebytes(dumps(obj)).decode('utf-8').strip())
+
+        return characteristics
+
     def flush(self):
+        r"""
+        Write reported data out as a JSON stream.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting.json import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json(surface)
+
+            >>> import asyncio
+            >>> asyncio.run(json.result("verdict", result=True))
+
+        Note that each result is reported individually, so the "verdict" is a list here::
+
+            >>> json.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [true]}
+
+        """
         import json
-        self._stream.write(json.dumps(self._data))
+        self._stream.write(json.dumps(self._data, default=self._serialize_to_pickle))
         self._stream.flush()

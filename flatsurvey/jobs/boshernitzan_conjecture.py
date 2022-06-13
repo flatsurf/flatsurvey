@@ -281,7 +281,7 @@ class BoshernitzanConjecture(Goal):
 
             >>> asyncio.run(goal.report())
             >>> log.flush()
-            {"boshernitzan-conjecture": [{"assertion": "b", "value": true}, {"assertion": "c", "value": true}]}
+            {"surface": {...}, "boshernitzan-conjecture": [{"assertion": "b", "value": true}, {"assertion": "c", "value": true}]}
 
         """
         if decomposition.undeterminedComponents():
@@ -346,7 +346,7 @@ class BoshernitzanConjecture(Goal):
             >>> import asyncio
             >>> asyncio.run(goal.report())
             >>> log.flush()
-            {}
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}}
 
         """
         if result is not None:
