@@ -46,8 +46,6 @@ from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.command import Command
 
 
-# TODO: Actually implement this.
-
 class Cache(Command):
     r"""
     A cache of previous results stored in local JSON files.
@@ -104,6 +102,28 @@ class Cache(Command):
         return {"bindings": Cache.bindings()}
 
     def results(self, job, predicate):
+        r"""
+        Return the results for ``job`` that satisfy ``predicate``.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
+            >>> surface = Ngon((1, 1, 1))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+
+            >>> goal = CompletelyCylinderPeriodic(report=None, flow_decompositions=flow_decompositions, cache=None)
+
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": 0}, {"result": 1}]}')], pickles=None)
+
+            >>> cache.results(goal, predicate=lambda entry: True)
+            [{'result': 0}, {'result': 1}]
+
+            >>> cache.results(goal, predicate=lambda entry: entry["result"])
+            [{'result': 1}]
+
+        """
         from flatsurvey.cache.results import Results
 
         return Results(

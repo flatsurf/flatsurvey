@@ -28,6 +28,9 @@ class Results:
     def __init__(self, job, results):
         pass
 
+    def __repr__(self):
+        return repr(list(self))
+
     async def reduce(self):
         return self._job.reduce(self._results)
 
