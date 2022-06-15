@@ -33,11 +33,12 @@ The saddle connections on a translation surface.
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline import Processor, Producer
+from flatsurvey.pipeline import Processor
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class SaddleConnectionOrientations(Processor):
+class SaddleConnectionOrientations(Processor, Command):
     r"""
     Orientations of saddle connections on the surface, i.e., the vectors of
     saddle connections irrespective of scaling and sign.

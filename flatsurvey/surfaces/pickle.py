@@ -13,7 +13,7 @@ EXAMPLES::
     Options:
       --base64 TEXT  a base64 encoded surface  [required]
       --help         Show this message and exit.
-    
+
 """
 # *********************************************************************
 #  This file is part of flatsurvey.

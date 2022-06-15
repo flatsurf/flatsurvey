@@ -173,28 +173,6 @@ class Consumer:
 
         return Consumer.COMPLETED
 
-    def command(self):
-        r"""
-        Return the command line that can be used to create this consumer.
-
-        Actual consumers must implement this method.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
-            >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
-            >>> orientations.command()
-            ['saddle-connection-orientations']
-
-        """
-        raise NotImplementedError
-
-    def __repr__(self):
-        return " ".join(self.command())
-
     async def report(self):
         r"""
         Report the current state of this consumer to the reporter. Typically

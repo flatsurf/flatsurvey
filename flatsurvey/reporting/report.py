@@ -36,9 +36,10 @@ import click
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class Report:
+class Report(Command):
     r"""
     Generic reporting of results.
 

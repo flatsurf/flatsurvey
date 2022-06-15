@@ -119,24 +119,6 @@ class Reporter:
         """
         pass
 
-    def command(self):
-        r"""
-        Return the command that can be used to configure this reporter with the
-        arguments that provide it in its current configuration.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-
-            >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
-            >>> log.command()
-            ['log']
-
-        """
-        raise NotImplementedError
-
     def _simplify_primitive(self, value):
         r"""
         Return the argument in a way that the report can render out.
@@ -221,6 +203,3 @@ class Reporter:
             return {self._simplify(key): self._simplify(v) for (key, v) in value.items()}
 
         return self._simplify_primitive(value)
-
-    def __repr__(self):
-        return " ".join(self.command())

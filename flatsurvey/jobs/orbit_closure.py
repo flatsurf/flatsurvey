@@ -54,9 +54,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class OrbitClosure(Goal):
+class OrbitClosure(Goal, Command):
     r"""
     Determines the GL₂(R) orbit closure of ``surface``.
 

@@ -39,9 +39,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class Log(Reporter):
+class Log(Reporter, Command):
     r"""
     Writes progress and results as an unstructured log file.
 

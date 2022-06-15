@@ -40,9 +40,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class BoshernitzanConjecture(Goal):
+class BoshernitzanConjecture(Goal, Command):
     r"""
     Determines whether Conjecture 2.2 in Boshernitzan's *Billiards and Rational
     Periodic Directions in Polygons* holds for this surface.

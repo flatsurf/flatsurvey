@@ -47,9 +47,10 @@ from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 from flatsurvey.pipeline import Processor
+from flatsurvey.command import Command
 
 
-class FlowDecompositions(Processor):
+class FlowDecompositions(Processor, Command):
     r"""
     Turns directions coming from saddle connections into flow decompositions.
 

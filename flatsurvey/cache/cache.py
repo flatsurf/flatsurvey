@@ -6,6 +6,8 @@ files and some accompanying Python pickles. It would be fairly trivial to
 change that and allow for other similar systems as well (and we at some point
 supported a GraphQL backend but it turned out to be impractical.)
 
+EXAMPLES::
+
     >>> from flatsurvey.test.cli import invoke
     >>> from flatsurvey.worker.__main__ import worker
     >>> invoke(worker, "local-cache", "--help") # doctest: +NORMALIZE_WHITESPACE
@@ -41,11 +43,12 @@ from pinject import copy_args_to_internal_fields
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
 # TODO: Actually implement this.
 
-class Cache:
+class Cache(Command):
     r"""
     A cache of previous results stored in local JSON files.
 
@@ -53,7 +56,7 @@ class Cache:
 
         >>> from flatsurvey.cache.pickles import Pickles
         >>> Cache(pickles=Pickles(), jsons=())
-        local cache
+        local-cache
 
     """
 
@@ -69,9 +72,6 @@ class Cache:
         for raw in jsons:
             for job, results in json.load(raw).items():
                 self._results.setdefault(job, []).extend(results)
-
-    def __repr__(self):
-        return "local cache"
 
     @classmethod
     @click.command(
@@ -94,8 +94,7 @@ class Cache:
         }
 
     def command(self):
-        command = ["cache"]
-        return command
+        return ["local-cache"] + [f"--json={json}" for json in self._jsons]
 
     @classmethod
     def bindings(cls, endpoint, key, region):

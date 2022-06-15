@@ -37,9 +37,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Producer
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class BoshernitzanConjectureOrientations(Producer):
+class BoshernitzanConjectureOrientations(Producer, Command):
     r"""
     Produces directions in $S^1(2d')$, i.e., corresponding to certain roots
     of unity, as used in Conjecture 2.2 of Boshernitzan's *Billiards and

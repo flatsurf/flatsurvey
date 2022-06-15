@@ -43,9 +43,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class CylinderPeriodicDirection(Goal):
+class CylinderPeriodicDirection(Goal, Command):
     r"""
     Determines whether there is a direction for which the surface decomposes
     into cylinders.
