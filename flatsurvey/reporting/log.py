@@ -176,7 +176,7 @@ class Log(Reporter, Command):
         self.log(source, result, **kwargs)
 
     def command(self):
-        command = ["log"]
+        command = [self.name()]
         import sys
 
         if self._stream is not sys.stdout:

@@ -207,13 +207,13 @@ class BoshernitzanConjecture(Goal, Command):
             ValueError: historic results are contradictory
 
         """
-        if not results:
+        if len(results) == 0:
             return None
 
-        assertion = results[0]["assertion"]
-        if any(result["assertion"] != assertion for result in results):
+        assertions = set([result["assertion"] for result in results])
+        if len(assertions) != 1:
             raise ValueError(
-                "cannot consolidate results relating to different conjectures"
+                f"cannot consolidate results relating to different conjectures: {assertions}"
             )
 
         results = [result["result"] for result in results]

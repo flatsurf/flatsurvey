@@ -1,5 +1,5 @@
 r"""
-TODO
+Results from a :class:`Cache`.
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -24,6 +24,30 @@ from pinject import copy_args_to_internal_fields
 
 
 class Results:
+    r"""
+    Results from a cache.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.surfaces import Ngon
+        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
+        >>> from flatsurvey.cache import Cache
+        >>> surface = Ngon((1, 1, 1))
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+
+        >>> goal = CompletelyCylinderPeriodic(report=None, flow_decompositions=flow_decompositions, cache=None)
+
+        >>> from io import StringIO
+        >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": null}, {"result": false}]}')], pickles=None)
+
+        >>> results = cache.results(goal, predicate=lambda entry: True)
+
+    TESTS::
+
+        >>> isinstance(results, Results)
+        True
+
+    """
     @copy_args_to_internal_fields
     def __init__(self, job, results):
         pass
@@ -32,7 +56,55 @@ class Results:
         return repr(list(self))
 
     async def reduce(self):
-        return self._job.reduce(self._results)
+        r"""
+        Return a verdict for the job from this set of results.
+
+        EXAMPLES:
+
+        We provide a cache with some previous results, one inconclusive, one
+        negative::
+
+            >>> from io import StringIO
+            >>> from flatsurvey.cache import Cache
+            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": null}, {"result": false}]}')], pickles=None)
+
+            >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
+            >>> results = cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: True)
+
+        Since we had found that the surface is not completely cylinder periodic
+        previously, we return that verdict::
+
+            >>> import asyncio
+            >>> asyncio.run(results.reduce())
+            False
+
+        """
+        return self._job.reduce(self)
 
     def __iter__(self):
-        return iter(self._results)
+        return iter(self._replace_pickles(self._replace_surface(result)) for result in self._results)
+
+    def __len__(self):
+        return len(self._results)
+
+    def _replace_surface(self, result):
+        r"""
+        Replace external surface references with the actual surface.
+
+        EXAMPLES::
+
+            TODO
+
+        """
+        return result
+
+    def _replace_pickles(self, result):
+        r"""
+        Replace any pickles in ``result`` with a lazy-loading object.
+
+        EXAMPLES::
+
+            TODO
+
+        """
+        return result

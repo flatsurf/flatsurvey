@@ -29,11 +29,12 @@ import click
 
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
 # TODO: Actually implement this.
 
-class Pickles:
+class Pickles(Command):
     @classmethod
     @click.command(
         name="pickles",
@@ -45,6 +46,9 @@ class Pickles:
         return {
             "bindings": Pickles.bindings(),
         }
+
+    def command(self):
+        return ["pickles"]
 
     @classmethod
     def bindings(cls):

@@ -215,7 +215,7 @@ class OrbitClosure(Goal, Command):
         }
 
     def command(self):
-        command = ["orbit-closure"]
+        command = [self.name()]
         if self._limit != self.DEFAULT_LIMIT:
             command.append(f"--limit={self._limit}")
         if self._expansions != self.DEFAULT_EXPANSIONS:

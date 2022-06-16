@@ -101,36 +101,60 @@ class Cache(Command):
     def deform(self, deformation):
         return {"bindings": Cache.bindings()}
 
-    def results(self, job, predicate):
+    def results(self, job, predicate=None):
         r"""
         Return the results for ``job`` that satisfy ``predicate``.
 
-        EXAMPLES::
+        EXAMPLES:
 
-            >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
-            >>> surface = Ngon((1, 1, 1))
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+        Cached results are automatically requested by a goal when
+        :meth:`Goal._consume_cache` which calls this method.
 
-            >>> goal = CompletelyCylinderPeriodic(report=None, flow_decompositions=flow_decompositions, cache=None)
+        However, the cache can also be queried manually. Let's suppose that we
+        have a cache from previous runs::
 
             >>> from io import StringIO
-            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": 0}, {"result": 1}]}')], pickles=None)
+            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": null}, {"result": false}]}')], pickles=None)
 
-            >>> cache.results(goal, predicate=lambda entry: True)
-            [{'result': 0}, {'result': 1}]
+        Then we can query all cached results for a goal::
 
-            >>> cache.results(goal, predicate=lambda entry: entry["result"])
-            [{'result': 1}]
+            >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
+            >>> cache.results(CompletelyCylinderPeriodic)
+            [{'result': None}, {'result': False}]
+
+        We can filter the results further by specifying a predicate::
+
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: entry["result"] is not None)
+            [{'result': False}]
+
+        Often, you only want results for a specific surface::
+
+            TODO
+
+        We can also only look at results for surfaces with certain properties::
+
+            TODO
+
+        Note that filtering by some properties can be very costly since the
+        urface needs to be loaded from pickled storage first. If the pickle is
+        not available locally, this requires to download the individual
+        pickles::
+
+            TODO
 
         """
-        from flatsurvey.cache.results import Results
+        if predicate is None:
+            def predicate(entry):
+                return True
 
+        key = job.name()
+
+        from flatsurvey.cache.results import Results
         return Results(
             job=job,
             results=[
                 entry
-                for entry in self._results.get(job.command()[0], [])
+                for entry in self._results.get(key, [])
                 if predicate(entry)
             ],
         )
