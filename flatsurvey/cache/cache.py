@@ -114,33 +114,46 @@ class Cache(Command):
         have a cache from previous runs::
 
             >>> from io import StringIO
-            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": null}, {"result": false}]}')], pickles=None)
+            >>> cache = Cache(jsons=[StringIO('{"completely-cylinder-periodic": [{"result": null, "surface": {"type": "Ngon", "angles": [1, 1, 1, 1]}}, {"result": false, "surface": {"type": "Ngon", "angles": [1, 1, 1, 7]}}]}')], pickles=None)
 
         Then we can query all cached results for a goal::
 
             >>> from flatsurvey.jobs import CompletelyCylinderPeriodic
             >>> cache.results(CompletelyCylinderPeriodic)
-            [{'result': None}, {'result': False}]
+            [{'result': None, 'surface': {'type': 'Ngon', 'angles': [1, 1, 1, 1]}}, {'result': False, 'surface': {'type': 'Ngon', 'angles': [1, 1, 1, 7]}}]
 
         We can filter the results further by specifying a predicate::
 
-            >>> cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: entry["result"] is not None)
-            [{'result': False}]
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: entry.result is not None)
+            [{'result': False, 'surface': {'type': 'Ngon', 'angles': [1, 1, 1, 7]}}]
 
-        Often, you only want results for a specific surface::
+        Or, if we only want results for a specific surface::
 
-            TODO
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1, 1))
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=surface.cache_predicate(exact=False))
+            [{'result': None, 'surface': {'type': 'Ngon', 'angles': [1, 1, 1, 1]}}]
+
+        The above returns the results for any ngon with such angles. To only
+        accept results for surfaces that are exactly the same, we can use the
+        ``exact`` keyword; however this is not implemented yet::
+
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=surface.cache_predicate(exact=True))
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: exact filtering is not supported yet
 
         We can also only look at results for surfaces with certain properties::
 
-            TODO
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: 7 in entry.surface.angles)
+            [{'result': False, 'surface': {'type': 'Ngon', 'angles': [1, 1, 1, 7]}}]
 
         Note that filtering by some properties can be very costly since the
         urface needs to be loaded from pickled storage first. If the pickle is
         not available locally, this requires to download the individual
         pickles::
 
-            TODO
+            >>> cache.results(CompletelyCylinderPeriodic, predicate=lambda entry: entry.surface.orbit_closure_dimension_upper_bound() == 3)
 
         """
         if predicate is None:
@@ -150,11 +163,12 @@ class Cache(Command):
         key = job.name()
 
         from flatsurvey.cache.results import Results
+        from flatsurvey.cache.node import Node
         return Results(
             job=job,
             results=[
-                entry
+                Node(entry, cache=self)
                 for entry in self._results.get(key, [])
-                if predicate(entry)
+                if predicate(Node(entry, cache=self))
             ],
         )

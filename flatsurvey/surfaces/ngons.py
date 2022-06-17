@@ -531,16 +531,16 @@ class Ngon(Surface):
 
         raise Exception("giving up on", E)
 
-    def cache_predicate(self, exact=False):
+    def cache_predicate(self, exact):
         def predicate(result):
-            surface = result["surface"]
-            if surface["type"] != "Ngon":
+            surface = result.surface
+            if surface.type != "Ngon":
                 return False
-            if surface["angles"] != self.angles:
+            if surface.angles != self.angles:
                 return False
 
             if exact:
-                raise NotImplementedError
+                raise NotImplementedError("exact filtering is not supported yet")
 
             return True
 

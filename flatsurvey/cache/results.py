@@ -49,7 +49,7 @@ class Results:
 
     """
     @copy_args_to_internal_fields
-    def __init__(self, job, results):
+    def __init__(self, job, results, cache):
         pass
 
     def __repr__(self):
@@ -82,29 +82,8 @@ class Results:
         return self._job.reduce(self)
 
     def __iter__(self):
-        return iter(self._replace_pickles(self._replace_surface(result)) for result in self._results)
+        from flatsurvey.cache.node import Node
+        return iter(Node(result, cache=self._cache) for result in self._results)
 
     def __len__(self):
         return len(self._results)
-
-    def _replace_surface(self, result):
-        r"""
-        Replace external surface references with the actual surface.
-
-        EXAMPLES::
-
-            TODO
-
-        """
-        return result
-
-    def _replace_pickles(self, result):
-        r"""
-        Replace any pickles in ``result`` with a lazy-loading object.
-
-        EXAMPLES::
-
-            TODO
-
-        """
-        return result
