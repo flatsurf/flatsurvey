@@ -27,21 +27,24 @@ class Node:
 
     EXAMPLES::
 
-        >>> Node(1, cache=None)
+        >>> from flatsurvey.cache import Cache
+        >>> cache = Cache(pickles=None)
+        >>> Node(1, cache=cache)
         1
 
     """
 
-    def __init__(self, value, cache):
+    def __init__(self, value, cache, kind):
         self._value = value
         self._cache = cache
+        self._kind = kind
 
-    def make(self, value, name):
+    def make(self, value, name, kind=None):
+        if kind is None:
+            kind = name
+
         if value is None:
             return None
-
-        if isinstance(value, (bool, int)):
-            return value
 
         if isinstance(value, list):
             if name.endswith('s'):
@@ -53,7 +56,10 @@ class Node:
         if isinstance(value, str) and name in ["surface"]:
             return ReferenceNode(value, "surface", cache=self._cache)
 
-        return Node(value, cache=self._cache)
+        if isinstance(value, (bool, int, str)):
+            return value
+
+        return Node(value, cache=self._cache, kind=kind)
 
     def __repr__(self):
         r"""
@@ -61,7 +67,9 @@ class Node:
 
         EXAMPLES::
 
-            >>> Node({})
+            >>> from flatsurvey.cache import Cache
+            >>> cache = Cache(pickles=None)
+            >>> Node({}, cache=cache)
             {}
 
         """
@@ -73,14 +81,32 @@ class Node:
 
         EXAMPLES::
 
-            >>> node = Node({"surface": '177156c4-1794-11eb-b7bd-0600cfa33284'})
-            >>> node.surface
+            >>> from flatsurvey.cache import Cache
+            >>> cache = Cache(pickles=None)
+            >>> node = Node({"surface": '177156c4-1794-11eb-b7bd-0600cfa33284'}, cache=cache)
+            >>> node.surface.type
 
         """
-        if isinstance(self._value, dict) and name in self._value:
-            return self.make(self._value[name], name=name)
+        try:
+            for source in self._cache.sources():
+                if source == "CACHE":
+                    if isinstance(self._value, dict) and name in self._value:
+                        return self.make(self._value[name], name=name)
 
-        raise AttributeError
+                if source == "PICKLE":
+                    if isinstance(self._value, dict) and "pickle" in self._value:
+                        instance = self._cache.unpickle(self._value["pickle"], self._kind)
+                        return getattr(instance, name)
+
+                if source == "DEFAULTS":
+                    defaults = self._cache.defaults()
+                    if name in defaults:
+                        return defaults[name]
+
+        except AttributeError as e:
+            raise RuntimeError(e)
+
+        raise AttributeError(name)
 
 
 class ReferenceNode(Node):
@@ -89,7 +115,12 @@ class ReferenceNode(Node):
 
     EXAMPLES::
 
-        >>> ReferenceNode('177156c4-1794-11eb-b7bd-0600cfa33284', "surface")
+        >>> from flatsurvey.cache import Cache
+        >>> cache = Cache(pickles=None)
+        >>> ReferenceNode('177156c4-1794-11eb-b7bd-0600cfa33284', "surface", cache=cache)
+        ...
+
+        # TODO
 
     """
 

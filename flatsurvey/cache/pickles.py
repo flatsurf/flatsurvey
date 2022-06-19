@@ -35,6 +35,9 @@ from flatsurvey.command import Command
 # TODO: Actually implement this.
 
 class Pickles(Command):
+    def __init__(self, providers):
+        self._providers = [PickleProvider.make(provider) for provider in providers]
+
     @classmethod
     @click.command(
         name="pickles",
@@ -53,3 +56,54 @@ class Pickles(Command):
     @classmethod
     def bindings(cls):
         return [PartialBindingSpec(Pickles)()]
+
+    def unpickle(self, pickle, kind):
+        for provider in self._providers:
+            try:
+                unpickled = provider.unpickle(pickle, kind)
+            except KeyError:
+                continue
+
+            return unpickled
+
+        raise KeyError(pickle)
+
+
+class PickleProvider:
+    @staticmethod
+    def make(data):
+        if isinstance(data, bytes):
+            return StaticPickleProvider(data)
+
+        raise NotImplementedError
+
+    def load(self, raw):
+        # Work around some current problems in many of our pickles:
+        # - Pickles import sage.rings.number_field but SageMath cannot handle
+        #   this so we get a circular import. # TODO: open an issue
+        import sage.all
+        # - Pickles use cppyy.gbl.flatsurf but it's not available yet somehow. # TODO: open an issue
+        import pyflatsurf
+
+        from pickle import loads
+        return loads(raw)
+
+
+class StaticPickleProvider(PickleProvider):
+    def __init__(self, data):
+        self._pickle = data
+
+        from hashlib import sha256
+        sha = sha256()
+        sha.update(data)
+        self._digest = sha.hexdigest()
+
+    def unpickle(self, digest, kind):
+        if digest == self._digest:
+            return self.load(self._pickle)
+        raise KeyError(digest)
+
+
+class DirectoryPickleProvider(PickleProvider):
+    def __init__(self, path):
+        raise NotImplementedError

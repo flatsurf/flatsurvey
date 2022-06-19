@@ -83,7 +83,7 @@ class Results:
 
     def __iter__(self):
         from flatsurvey.cache.node import Node
-        return iter(Node(result, cache=self._cache) for result in self._results)
+        return iter(Node(result, cache=self._cache, kind=self._job.name()) for result in self._results)
 
     def __len__(self):
         return len(self._results)

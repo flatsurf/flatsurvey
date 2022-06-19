@@ -60,6 +60,8 @@ class Surface:
         """
         return None
 
+    # TODO: This should probably live on the OrbitClosure job and not here so
+    # it is pickled correctly.
     @cached_method
     def orbit_closure(self):
         r"""

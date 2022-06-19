@@ -226,6 +226,17 @@ class OrbitClosure(Goal, Command):
             command.append("--cache-only")
         return command
 
+    @property
+    def dimension(self):
+        return self._surface.orbit_closure().dimension()
+
+    @property
+    def dense(self):
+        if self.dimension == self._surface.orbit_closure_dimension_upper_bound:
+            return True
+
+        return None
+
     async def _consume(self, decomposition, cost):
         r"""
         Enlarge the orbit closure from the cylinders in ``decomposition``.
@@ -265,30 +276,30 @@ class OrbitClosure(Goal, Command):
             self._directions_with_cylinders += 1
 
         orbit_closure = self._surface.orbit_closure()
-        dimension = orbit_closure.dimension()
+        dimension = self.dimension
 
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
         self._report.progress(
             self,
             "dimension",
-            orbit_closure.dimension(),
+            self.dimension,
             self._surface.orbit_closure_dimension_upper_bound,
         )
 
         assert (
-            orbit_closure.dimension()
+            self.dimension
             <= self._surface.orbit_closure_dimension_upper_bound
         ), "%s <= %s" % (
-            orbit_closure.dimension(),
+            self.dimension,
             self._surface.orbit_closure_dimension_upper_bound,
         )
 
-        if dimension != orbit_closure.dimension():
+        if dimension != self.dimension:
             self._cylinders_without_increase = 0
 
         if (
-            orbit_closure.dimension()
+            self.dimension
             == self._surface.orbit_closure_dimension_upper_bound
         ):
             await self.report()
@@ -324,9 +335,9 @@ class OrbitClosure(Goal, Command):
             return Goal.COMPLETED
 
         if (
-            dimension != orbit_closure.dimension()
+            dimension != self.dimension
             and not self._deformed
-            and orbit_closure.dimension() > 3
+            and self.dimension > 3
         ):
             tangents = [
                 orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]
@@ -426,10 +437,8 @@ class OrbitClosure(Goal, Command):
             await self._report.result(
                 self,
                 orbit_closure,
-                dimension=orbit_closure.dimension(),
+                dimension=self.dimension,
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,
-                dense=orbit_closure.dimension()
-                == self._surface.orbit_closure_dimension_upper_bound
-                or None,
+                dense=self.dense,
             )

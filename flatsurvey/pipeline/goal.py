@@ -69,8 +69,8 @@ class Goal(Consumer):
     @copy_args_to_internal_fields
     def __init__(self, producers, report, cache, cache_only=DEFAULT_CACHE_ONLY):
         if self._cache is None:
-            from flatsurvey.cache import Cache, Pickles
-            self._cache = Cache(pickles=Pickles())
+            from flatsurvey.cache import Cache
+            self._cache = Cache(pickles=None)
 
         if self._report is None:
             from flatsurvey.reporting import Report
