@@ -190,7 +190,7 @@ class CompletelyCylinderPeriodic(Goal, Command):
             False
 
         """
-        results = [result["result"] for result in results]
+        results = [result.result for result in results]
 
         assert not any(results)
         return False if any(result is False for result in results) else None

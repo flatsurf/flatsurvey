@@ -105,6 +105,9 @@ class Cache(Command):
         return {"bindings": Cache.bindings()}
 
     def sources(self, *sources):
+        r"""
+        TODO: Document and test.
+        """
         if len(sources) == 0:
             return self._sources[-1]
 
@@ -135,6 +138,9 @@ class Cache(Command):
         return self._pickles.unpickle(pickle, kind)
 
     def defaults(self, defaults=None):
+        r"""
+        TODO: Document and test.
+        """
         if defaults is None:
             return self._defaults[-1]
 
@@ -308,3 +314,37 @@ class Cache(Command):
             ],
             cache=self,
         )
+
+    def get(self, section, sha):
+        for entry in self._results[section]:
+            if entry["pickle"] == sha:
+                return self.make(entry, section)
+
+        raise KeyError(sha)
+
+    def make(self, value, name, kind=None):
+        if kind is None:
+            if isinstance(value, dict) and "type" in value:
+                kind = value["type"]
+            else:
+                kind = name
+
+        if value is None:
+            return None
+
+        if isinstance(value, list):
+            if name.endswith('s'):
+                name = name[:-1]
+            else:
+                name = None
+            return [self.make(v, name=name) for v in value]
+
+        if isinstance(value, str) and name in ["surface"]:
+            from flatsurvey.cache.node import ReferenceNode
+            return ReferenceNode(value, "surface", cache=self)
+
+        if isinstance(value, (bool, int, str)):
+            return value
+
+        from flatsurvey.cache.node import Node
+        return Node(value, cache=self, kind=kind)

@@ -1,5 +1,5 @@
 r"""
-A node in a tree of :class:`Results`.
+Nodes in a tree of :class:`Results`.
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -29,7 +29,7 @@ class Node:
 
         >>> from flatsurvey.cache import Cache
         >>> cache = Cache(pickles=None)
-        >>> Node(1, cache=cache)
+        >>> Node(1, cache=cache, kind=None)
         1
 
     """
@@ -39,28 +39,6 @@ class Node:
         self._cache = cache
         self._kind = kind
 
-    def make(self, value, name, kind=None):
-        if kind is None:
-            kind = name
-
-        if value is None:
-            return None
-
-        if isinstance(value, list):
-            if name.endswith('s'):
-                name = name[:-1]
-            else:
-                name = None
-            return [self.make(v, name=name) for v in value]
-
-        if isinstance(value, str) and name in ["surface"]:
-            return ReferenceNode(value, "surface", cache=self._cache)
-
-        if isinstance(value, (bool, int, str)):
-            return value
-
-        return Node(value, cache=self._cache, kind=kind)
-
     def __repr__(self):
         r"""
         Return a printable representation of this node, i.e., the underlying raw data.
@@ -69,7 +47,7 @@ class Node:
 
             >>> from flatsurvey.cache import Cache
             >>> cache = Cache(pickles=None)
-            >>> Node({}, cache=cache)
+            >>> Node({}, cache=cache, kind=None)
             {}
 
         """
@@ -81,17 +59,19 @@ class Node:
 
         EXAMPLES::
 
+            >>> from io import StringIO
             >>> from flatsurvey.cache import Cache
-            >>> cache = Cache(pickles=None)
-            >>> node = Node({"surface": '177156c4-1794-11eb-b7bd-0600cfa33284'}, cache=cache)
+            >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None)
+            >>> node = Node({"surface": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}, cache=cache, kind=None)
             >>> node.surface.type
+            'Ngon'
 
         """
         try:
             for source in self._cache.sources():
                 if source == "CACHE":
                     if isinstance(self._value, dict) and name in self._value:
-                        return self.make(self._value[name], name=name)
+                        return self._cache.make(self._value[name], name=name)
 
                 if source == "PICKLE":
                     if isinstance(self._value, dict) and "pickle" in self._value:
@@ -115,15 +95,29 @@ class ReferenceNode(Node):
 
     EXAMPLES::
 
+        >>> from io import StringIO
         >>> from flatsurvey.cache import Cache
-        >>> cache = Cache(pickles=None)
-        >>> ReferenceNode('177156c4-1794-11eb-b7bd-0600cfa33284', "surface", cache=cache)
-        ...
-
-        # TODO
+        >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None)
+        >>> ReferenceNode('a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da', "surface", cache=cache)
+        {'type': 'Ngon', 'angles': [1, 2, 4], 'pickle': 'a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da'}
 
     """
 
-    def __init__(self, reference, kind, cache):
-        super().__init__(reference, cache)
-        self._kind = kind
+    def __init__(self, sha, section, cache):
+        super().__init__(sha, cache, section)
+
+    def _resolve(self):
+        r"""
+        Return the node this node resolves to.
+        """
+        return self._cache.get(self._kind, self._value)
+
+    def __getattr__(self, name):
+        resolved = self._resolve()
+        try:
+            return getattr(resolved, name)
+        except AttributeError:
+            return super().__getattr__(name)
+
+    def __repr__(self):
+        return repr(self._resolve())
