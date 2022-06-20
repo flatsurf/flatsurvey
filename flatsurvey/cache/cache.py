@@ -66,10 +66,10 @@ class Cache(Command):
     ):
         import json
 
-        self._results = {}
+        self._cache = {}
         for raw in jsons:
             for job, results in json.load(raw).items():
-                self._results.setdefault(job, []).extend(results)
+                self._cache.setdefault(job, []).extend(results)
 
         self._sources = [("CACHE", "PICKLE", "DEFAULTS")]
         self._defaults = [{}]
@@ -139,7 +139,30 @@ class Cache(Command):
 
     def defaults(self, defaults=None):
         r"""
-        TODO: Document and test.
+        Get or set the defaults used for keys that are missing from a node.
+
+        EXAMPLES:
+
+        When no parameters are provided, the defaults are returned::
+
+            >>> from flatsurvey.cache.pickles import Pickles
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=(StringIO('{"A": [{}]}'),), pickles=None)
+            >>> cache.defaults()
+            {}
+
+        Otherwise, a context is returned for whose lifetime the defaults are replaced::
+
+            >>> with cache.defaults({"type": "B"}):
+            ...     cache.defaults()
+            {'type': 'B'}
+
+        ::
+
+            >>> with cache.defaults({"type": "B"}):
+            ...     cache.get("A")[0].type
+            'B'
+
         """
         if defaults is None:
             return self._defaults[-1]
@@ -157,9 +180,9 @@ class Cache(Command):
 
         return with_defaults()
 
-    def results(self, job, predicate=None):
+    def get(self, section, predicate=None, single=None):
         r"""
-        Return the results for ``job`` that satisfy ``predicate``.
+        Return the results for ``section`` that satisfy ``predicate``.
 
         EXAMPLES:
 
@@ -250,33 +273,33 @@ class Cache(Command):
         Then we can query all cached results for a goal::
 
             >>> from flatsurvey.jobs import OrbitClosure
-            >>> cache.results(OrbitClosure)
+            >>> cache.get(OrbitClosure)
             [{'dense': True, 'dimension': 7, 'surface': {'type': 'Ngon', 'angles': [1, 2, 4], 'pickle': '...'}}, {'surface': {'type': 'Ngon', 'angles': [3, 4, 13], ...}, ...}]
 
         We can filter the results further by specifying a predicate::
 
-            >>> len(cache.results(OrbitClosure, predicate=lambda entry: entry.dense is not True)) == 1
+            >>> len(cache.get(OrbitClosure, predicate=lambda entry: entry.dense is not True)) == 1
             True
 
         Or, if we only want results for a specific surface::
 
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 2, 4))
-            >>> cache.results(OrbitClosure, predicate=surface.cache_predicate(exact=False))
+            >>> cache.get(OrbitClosure, predicate=surface.cache_predicate(exact=False))
             [{'dense': True, 'dimension': 7, 'surface': {'type': 'Ngon', 'angles': [1, 2, 4], 'pickle': '...'}}]
 
         The above returns the results for any ngon with such angles. To only
         accept results for surfaces that are exactly the same, we can use the
         ``exact`` keyword; however this is not implemented yet::
 
-            >>> cache.results(OrbitClosure, predicate=surface.cache_predicate(exact=True))
+            >>> cache.get(OrbitClosure, predicate=surface.cache_predicate(exact=True))
             Traceback (most recent call last):
             ...
             NotImplementedError: exact filtering is not supported yet
 
         We can also only look at results for surfaces with certain properties::
 
-            >>> cache.results(OrbitClosure, predicate=lambda entry: entry.dense is not True)
+            >>> cache.get(OrbitClosure, predicate=lambda entry: entry.dense is not True)
             [{'surface': {'type': 'Ngon', 'angles': [3, 4, 13], 'pickle': '93a35e3ae58f6c981ee0e40f5b14c44026095cbd1a655efb438ce75b4ce0f961'}, 'dimension': 4, 'pickle': '2d42b17964db400f6d73c09b6014c9612cafc3512781e4ebd6477354aee56d70'}]
 
 
@@ -287,40 +310,49 @@ class Cache(Command):
 
             >>> with cache.defaults({"dense": None}):
             ...     with cache.sources("CACHE", "DEFAULTS"):
-            ...         cache.results(OrbitClosure, predicate=lambda entry: entry.dense is not True)
+            ...         cache.get(OrbitClosure, predicate=lambda entry: entry.dense is not True)
             [{'surface': {'type': 'Ngon', 'angles': [3, 4, 13], 'pickle': '93a35e3ae58f6c981ee0e40f5b14c44026095cbd1a655efb438ce75b4ce0f961'}, 'dimension': 4, 'pickle': '2d42b17964db400f6d73c09b6014c9612cafc3512781e4ebd6477354aee56d70'}]
 
         We can also use more elaborate queries on the underlying objects,
         again, these could be very costly::
 
-            >>> cache.results(OrbitClosure, predicate=lambda entry: entry.dimension != entry.surface.orbit_closure_dimension_upper_bound)
+            >>> cache.get(OrbitClosure, predicate=lambda entry: entry.dimension != entry.surface.orbit_closure_dimension_upper_bound)
             [{'surface': {'type': 'Ngon', 'angles': [3, 4, 13], 'pickle': '93a35e3ae58f6c981ee0e40f5b14c44026095cbd1a655efb438ce75b4ce0f961'}, 'dimension': 4, 'pickle': '2d42b17964db400f6d73c09b6014c9612cafc3512781e4ebd6477354aee56d70'}]
 
         """
+        if isinstance(section, type):
+            section = section.name()
+
+        if isinstance(predicate, str):
+            sha = predicate
+            single = True
+
+            def predicate(node):
+                return hasattr(node, "pickle") and node.pickle == sha
+
         if predicate is None:
-            def predicate(entry):
+            def predicate(node):
                 return True
 
-        key = job.name()
+        results = []
+        for entry in self._cache.get(section, []):
+            node = self.make(entry, section)
 
-        from flatsurvey.cache.results import Results
-        from flatsurvey.cache.node import Node
-        return Results(
-            job=job,
-            results=[
-                entry
-                for entry in self._results.get(key, [])
-                if predicate(Node(entry, cache=self, kind=key))
-            ],
-            cache=self,
-        )
+            if not predicate(node):
+                continue
 
-    def get(self, section, sha):
-        for entry in self._results[section]:
-            if entry["pickle"] == sha:
-                return self.make(entry, section)
+            results.append(node)
 
-        raise KeyError(sha)
+        if single:
+            if len(results) > 1:
+                raise ValueError(f"expected at most one result but found {len(results)}")
+
+            if len(results) == 0:
+                raise KeyError
+
+            return results[0]
+
+        return results
 
     def make(self, value, name, kind=None):
         if kind is None:
