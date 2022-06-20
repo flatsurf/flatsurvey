@@ -84,7 +84,7 @@ class Report(Command):
             [Ngon([1, 1, 1])] [Ngon] Hello World printed by two identical reporters
 
         """
-        if type(source).__name__ in self._ignore:
+        if self.ignore(source):
             return
         for reporter in self._reporters:
             reporter.log(source, message, **kwargs)
@@ -108,7 +108,7 @@ class Report(Command):
             [Ngon([1, 1, 1])] [Ngon] Computation completed.
 
         """
-        if type(source).__name__ in self._ignore:
+        if self.ignore(source):
             return
         for reporter in self._reporters:
             await reporter.result(source, result, **kwargs)
@@ -132,10 +132,18 @@ class Report(Command):
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
-        if type(source).__name__ in self._ignore:
+        if self.ignore(source):
             return
         for reporter in self._reporters:
             reporter.progress(source, unit, count, total)
+
+    def ignore(self, source):
+        if type(source).__name__ in self._ignore:
+            return True
+        if isinstance(source, Command) and source.name() in self._ignore:
+            return True
+
+        return False
 
     def command(self):
         return ["report"] + [f"--ignore={i}" for i in self._ignore]
