@@ -119,7 +119,7 @@ class CompletelyCylinderPeriodic(Goal, Command):
 
         EXAMPLES::
 
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
@@ -156,7 +156,7 @@ class CompletelyCylinderPeriodic(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": false
-            ... }]}''')], pickles=Pickles()), log)
+            ... }]}''')], pickles=None), log)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -168,11 +168,9 @@ class CompletelyCylinderPeriodic(Goal, Command):
             {"surface": {...}, "completely-cylinder-periodic": [{"cached": true, "value": false}]}
 
         """
-        results = self._cache.results(
-            job=self, predicate=self._flow_decompositions._surface.cache_predicate
-        )
+        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate)
 
-        verdict = await results.reduce()
+        verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
             await self._report.result(self, verdict, cached=True)
@@ -185,8 +183,10 @@ class CompletelyCylinderPeriodic(Goal, Command):
 
         EXAMPLES::
 
-            >>> CompletelyCylinderPeriodic.reduce([{'result': None}, {'result': None}])
-            >>> CompletelyCylinderPeriodic.reduce([{'result': None}, {'result': False}])
+            >>> from collections import namedtuple
+            >>> Result = namedtuple("Result", "result")
+            >>> CompletelyCylinderPeriodic.reduce([Result(None), Result(None)])
+            >>> CompletelyCylinderPeriodic.reduce([Result(None), Result(False)])
             False
 
         """

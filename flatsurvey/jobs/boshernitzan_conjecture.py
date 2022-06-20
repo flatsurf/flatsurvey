@@ -94,7 +94,7 @@ class BoshernitzanConjecture(Goal, Command):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
@@ -128,7 +128,7 @@ class BoshernitzanConjecture(Goal, Command):
             ...   },
             ...   "assertion": "c",
             ...   "result": false
-            ... }]}''')], pickles=Pickles()))
+            ... }]}''')], pickles=None))
 
             >>> asyncio.run(goal.consume_cache())
 
@@ -142,17 +142,14 @@ class BoshernitzanConjecture(Goal, Command):
                 if not self._surface.cache_predicate(result):
                     return False
 
-                if result["assertion"] != assertion:
+                if result.assertion != assertion:
                     return False
 
                 return True
 
-            results = self._cache.results(
-                job=self,
-                predicate=predicate,
-            )
+            results = self._cache.get(self, predicate)
 
-            verdict = await results.reduce()
+            verdict = self.reduce(results)
 
             if verdict is not None or self._cache_only:
                 self._verdict[assertion] = verdict
@@ -196,12 +193,56 @@ class BoshernitzanConjecture(Goal, Command):
 
         EXAMPLES::
 
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': None}])
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': False}])
-            False
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': True}])
+            >>> from flatsurvey.cache import Cache
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }]}''')], pickles=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture")) is None
             True
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': False}, {'assertion': 'ignored', 'result': True}])
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": false
+            ... }]}''')], pickles=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
+            False
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": true
+            ... }]}''')], pickles=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
+            True
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": false
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": true
+            ... }]}''')], pickles=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             Traceback (most recent call last):
             ...
             ValueError: historic results are contradictory
@@ -210,13 +251,13 @@ class BoshernitzanConjecture(Goal, Command):
         if len(results) == 0:
             return None
 
-        assertions = set([result["assertion"] for result in results])
+        assertions = set([result.assertion for result in results])
         if len(assertions) != 1:
             raise ValueError(
                 f"cannot consolidate results relating to different conjectures: {assertions}"
             )
 
-        results = [result["result"] for result in results]
+        results = [result.result for result in results]
 
         if any(result is True for result in results) and any(
             result is False for result in results

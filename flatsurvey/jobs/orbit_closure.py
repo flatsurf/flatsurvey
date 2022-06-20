@@ -112,7 +112,7 @@ class OrbitClosure(Goal, Command):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 1, 1))
             >>> connections = SaddleConnections(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
@@ -144,16 +144,17 @@ class OrbitClosure(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "dense": true
-            ... }]}''')], pickles=Pickles()))
+            ... }]}''')], pickles=None))
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
         """
-        results = self._cache.results(job=self, predicate=self._surface.cache_predicate)
+        with self._cache.defaults({"dense": None}):
+            results = self._cache.get(self, self._surface.cache_predicate)
 
-        verdict = await results.reduce()
+            verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
             # TODO: Test JSON output.
@@ -420,13 +421,30 @@ class OrbitClosure(Goal, Command):
 
         EXAMPLES::
 
-            >>> OrbitClosure.reduce([{}, {}]) is None
+            >>> from flatsurvey.cache import Cache
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"orbit-closure": [{
+            ...   "dense": null
+            ... }, {
+            ...   "dense": null
+            ... }]}''')], pickles=None)
+            >>> OrbitClosure.reduce(cache.get("orbit-closure")) is None
             True
-            >>> OrbitClosure.reduce([{}, {'dense': True}]) is True
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"orbit-closure": [{
+            ...   "dense": null
+            ... }, {
+            ...   "dense": true
+            ... }]}''')], pickles=None)
+            >>> OrbitClosure.reduce(cache.get("orbit-closure")) is True
             True
 
         """
-        results = [result.get("dense", None) for result in results]
+        results = [result.dense for result in results]
         assert not any([result is False for result in results])
         return True if any(result for result in results) else None
 

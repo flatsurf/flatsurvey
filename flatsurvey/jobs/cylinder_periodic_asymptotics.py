@@ -79,7 +79,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.reporting.log import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
@@ -90,7 +90,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         artificial cache::
 
             >>> from io import StringIO
-            >>> cache = Cache(pickles=Pickles, jsons=[StringIO(
+            >>> cache = Cache(pickles=None, jsons=[StringIO(
             ... '''{"cylinder-periodic-asymptotics": [{
             ...   "surface": {
             ...     "type": "Ngon",
@@ -123,14 +123,9 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.results(
-            job=self, predicate=self._flow_decompositions._surface.cache_predicate
-        )
+        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate)
 
-        distributions = [
-            [d() if callable(d) else d for d in node["distribution"]]
-            for node in results
-        ]
+        distributions = [node.distribution for node in results]
 
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution

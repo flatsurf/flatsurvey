@@ -71,7 +71,7 @@ class Cache(Command):
             for job, results in json.load(raw).items():
                 self._cache.setdefault(job, []).extend(results)
 
-        self._sources = [("CACHE", "PICKLE", "DEFAULTS")]
+        self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
         self._defaults = [{}]
 
     @classmethod
@@ -320,7 +320,7 @@ class Cache(Command):
             [{'surface': {'type': 'Ngon', 'angles': [3, 4, 13], 'pickle': '93a35e3ae58f6c981ee0e40f5b14c44026095cbd1a655efb438ce75b4ce0f961'}, 'dimension': 4, 'pickle': '2d42b17964db400f6d73c09b6014c9612cafc3512781e4ebd6477354aee56d70'}]
 
         """
-        if isinstance(section, type):
+        if isinstance(section, (type, Command)):
             section = section.name()
 
         if isinstance(predicate, str):

@@ -88,7 +88,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.reporting.log import Log
             >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
@@ -117,7 +117,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": "IET(…)"
-            ... }]}''')], pickles=Pickles()))
+            ... }]}''')], pickles=None))
 
             >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])
@@ -131,9 +131,9 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.results(job=self, predicate=self._surface.cache_predicate)
+        results = self._cache.get(self, self._surface.cache_predicate)
 
-        iets = [result["result"] for result in results]
+        iets = [result.result for result in results]
 
         # TODO: Test JSON output.
         await self._report.result(self, None, iets=iets, cached=True)

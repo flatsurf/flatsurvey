@@ -85,7 +85,7 @@ class CylinderPeriodicDirection(Goal, Command):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.cache import Cache, Pickles
+            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
@@ -117,18 +117,16 @@ class CylinderPeriodicDirection(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": true
-            ... }]}''')], pickles=Pickles()))
+            ... }]}''')], pickles=None))
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
         """
-        results = self._cache.results(
-            job=self, predicate=self._flow_decompositions._surface.cache_predicate
-        )
+        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate)
 
-        verdict = await results.reduce()
+        verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
             # TODO: Test JSON output.
@@ -142,12 +140,14 @@ class CylinderPeriodicDirection(Goal, Command):
 
         EXAMPLES::
 
-            >>> CylinderPeriodicDirection.reduce([{"result": None}, {"result": None}])
-            >>> CylinderPeriodicDirection.reduce([{"result": True}, {"result": None}])
+            >>> from collections import namedtuple
+            >>> Result = namedtuple("Result", "result")
+            >>> CylinderPeriodicDirection.reduce([Result(None), Result(None)])
+            >>> CylinderPeriodicDirection.reduce([Result(True), Result(None)])
             True
 
         """
-        results = [result["result"] for result in results]
+        results = [result.result for result in results]
 
         assert not any([result is False for result in results])
         return True if any(result for result in results) else None
