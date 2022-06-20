@@ -86,7 +86,7 @@ class Node:
         except AttributeError as e:
             raise RuntimeError(e)
 
-        raise AttributeError(name)
+        raise AttributeError(f"{self} has no {name}")
 
 
 class ReferenceNode(Node):
@@ -113,6 +113,9 @@ class ReferenceNode(Node):
         return self._cache.get(self._kind, self._value)
 
     def __getattr__(self, name):
+        if name == "pickle":
+            return self._value
+
         resolved = self._resolve()
         try:
             return getattr(resolved, name)

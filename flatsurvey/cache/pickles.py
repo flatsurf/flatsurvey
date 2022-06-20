@@ -45,17 +45,27 @@ class Pickles(Command):
         group="Cache",
         help=__doc__.split("EXAMPLES")[0],
     )
-    def click(self):
+    @click.option(
+        "--dir",
+        "-d",
+        metavar="PATH",
+        multiple=True,
+        type=str,
+        help="local directory to search for pickles"
+    )
+    def click(dir):
+        providers = [DirectoryPickleProvider(d) for d in dir]
+
         return {
-            "bindings": Pickles.bindings(),
+            "bindings": Pickles.bindings(providers=providers),
         }
 
     def command(self):
-        return ["pickles"]
+        return ["pickles"] + [provider.command() for provider in self._providers]
 
     @classmethod
-    def bindings(cls):
-        return [PartialBindingSpec(Pickles)()]
+    def bindings(cls, providers):
+        return [PartialBindingSpec(Pickles, scope="SHARED")(providers=providers)]
 
     def unpickle(self, pickle, kind):
         for provider in self._providers:
@@ -106,4 +116,9 @@ class StaticPickleProvider(PickleProvider):
 
 class DirectoryPickleProvider(PickleProvider):
     def __init__(self, path):
+        raise NotImplementedError
+
+
+class GitHubPickleProvider(PickleProvider):
+    def __init__(self, organization, project):
         raise NotImplementedError

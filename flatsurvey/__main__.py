@@ -93,6 +93,7 @@ from flatsurvey.ui.group import CommandWithGroups
     help="Run a survey on the `objects` until all the `goals` are reached.",
 )
 @click.option("--dry-run", "-N", is_flag=True, help="Do not spawn any workers.")
+@click.option("--debug", is_flag=True)
 @click.option(
     "--load",
     "-l",
@@ -101,7 +102,7 @@ from flatsurvey.ui.group import CommandWithGroups
     default=None,
     help="Do not start workers until load is below L.",
 )
-def survey(dry_run, load):
+def survey(dry_run, load, debug):
     r"""
     Main command, runs a survey; specific survey objects and goals are
     registered automatically as subcommands.
@@ -110,6 +111,8 @@ def survey(dry_run, load):
     _ = dry_run
     # For technical reasons, load needs to be a parameter here. It is consumed by process() below.
     _ = load
+    # For technical reasons, debug needs to be a parameter here. It is consumed by process() below.
+    _ = debug
 
 
 # Register objects and goals as subcommans of "survey".
@@ -124,7 +127,7 @@ for commands in [
 
 
 @survey.result_callback()
-def process(subcommands, dry_run=False, load=None):
+def process(subcommands, dry_run=False, load=None, debug=False):
     r"""
     Run the specified subcommands of ``survey``.
 
@@ -141,32 +144,44 @@ def process(subcommands, dry_run=False, load=None):
         ...
 
     """
-    surface_generators = []
-    goals = []
-    reporters = []
-    bindings = []
+    if debug:
+        import pdb
+        import signal
 
-    for subcommand in subcommands:
-        if isinstance(subcommand, dict):
-            goals.extend(subcommand.get("goals", []))
-            reporters.extend(subcommand.get("reporters", []))
-            bindings.extend(subcommand.get("bindings", []))
-        else:
-            surface_generators.append(subcommand)
+        signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
 
-    if dry_run:
-        load = 0
+    try:
+        surface_generators = []
+        goals = []
+        reporters = []
+        bindings = []
 
-    asyncio.run(
-        Scheduler(
-            surface_generators,
-            bindings=bindings,
-            goals=goals,
-            reporters=reporters,
-            dry_run=dry_run,
-            load=load,
-        ).start()
-    )
+        for subcommand in subcommands:
+            if isinstance(subcommand, dict):
+                goals.extend(subcommand.get("goals", []))
+                reporters.extend(subcommand.get("reporters", []))
+                bindings.extend(subcommand.get("bindings", []))
+            else:
+                surface_generators.append(subcommand)
+
+        if dry_run:
+            load = 0
+
+        asyncio.run(
+            Scheduler(
+                surface_generators,
+                bindings=bindings,
+                goals=goals,
+                reporters=reporters,
+                dry_run=dry_run,
+                load=load,
+                debug=debug,
+            ).start()
+        )
+    except Exception:
+        if debug:
+            pdb.post_mortem()
+        raise
 
 
 class Scheduler:
@@ -188,6 +203,7 @@ class Scheduler:
         dry_run=False,
         load=None,
         quiet=False,
+        debug=False,
     ):
         if load is None:
             load = os.cpu_count()
@@ -200,6 +216,9 @@ class Scheduler:
         self._load = load
         self._quiet = quiet
         self._jobs = []
+        self._debug = debug
+
+        self._enable_shared_bindings()
 
     def __repr__(self):
         return "Scheduler"
@@ -213,25 +232,47 @@ class Scheduler:
         All jobs have been scheduled. Now waiting for jobs to finish.
 
         """
-        tasks = []
-
-        iters = [iter(generator) for generator in self._generators]
         try:
-            while iters:
-                for it in list(iters):
-                    try:
-                        surface = next(it)
-                        command = await self._render_command(surface)
-                        if command is None:
-                            continue
-                        tasks.append(await self._enqueue(command))
-                    except StopIteration:
-                        iters.remove(it)
-        except KeyboardInterrupt:
-            print("Stopped scheduling of new jobs.")
+            tasks = []
 
-        print("All jobs have been scheduled. Now waiting for jobs to finish.")
-        await asyncio.gather(*tasks)
+            iters = [iter(generator) for generator in self._generators]
+            try:
+                while iters:
+                    for it in list(iters):
+                        try:
+                            surface = next(it)
+                            command = await self._render_command(surface)
+                            if command is None:
+                                continue
+                            tasks.append(await self._enqueue(command))
+                        except StopIteration:
+                            iters.remove(it)
+            except KeyboardInterrupt:
+                print("Stopped scheduling of new jobs.")
+
+            print("All jobs have been scheduled. Now waiting for jobs to finish.")
+            await asyncio.gather(*tasks)
+        except Exception:
+            if self._debug:
+                import pdb
+                pdb.post_mortem()
+            raise
+
+    def _enable_shared_bindings(self):
+        shared = [binding for binding in self._bindings if binding.scope == "SHARED"]
+
+        import pinject
+        objects = pinject.new_object_graph(modules=[], binding_specs=shared)
+
+        def share(binding):
+            if binding.scope == "SHARED":
+                object = provide(binding.name, objects)
+                from flatsurvey.pipeline.util import FactoryBindingSpec
+                return FactoryBindingSpec(binding.name, lambda: object)
+
+            return binding
+
+        self._bindings = [share(binding) for binding in self._bindings]
 
     async def _render_command(self, surface):
         r"""
@@ -286,8 +327,12 @@ class Scheduler:
         goals = [
             goal
             for goal in objects.provide(Goals)._goals
-            if goal._resolved != goal.COMPLETED
         ]
+
+        for goal in goals:
+            await goal.consume_cache()
+
+        goals = [goal for goal in goals if goal._resolved != goal.COMPLETED]
 
         if not goals:
             return None
@@ -302,6 +347,12 @@ class Scheduler:
             if binding in goals:
                 continue
             if binding == surface:
+                continue
+
+            # We already consumed the cache above. There is no need to have the
+            # worker reread the cache.
+            from flatsurvey.cache import Cache
+            if binding.name() == Cache.name():
                 continue
 
             commands.extend(binding.command())

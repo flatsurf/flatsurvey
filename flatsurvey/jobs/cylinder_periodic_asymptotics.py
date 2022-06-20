@@ -123,7 +123,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate)
+        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
 
         distributions = [node.distribution for node in results]
 

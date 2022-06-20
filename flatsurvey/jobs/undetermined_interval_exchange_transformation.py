@@ -131,7 +131,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.get(self, self._surface.cache_predicate)
+        results = self._cache.get(self, self._surface.cache_predicate(False, cache=self._cache))
 
         iets = [result.result for result in results]
 

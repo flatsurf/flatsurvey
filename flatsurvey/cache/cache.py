@@ -14,8 +14,7 @@ EXAMPLES::
     Usage: worker local-cache [OPTIONS]
       A cache of previous results stored in local JSON files.
     Options:
-      -j, --json PATH  JSON files to read cached data from; can be a glob expression
-                       or a directory which is then searched recursively
+      -j, --json PATH  JSON files to read cached data from or a directory to read recursively
       --help           Show this message and exit.
 
 """
@@ -64,15 +63,26 @@ class Cache(Command):
         pickles,
         jsons=(),
     ):
-        import json
+        def load(file):
+            try:
+                import orjson
+
+                return orjson.loads(file.read())
+            except ModuleNotFoundError:
+                import json
+
+                return json.load(file)
 
         self._cache = {}
         for raw in jsons:
-            for job, results in json.load(raw).items():
-                self._cache.setdefault(job, []).extend(results)
+            parsed = load(raw)
+
+            for section, results in parsed.items():
+                self._cache.setdefault(section, []).extend(results)
 
         self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
         self._defaults = [{}]
+        self._shas = {}
 
     @classmethod
     @click.command(
@@ -87,19 +97,31 @@ class Cache(Command):
         metavar="PATH",
         multiple=True,
         type=str,
-        help="JSON files to read cached data from; can be a glob expression or a directory which is then searched recursively",
+        help="JSON files to read cached data from or a directory to read recursively",
     )
     def click(json):
+        jsons = []
+
+        for j in json:
+            import os.path
+            if os.path.isdir(j):
+                for root, dirs, files in os.walk(j):
+                    for f in files:
+                        if f.endswith(".json"):
+                            jsons.append(open(os.path.join(root, f), "rb"))
+            else:
+                jsons.append(open(j, "rb"))
+
         return {
-            "bindings": PartialBindingSpec(Cache)(jsons=json),
+            "bindings": Cache.bindings(jsons)
         }
 
     def command(self):
-        return ["local-cache"] + [f"--json={json}" for json in self._jsons]
+        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons]
 
     @classmethod
-    def bindings(cls, endpoint, key, region):
-        return [PartialBindingSpec(Cache, name="cache")()]
+    def bindings(cls, jsons):
+        return [PartialBindingSpec(Cache, name="cache", scope="SHARED")(jsons=jsons)]
 
     def deform(self, deformation):
         return {"bindings": Cache.bindings()}
@@ -281,11 +303,12 @@ class Cache(Command):
             >>> len(cache.get(OrbitClosure, predicate=lambda entry: entry.dense is not True)) == 1
             True
 
-        Or, if we only want results for a specific surface::
+        Or, if we only want results for a specific surface (the ``cache=cache``
+        parameter is optional but speeds up searches a lot)::
 
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 2, 4))
-            >>> cache.get(OrbitClosure, predicate=surface.cache_predicate(exact=False))
+            >>> cache.get(OrbitClosure, predicate=surface.cache_predicate(exact=False, cache=cache))
             [{'dense': True, 'dimension': 7, 'surface': {'type': 'Ngon', 'angles': [1, 2, 4], 'pickle': '...'}}]
 
         The above returns the results for any ngon with such angles. To only
@@ -323,25 +346,28 @@ class Cache(Command):
         if isinstance(section, (type, Command)):
             section = section.name()
 
-        if isinstance(predicate, str):
-            sha = predicate
-            single = True
-
-            def predicate(node):
-                return hasattr(node, "pickle") and node.pickle == sha
-
         if predicate is None:
             def predicate(node):
                 return True
 
-        results = []
-        for entry in self._cache.get(section, []):
-            node = self.make(entry, section)
+        if isinstance(predicate, str):
+            if single is None:
+                single = True
 
-            if not predicate(node):
-                continue
+            results = [self._from_sha(section, predicate)]
+        else:
+            if single is None:
+                single = False
 
-            results.append(node)
+            results = []
+
+            for entry in self._cache.get(section, []):
+                node = self.make(entry, section)
+
+                if not predicate(node):
+                    continue
+
+                results.append(node)
 
         if single:
             if len(results) > 1:
@@ -353,6 +379,12 @@ class Cache(Command):
             return results[0]
 
         return results
+
+    def _from_sha(self, section, sha):
+        if section not in self._shas:
+            self._shas[section] = {entry["pickle"]: entry for entry in self._cache[section]}
+
+        return self.make(self._shas[section][sha], section)
 
     def make(self, value, name, kind=None):
         if kind is None:

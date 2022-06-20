@@ -531,9 +531,8 @@ class Ngon(Surface):
 
         raise Exception("giving up on", E)
 
-    def cache_predicate(self, exact):
-        def predicate(result):
-            surface = result.surface
+    def cache_predicate(self, exact, cache=None):
+        def surface_predicate(surface):
             if surface.type != "Ngon":
                 return False
             if surface.angles != self.angles:
@@ -543,6 +542,19 @@ class Ngon(Surface):
                 raise NotImplementedError("exact filtering is not supported yet")
 
             return True
+
+        if cache is not None:
+            surfaces = set([surface.pickle for surface in cache.get("surface", surface_predicate)])
+
+            def predicate(result):
+                surface = result.surface
+                from flatsurvey.cache.node import ReferenceNode
+                if isinstance(surface, ReferenceNode):
+                    return surface.pickle in surfaces
+                return surface_predicate(surface)
+        else:
+            def predicate(result):
+                return surface_predicate(result.surface)
 
         return predicate
 

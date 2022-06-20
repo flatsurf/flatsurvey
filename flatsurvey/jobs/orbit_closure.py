@@ -152,7 +152,7 @@ class OrbitClosure(Goal, Command):
 
         """
         with self._cache.defaults({"dense": None}):
-            results = self._cache.get(self, self._surface.cache_predicate)
+            results = self._cache.get(self, self._surface.cache_predicate(False, cache=self._cache))
 
             verdict = self.reduce(results)
 

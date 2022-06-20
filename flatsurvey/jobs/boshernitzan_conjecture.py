@@ -138,8 +138,10 @@ class BoshernitzanConjecture(Goal, Command):
         """
         for assertion in self._verdict:
 
+            surface_predicate = self._surface.cache_predicate(False, cache=self._cache)
+
             def predicate(result):
-                if not self._surface.cache_predicate(result):
+                if not surface_predicate(result):
                     return False
 
                 if result.assertion != assertion:
@@ -245,7 +247,7 @@ class BoshernitzanConjecture(Goal, Command):
             >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             Traceback (most recent call last):
             ...
-            ValueError: historic results are contradictory
+            ValueError: historic results are contradictory: ...
 
         """
         if len(results) == 0:
@@ -262,7 +264,7 @@ class BoshernitzanConjecture(Goal, Command):
         if any(result is True for result in results) and any(
             result is False for result in results
         ):
-            raise ValueError("historic results are contradictory")
+            raise ValueError(f"historic results are contradictory: {results}")
 
         if any(result is False for result in results):
             return False

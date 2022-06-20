@@ -168,7 +168,7 @@ class CompletelyCylinderPeriodic(Goal, Command):
             {"surface": {...}, "completely-cylinder-periodic": [{"cached": true, "value": false}]}
 
         """
-        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate)
+        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
 
         verdict = self.reduce(results)
 
