@@ -74,9 +74,13 @@ class Cache(Command):
                 return json.load(file)
 
         self._cache = {}
-        for raw in jsons:
-            parsed = load(raw)
 
+        import concurrent.futures
+        from os import cpu_count
+        with concurrent.futures.ThreadPoolExecutor(max_workers=cpu_count()) as pool:
+            parseds = pool.map(load, jsons)
+
+        for parsed in parseds:
             for section, results in parsed.items():
                 self._cache.setdefault(section, []).extend(results)
 
