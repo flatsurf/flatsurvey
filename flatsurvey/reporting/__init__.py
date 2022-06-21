@@ -24,5 +24,6 @@ from flatsurvey.reporting.json import Json
 from flatsurvey.reporting.log import Log
 from flatsurvey.reporting.report import Report
 from flatsurvey.reporting.yaml import Yaml
+from flatsurvey.reporting.progress import Progress
 
-commands = [Log.click, Yaml.click, Json.click, Report.click]
+commands = [Log.click, Yaml.click, Json.click, Report.click, Progress.click]

@@ -32,10 +32,10 @@ from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.command import Command
 
 
-# TODO: Actually implement this.
+# TODO: Actually implement all of this.
 
 class Pickles(Command):
-    def __init__(self, providers):
+    def __init__(self, providers=()):
         self._providers = [PickleProvider.make(provider) for provider in providers]
 
     @classmethod
