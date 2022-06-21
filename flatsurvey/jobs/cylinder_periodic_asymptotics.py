@@ -217,9 +217,8 @@ class CylinderPeriodicAsymptotics(Goal, Command):
 
             undetermineds = len([r for r in distribution if r is None])
             if undetermineds:
-                print(
-                    f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
-                )
+                import logging
+                logging.warning(f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders.")
             distribution = sorted([r for r in distribution if r])
 
             # TODO: Test JSON output.

@@ -402,14 +402,16 @@ class OrbitClosure(Goal, Command):
                         from flatsurvey.surfaces import Deformation
 
                         raise Deformation.Restart(surface, old=self._surface)
-                    except cppyy.gbl.std.invalid_argument as e:
-                        print(e)
+                    except cppyy.gbl.std.invalid_argument:
+                        # TODO: Report progress.
                         continue
 
                 scale *= 2
 
                 if not eligibles:
-                    print("Cannot deform. No tangent vector can be used to deform.")
+                    import logging
+                    # TODO: Report as progress?
+                    logging.error("Cannot deform. No tangent vector can be used to deform.")
                     break
 
         return not Goal.COMPLETED

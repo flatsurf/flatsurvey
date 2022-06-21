@@ -101,7 +101,8 @@ class Ngon(Surface):
             self._lengths.set_cache(tuple(lengths))
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
-            print(
+            import logging
+            logging.warning(
                 "Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?"
             )
 

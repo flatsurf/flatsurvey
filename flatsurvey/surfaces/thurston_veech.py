@@ -367,7 +367,7 @@ class ThurstonVeechs:
                                 tv = ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
 
                                 if tv in seen:
-                                    print("Skipping duplicate")
+                                    # Skipping duplicate.
                                     continue
 
                                 if literature == "include":

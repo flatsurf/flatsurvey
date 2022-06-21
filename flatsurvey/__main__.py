@@ -57,7 +57,7 @@ TESTS::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2022 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -75,6 +75,7 @@ TESTS::
 
 import asyncio
 import os
+import logging
 
 import click
 
@@ -248,9 +249,9 @@ class Scheduler:
                         except StopIteration:
                             iters.remove(it)
             except KeyboardInterrupt:
-                print("Stopped scheduling of new jobs.")
+                logging.info("Stopped scheduling of new jobs as requested.")
 
-            print("All jobs have been scheduled. Now waiting for jobs to finish.")
+            logging.info("All jobs have been scheduled. Now waiting for jobs to finish.")
             await asyncio.gather(*tasks)
         except Exception:
             if self._debug:
@@ -415,15 +416,12 @@ class Scheduler:
         """
         if self._dry_run:
             if not self._quiet:
-                print(" ".join(command))
+                logging.info(" ".join(command))
             return
-
-        import datetime
 
         from plumbum import BG, local
         from plumbum.commands.processes import ProcessExecutionError
 
-        start = datetime.datetime.now()
         task = local[command[0]].__getitem__(command[1:]) & BG
 
         try:
@@ -432,15 +430,10 @@ class Scheduler:
 
             if task.stdout:
                 # We should have better monitoring, see #41.
-                print("*** task produced output on stdout: ")
-                print(task.stdout)
+                logging.warning("Task produced output on stdout:\n" + task.stdout)
         except ProcessExecutionError as e:
             # We should have better monitoring, see #41.
-            print("xxx process crashed ", " ".join(command))
-            print(e)
-
-        # We should have better monitoring, see #41.
-        print("*** terminated after %s wall time" % (datetime.datetime.now() - start,))
+            logging.error("Process crashed: " + " ".join(command) + "\n" + str(e))
 
 
 if __name__ == "__main__":
