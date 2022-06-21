@@ -337,8 +337,7 @@ class Ngon(Surface):
 
         Trivial simplifications::
 
-            >>> Ngon((1, 1, 1, 3)).reference()
-            Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?
+            >>> Ngon((1, 1, 1, 3)).reference()  # Note that this will print a warning about the π angle to the console.
             Ngon([1, 1, 1])
 
             >>> Ngon((2, 1, 1)).reference()

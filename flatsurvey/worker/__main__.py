@@ -85,12 +85,21 @@ from flatsurvey.worker.restart import Restart
 
 @click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
 @click.option("--debug", is_flag=True)
-def worker(debug):
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    help="Enable verbose message, repeat for debug message",
+)
+def worker(debug, verbose):
     r"""
     Main command to invoke the worker; specific objects and goals are
     registered automatically as subcommands.
-
     """
+    # For technical reasons, debug needs to be a parameter here. It is consumed by process() below.
+    _ = debug
+    # For technical reasons, verbose needs to be a parameter here. It is consumed by process() below.
+    _ = verbose
 
 
 # Register subcommands
@@ -105,7 +114,7 @@ for kind in [
 
 
 @worker.result_callback()
-def process(commands, debug):
+def process(commands, debug, verbose):
     r"""
     Run the specified subcommands of ``worker``.
 
@@ -126,6 +135,11 @@ def process(commands, debug):
         import signal
 
         signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
+
+    if verbose:
+        import logging
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
     try:
         while True:

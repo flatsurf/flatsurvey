@@ -103,7 +103,13 @@ from flatsurvey.ui.group import CommandWithGroups
     default=None,
     help="Do not start workers until load is below L.",
 )
-def survey(dry_run, load, debug):
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    help="Enable verbose message, repeat for debug message",
+)
+def survey(dry_run, load, debug, verbose):
     r"""
     Main command, runs a survey; specific survey objects and goals are
     registered automatically as subcommands.
@@ -114,6 +120,8 @@ def survey(dry_run, load, debug):
     _ = load
     # For technical reasons, debug needs to be a parameter here. It is consumed by process() below.
     _ = debug
+    # For technical reasons, verbose needs to be a parameter here. It is consumed by process() below.
+    _ = verbose
 
 
 # Register objects and goals as subcommans of "survey".
@@ -128,7 +136,7 @@ for commands in [
 
 
 @survey.result_callback()
-def process(subcommands, dry_run=False, load=None, debug=False):
+def process(subcommands, dry_run=False, load=None, debug=False, verbose=0):
     r"""
     Run the specified subcommands of ``survey``.
 
@@ -150,6 +158,13 @@ def process(subcommands, dry_run=False, load=None, debug=False):
         import signal
 
         signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
+
+    if verbose > 1:
+        verbose = logging.DEBUG
+    elif verbose > 0:
+        verbose = logging.INFO
+
+    logging.getLogger().setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
     try:
         surface_generators = []
@@ -177,6 +192,7 @@ def process(subcommands, dry_run=False, load=None, debug=False):
                 dry_run=dry_run,
                 load=load,
                 debug=debug,
+                verbose=verbose,
             ).start()
         )
     except Exception:
@@ -205,6 +221,7 @@ class Scheduler:
         load=None,
         quiet=False,
         debug=False,
+        verbose=logging.WARNING,
     ):
         if load is None:
             load = os.cpu_count()
@@ -218,6 +235,7 @@ class Scheduler:
         self._quiet = quiet
         self._jobs = []
         self._debug = debug
+        self._verbose = verbose
 
         self._enable_shared_bindings()
 
@@ -249,8 +267,10 @@ class Scheduler:
                         except StopIteration:
                             iters.remove(it)
             except KeyboardInterrupt:
+                import logging
                 logging.info("Stopped scheduling of new jobs as requested.")
 
+            import logging
             logging.info("All jobs have been scheduled. Now waiting for jobs to finish.")
             await asyncio.gather(*tasks)
         except Exception:
@@ -312,6 +332,11 @@ class Scheduler:
         )
 
         commands = []
+
+        if self._verbose == logging.INFO:
+            commands.append("-v")
+        elif self._verbose == logging.DEBUG:
+            commands.append("-vv")
 
         class Reporters:
             def __init__(self, reporters):
@@ -416,6 +441,7 @@ class Scheduler:
         """
         if self._dry_run:
             if not self._quiet:
+                import logging
                 logging.info(" ".join(command))
             return
 
