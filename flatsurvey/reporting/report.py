@@ -65,7 +65,9 @@ class Report(Command):
     )
     @click.option("--ignore", type=str, multiple=True)
     def click(ignore):
-        return {"bindings": [PartialBindingSpec(Report)(ignore=ignore)]}
+        return {
+            "bindings": Report.bindings(ignore)
+        }
 
     def log(self, source, message, **kwargs):
         r"""
@@ -113,11 +115,11 @@ class Report(Command):
         for reporter in self._reporters:
             await reporter.result(source, result, **kwargs)
 
-    def progress(self, source, unit, count, total=None):
+    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
         r"""
         Report that some progress has been made in the resolution of the
-        computation ``source``. Now we are at ``count`` of ``total`` given in
-        multiples of ``unit``.
+        computation ``source``. Now we are at ``count`` of ``total`` given as
+        ``what``.
 
         EXAMPLES::
 
@@ -127,15 +129,39 @@ class Report(Command):
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
             >>> report = Report([log, log])
-            >>> report.progress(surface, unit="dimension", count=13, total=37)
+            >>> report.progress(surface, what="dimension", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
-        if self.ignore(source):
-            return
-        for reporter in self._reporters:
-            reporter.progress(source, unit, count, total)
+        contexts = [reporter.progress(source=source, what=what, count=count, advance=advance, total=total, parent=parent, activity=activity, message=message) for reporter in self._reporters]
+        contexts = [context for context in contexts if context is not None]
+
+        from contextlib import contextmanager
+
+        def report(source=None, **kwargs):
+            if source is not None:
+                return self.progress(source=source, parent=outer, **kwargs)
+            return self.progress(source=outer, parent=parent, **kwargs)
+
+        @contextmanager
+        def progress(contexts):
+            if contexts:
+                with contexts[0]:
+                    with progress(contexts[1:]):
+                        yield report
+            else:
+                yield report
+
+        token = progress(contexts)
+
+        outer = source
+
+        return token
+
+    @classmethod
+    def bindings(cls, ignore):
+        return [PartialBindingSpec(Report, scope="SHARED")(ignore=ignore)]
 
     def ignore(self, source):
         if type(source).__name__ in self._ignore:
@@ -149,7 +175,7 @@ class Report(Command):
         return ["report"] + [f"--ignore={i}" for i in self._ignore]
 
     def deform(self, deformation):
-        return {"bindings": [PartialBindingSpec(Report)(ignore=self._ignore)]}
+        return {"bindings": Report.bindings(ignore=self._ignore)}
 
     def flush(self):
         for reporter in self._reporters:

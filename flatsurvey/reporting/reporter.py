@@ -82,7 +82,7 @@ class Reporter:
         """
         pass
 
-    def progress(self, source, unit, count, total=None):
+    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
         r"""
         Report that ``source`` has made some progress.
 
@@ -95,7 +95,7 @@ class Reporter:
 
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
-            >>> log.progress(source=surface, unit="progress", count=13, total=37)
+            >>> log.progress(source=surface, what="progress", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] progress: 13/37
 
         """

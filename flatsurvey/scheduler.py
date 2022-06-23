@@ -19,6 +19,7 @@
 
 import logging
 
+
 class Scheduler:
     r"""
     A simple scheduler that splits a survey into commands that are run on the local
@@ -55,7 +56,7 @@ class Scheduler:
         self._jobs = []
         self._debug = debug
 
-        self._enable_shared_bindings()
+        self._report = self._enable_shared_bindings()
 
     def __repr__(self):
         return "Scheduler"
@@ -69,36 +70,101 @@ class Scheduler:
         >>> asyncio.run(scheduler.start())
 
         """
+        MAX_QUEUE = 32
+
         try:
-            tasks = []
+            with self._report.progress(self, activity="Survey", count=0, what="tasks queued") as scheduling_progress:
+                scheduling_progress(activity="running survey")
 
-            iters = [iter(generator) for generator in self._generators]
-            try:
-                while iters:
-                    for it in list(iters):
-                        try:
-                            surface = next(it)
-                            command = await self._render_command(surface)
-                            if command is None:
-                                continue
-                            tasks.append(await self._enqueue(command))
-                        except StopIteration:
-                            iters.remove(it)
-            except KeyboardInterrupt:
-                logging.info("Stopped scheduling of new jobs as requested.")
+                with scheduling_progress("executing tasks", activity="executing tasks", count=0, what="tasks running") as execution_progress:
+                    submitted_tasks = []
 
-            logging.info("All jobs have been scheduled. Now waiting for jobs to finish.")
+                    from collections import deque
+                    queued_commands = deque()
 
-            import asyncio
-            await asyncio.gather(*tasks)
+                    surfaces = [iter(generator) for generator in self._generators]
+
+                    try:
+                        while True:
+                            import asyncio
+                            await asyncio.sleep(0)
+
+                            message = []
+
+                            try:
+                                if queued_commands:
+                                    # Attempt to run a task (unless the load is too high)
+                                    import os
+                                    load = os.getloadavg()[0]
+
+                                    import psutil
+                                    psutil.cpu_percent(None)
+                                    cpu = psutil.cpu_percent(0.01)
+
+                                    if self._load > 0 and load > self._load:
+                                        message.append(f"load {load:.1f} too high")
+                                    elif self._load > 0 and cpu >= 100:
+                                        message.append(f"CPU {cpu:.1f}% too high")
+                                    else:
+                                        import asyncio
+                                        submitted_tasks.append(asyncio.create_task(self._run(queued_commands.popleft(), execution_progress)))
+
+                                        continue
+
+                                if len(queued_commands) >= MAX_QUEUE or (not surfaces and queued_commands):
+                                    message.append("queue full")
+                                    import asyncio
+                                    await asyncio.sleep(1)
+                                    continue
+                            finally:
+                                scheduling_progress(count=len(queued_commands), message=" and ".join(message))
+
+                            if not surfaces and not queued_commands:
+                                break
+
+                            with scheduling_progress(source="rendering task", activity="rendering task") as rendering_progress:
+                                generator = surfaces[0]
+                                surfaces = surfaces[1:] + surfaces[:1]
+
+                                try:
+                                    surface = next(generator)
+                                except StopIteration:
+                                    surfaces.pop()
+                                    continue
+
+                                rendering_progress(message="determining goals", activity=f"rendering task for {surface}")
+
+                                command = await self._render_command(surface, scheduling_progress)
+
+                                if command is None:
+                                    continue
+
+                                queued_commands.append(command)
+                                scheduling_progress(count=len(queued_commands))
+
+                    except KeyboardInterrupt:
+                        scheduling_progress(message="stopped scheduling of new jobs as requested", activity="waiting for pending tasks")
+                    else:
+                        scheduling_progress(message="all jobs have been scheduled", activity="waiting for pending tasks")
+
+                    import asyncio
+                    await asyncio.gather(*submitted_tasks)
+
         except Exception:
             if self._debug:
                 import pdb
                 pdb.post_mortem()
+
             raise
 
     def _enable_shared_bindings(self):
         shared = [binding for binding in self._bindings if binding.scope == "SHARED"]
+
+        from flatsurvey.reporting.progress import Progress
+        reporters = [reporter for reporter in self._reporters if reporter.name() == Progress.name()]
+
+        from flatsurvey.pipeline.util import ListBindingSpec
+        shared.append(ListBindingSpec("reporters", reporters))
 
         import pinject
         objects = pinject.new_object_graph(modules=[], binding_specs=shared)
@@ -115,7 +181,10 @@ class Scheduler:
 
         self._bindings = [share(binding) for binding in self._bindings]
 
-    async def _render_command(self, surface):
+        from flatsurvey.pipeline.util import provide
+        return provide("report", objects)
+
+    async def _render_command(self, surface, progress):
         r"""
         Return the command to invoke a worker to compute the ``goals`` for ``surface``.
 
@@ -176,8 +245,10 @@ class Scheduler:
             for goal in objects.provide(Goals)._goals
         ]
 
-        for goal in goals:
-            await goal.consume_cache()
+        with progress("resolving goals from cached data", activity="resolvivg goals from cached data", total=len(goals), count=0, what="goals") as resolving_progress:
+            for goal in goals:
+                await goal.consume_cache()
+                resolving_progress(advance=1)
 
         goals = [goal for goal in goals if goal._resolved != goal.COMPLETED]
 
@@ -215,39 +286,7 @@ class Scheduler:
             "flatsurvey.worker",
         ] + commands
 
-    async def _enqueue(self, command):
-        r"""
-        Run ``command`` once the load admits it.
-
-        The result of this coroutine is a task that terminates when the command is completed.
-
-        TESTS:
-
-        We enqueue a job without worrying about the actual system load::
-
-            >>> import asyncio
-            >>> scheduler = Scheduler(generators=[], bindings=[], goals=[], reporters=[], load=0)
-            >>> asyncio.run(scheduler._enqueue(["true"]))
-            ...
-            <Task ...>
-
-        """
-        import asyncio
-
-        # This is a bit of a hack: Without it, the _run never actually
-        # runs and we just enqueue forever (we do not need 1 for this, 0
-        # works.) Without it, we schedule too many tasks but the load does not
-        # go up quickly enough. See #5.
-        await asyncio.sleep(1)
-
-        if self._load > 0:
-            import os
-            while os.getloadavg()[0] > self._load:
-                await asyncio.sleep(1)
-
-        return asyncio.create_task(self._run(command))
-
-    async def _run(self, command):
+    async def _run(self, command, progress):
         r"""
         Run ``command``.
 
@@ -273,16 +312,20 @@ class Scheduler:
         from plumbum import BG, local
         from plumbum.commands.processes import ProcessExecutionError
 
-        task = local[command[0]].__getitem__(command[1:]) & BG
+        with self._report.progress(source=command) as worker_progress:
+            task = local[command[0]].__getitem__(command[1:]) & BG
+            progress(advance=1)
+            try:
+                try:
+                    while not task.ready():
+                        import asyncio
+                        await asyncio.sleep(1)
 
-        try:
-            while not task.ready():
-                import asyncio
-                await asyncio.sleep(1)
-
-            if task.stdout:
-                # We should have better monitoring, see #41.
-                logging.warning("Task produced output on stdout:\n" + task.stdout)
-        except ProcessExecutionError as e:
-            # We should have better monitoring, see #41.
-            logging.error("Process crashed: " + " ".join(command) + "\n" + str(e))
+                    if task.stdout:
+                        # We should have better monitoring, see #41.
+                        logging.warning("Task produced output on stdout:\n" + task.stdout)
+                except ProcessExecutionError as e:
+                    # We should have better monitoring, see #41.
+                    logging.error("Process crashed: " + " ".join(command) + "\n" + str(e))
+            finally:
+                progress(advance=-1)

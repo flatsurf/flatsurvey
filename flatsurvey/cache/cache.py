@@ -61,32 +61,33 @@ class Cache(Command):
     def __init__(
         self,
         pickles,
+        report,
         jsons=(),
     ):
         def load(file):
             try:
                 import orjson
-
                 return orjson.loads(file.read())
             except ModuleNotFoundError:
                 import json
-
-                return json.load(file)
+                return json.loads(file.read())
 
         self._cache = {}
 
-        import concurrent.futures
-        from os import cpu_count
-        with concurrent.futures.ThreadPoolExecutor(max_workers=cpu_count()) as pool:
-            parseds = pool.map(load, jsons)
+        with report.progress(self, what="files", count=0, total=len(jsons), activity="loading cache"):
+            for json in jsons:
+                parsed = load(json)
 
-        for parsed in parseds:
-            for section, results in parsed.items():
-                self._cache.setdefault(section, []).extend(results)
+                for section, results in parsed.items():
+                    self._cache.setdefault(section, []).extend(results)
 
-        self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
-        self._defaults = [{}]
-        self._shas = {}
+                report.progress(self, advance=1, message=f"processed {json.name}")
+
+            report.progress(self, message="done")
+
+            self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
+            self._defaults = [{}]
+            self._shas = {}
 
     @classmethod
     @click.command(

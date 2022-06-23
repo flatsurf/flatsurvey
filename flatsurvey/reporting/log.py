@@ -132,7 +132,7 @@ class Log(Reporter, Command):
             "reporters": [Log],
         }
 
-    def progress(self, source, unit, count, total=None):
+    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
         r"""
         Write a progress update to the log.
 
@@ -142,13 +142,18 @@ class Log(Reporter, Command):
             >>> surface = Ngon((1, 1, 1))
 
             >>> log = Log(surface)
-            >>> log.progress(source=surface, unit='progress', count=10, total=100)
+            >>> log.progress(source=surface, what='progress', count=10, total=100)
             [Ngon([1, 1, 1])] [Ngon] progress: 10/100
-            >>> log.progress(source=surface, unit='dimension', count=10)
+            >>> log.progress(source=surface, what='dimension', count=10)
             [Ngon([1, 1, 1])] [Ngon] dimension: 10/?
 
         """
-        self.log(source, f"{unit}: {count}/{total or '?'}")
+        if advance is not None:
+            raise NotImplementedError
+        if message is not None:
+            raise NotImplementedError
+
+        self.log(source, f"{what}: {count}/{total or '?'}")
 
     async def result(self, source, result, **kwargs):
         r"""
