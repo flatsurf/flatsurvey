@@ -75,7 +75,7 @@ class Progress(Reporter, Command):
             root = root._parent
 
         if cls._live is None:
-            cls._live = rich.live.Live(rich.console.Group("…"))
+            cls._live = rich.live.Live(rich.console.Group("…"), transient=True)
             cls._live.start()
             cls._live._owner = root
 
@@ -99,9 +99,17 @@ class Progress(Reporter, Command):
     )
     def click():
         return {
-            "bindings": [PartialBindingSpec(Progress, scope="SHARED")()],
+            "bindings": Progress.bindings(),
             "reporters": [Progress],
         }
+
+    @classmethod
+    def bindings(cls):
+        # TODO: Rather use a remote-progress command.
+        if RemoteProgress._progress_queue:
+            return [PartialBindingSpec(RemoteProgress, name="progress", scope="SHARED")()]
+        else:
+            return [PartialBindingSpec(Progress, scope="SHARED")()]
 
     def command(self):
         return ["progress"]
@@ -336,3 +344,17 @@ class Progress(Reporter, Command):
             self._progress.update(self._task, description=activity)
 
         self.redraw()
+
+
+class RemoteProgress(Reporter):
+    # TODO: Explain this crazy hack.
+    _progress_queue = None
+
+    def progress(self, source, count=None, advance=None, total=None, what=None, message=None, parent=None, activity=None):
+        RemoteProgress._progress_queue.put(("progress", str(source), count, advance, total, what, message, None if parent is None else str(parent), activity))
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        pass

@@ -43,7 +43,6 @@ class Reporter:
         True
 
     """
-
     def log(self, source, message, **kwargs):
         r"""
         Write ``message`` emitted by ``source`` to this log.

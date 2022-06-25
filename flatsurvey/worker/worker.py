@@ -91,7 +91,7 @@ from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
 
 
-@click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
+@click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""", )
 @click.option("--debug", is_flag=True)
 @click.option(
     "--verbose",
@@ -182,7 +182,7 @@ class Worker:
     """
 
     @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters):
+    def __init__(self, goals, reporters, ):
         pass
 
     @classmethod

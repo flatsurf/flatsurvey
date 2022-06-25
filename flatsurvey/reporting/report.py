@@ -51,7 +51,6 @@ class Report(Command):
         >>> report.log(report, "invisible message because no reporter has been registered")
 
     """
-
     def __init__(self, reporters, ignore=None):
         self._reporters = reporters
         self._ignore = ignore or []

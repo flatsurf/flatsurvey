@@ -13,7 +13,6 @@ dependencies:
   - isort
   - moto
   - pip
-  - plumbum
   - pyflatsurf
   - pyintervalxt
   - pylint

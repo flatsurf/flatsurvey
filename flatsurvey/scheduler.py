@@ -44,7 +44,7 @@ class Scheduler:
         import os
 
         if load is None:
-            load = os.cpu_count()
+            load = os.cpu_count() * 1.2
 
         self._generators = generators
         self._bindings = bindings
@@ -107,7 +107,8 @@ class Scheduler:
                                         message.append(f"CPU {cpu:.1f}% too high")
                                     else:
                                         import asyncio
-                                        submitted_tasks.append(asyncio.create_task(self._run(queued_commands.popleft(), execution_progress)))
+                                        surface, command = queued_commands.popleft()
+                                        submitted_tasks.append(asyncio.create_task(self._run(command, surface, execution_progress)))
 
                                         continue
 
@@ -139,7 +140,7 @@ class Scheduler:
                                 if command is None:
                                     continue
 
-                                queued_commands.append(command)
+                                queued_commands.append((str(surface), command))
                                 scheduling_progress(count=len(queued_commands))
 
                     except KeyboardInterrupt:
@@ -280,52 +281,90 @@ class Scheduler:
 
         import os
 
-        return [
-            os.environ.get("PYTHON", "python"),
-            "-m",
-            "flatsurvey.worker",
-        ] + commands
+        return commands
 
-    async def _run(self, command, progress):
-        r"""
-        Run ``command``.
-
-        # Currently, pytest fails to test these with a "fileno" error, see #4.
-        # >>> scheduler = Scheduler(generators=[], goals=[], reporters=[], bindings=[], load=None)
-        # >>> asyncio.run(scheduler._run(["echo", "hello world"]))
-        # hello world
-        # >>> asyncio.run(scheduler._run(["no-such-command"]))
-        # Traceback (most recent call last):
-        # ...
-        # plumbum.commands.processes.CommandNotFound: ...
-        # >>> asyncio.run(scheduler._run(["false"]))
-        # Traceback (most recent call last):
-        # ...
-        # plumbum.commands.processes.ProcessExecutionError: Unexpected exit code: ...
-
-        """
+    async def _run(self, command, name, progress):
         if self._dry_run:
             if not self._quiet:
                 logging.info(" ".join(command))
             return
 
-        from plumbum import BG, local
-        from plumbum.commands.processes import ProcessExecutionError
+        from multiprocessing import Queue, Process
 
-        with self._report.progress(source=command) as worker_progress:
-            task = local[command[0]].__getitem__(command[1:]) & BG
+        progress_queue = Queue()
+
+        with self._report.progress(source=command, activity=name) as worker_progress:
+            def work(command, progress_queue):
+                try:
+                    from flatsurvey.worker.worker import worker
+                    from click.testing import CliRunner
+
+                    runner = CliRunner()
+
+                    from flatsurvey.reporting.progress import RemoteProgress
+                    RemoteProgress._progress_queue = progress_queue
+
+                    invocation = runner.invoke(worker, args=command, catch_exceptions=False)
+                    output = invocation.output.strip()
+                    if output:
+                        from logging import warning
+                        warning("Task produced output on stdout:\n" + output)
+                except Exception as e:
+                    from logging import error
+                    import traceback
+                    error("Process crashed: " + " ".join(command) + "\n" + traceback.format_exc())
+                    progress_queue.put(("crash", str(e)))
+                else:
+                    progress_queue.put(("exit",))
+
             progress(advance=1)
             try:
-                try:
-                    while not task.ready():
-                        import asyncio
-                        await asyncio.sleep(1)
+                worker = Process(target=work, args=(command, progress_queue))
+                worker.start()
 
-                    if task.stdout:
-                        # We should have better monitoring, see #41.
-                        logging.warning("Task produced output on stdout:\n" + task.stdout)
-                except ProcessExecutionError as e:
-                    # We should have better monitoring, see #41.
-                    logging.error("Process crashed: " + " ".join(command) + "\n" + str(e))
+                from asyncio import Future, get_event_loop
+                done = Future()
+                loop = get_event_loop()
+
+                def consume_progress():
+                    while True:
+                        try:
+                            report = progress_queue.get()
+
+                            code = report[0]
+                            if code == "crash":
+                                code, message = report
+                                progress(source=command, activity=name, message=f"process crashed: {message}")
+                                break
+                            elif code == "exit":
+                                break
+                            elif code == "progress":
+                                code, source, count, advance, total, what, message, parent, activity = report
+
+                                source = tuple(command) + (source,)
+
+                                if parent is None:
+                                    parent = command
+                                else:
+                                    parent = tuple(command) + (parent,)
+
+                                self._report.progress(source=source, count=count, advance=advance, total=total, what=what, message=message, parent=parent, activity=activity)
+                            else:
+                                raise NotImplementedError(code)
+                        except Exception:
+                            # TODO: Handle exceptions
+                            print("unhandled exception")
+                            import traceback
+                            traceback.print_exc()
+                            break
+
+                    loop.call_soon_threadsafe(done.set_result, None)
+
+                from threading import Thread
+                progress_consumer = Thread(target=consume_progress)
+                progress_consumer.start()
+                await done
+                progress_consumer.join()
+
             finally:
                 progress(advance=-1)
