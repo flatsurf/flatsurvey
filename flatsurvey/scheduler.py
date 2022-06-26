@@ -279,8 +279,6 @@ class Scheduler:
 
         commands.extend(surface.command())
 
-        import os
-
         return commands
 
     async def _run(self, command, name, progress):
