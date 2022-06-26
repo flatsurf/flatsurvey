@@ -89,12 +89,11 @@ class CylinderPeriodicDirection(Goal, Command):
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> make_goal = lambda cache: CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
-            >>> goal = make_goal(None)
+            >>> goal = CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -104,7 +103,7 @@ class CylinderPeriodicDirection(Goal, Command):
         artificial cache::
 
             >>> from io import StringIO
-            >>> goal = make_goal(Cache(jsons=[StringIO(
+            >>> cache = Cache(jsons=[StringIO(
             ... '''{"cylinder-periodic-direction": [{
             ...   "surface": {
             ...     "type": "Ngon",
@@ -117,11 +116,27 @@ class CylinderPeriodicDirection(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": true
-            ... }]}''')], pickles=None, report=None))
+            ... }]}''')], pickles=None, report=None)
+            >>> goal = CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=cache)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
+
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> goal = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=cache)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"cached": true, "value": true}]}
 
         """
         results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
@@ -129,7 +144,6 @@ class CylinderPeriodicDirection(Goal, Command):
         verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
-            # TODO: Test JSON output.
             await self._report.result(self, verdict, cached=True)
             self._resolved = Goal.COMPLETED
 
@@ -207,6 +221,27 @@ class CylinderPeriodicDirection(Goal, Command):
             [Ngon([1, 1, 1])] [CylinderPeriodicDirection] True (directions: 1)
             True
 
+        TESTS:
+
+        Verify that the JSON output works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> cpd = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(cpd.report())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"directions": 1, "value": true}]}
+
+
         """
         self._directions += 1
 
@@ -222,5 +257,4 @@ class CylinderPeriodicDirection(Goal, Command):
 
     async def report(self, result=None, **kwargs):
         if self._resolved != Goal.COMPLETED:
-            # TODO: Test JSON output.
             await self._report.result(self, result, directions=self._directions)
