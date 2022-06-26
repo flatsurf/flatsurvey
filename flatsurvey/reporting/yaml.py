@@ -179,13 +179,23 @@ class Yaml(Reporter, Command):
         r"""
         Return the argument in a way that YAML serialization can make sense of.
 
-        EXAMPLES::
+        EXAMPLES:
+
+        Anything that is unknown is rendered as its pickle, so we can let any
+        object that we don't understand through without changes::
 
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
             >>> log = Yaml(surface)
 
-        TODO: Actually test something
+            >>> import asyncio
+            >>> asyncio.run(log.result("verdict", result=asyncio))
+
+            >>> log.flush()
+            surface:
+            ...
+            verdict:
+            - {pickle: !!binary "gASVNgAAAAAAAACMEXNhZ2UubWlzYy5mcGlja2xllIwOdW5waWNrbGVNb2R1bGWUk5SMB2FzeW5j\naW+UhZRSlC4=\n"}
 
         """
         if hasattr(type(value), "to_yaml"):

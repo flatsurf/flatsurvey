@@ -166,7 +166,7 @@ class Json(Reporter, Command):
 
         EXAMPLES:
 
-        Anything that is unknown is renderede as its pickle, so we can let any
+        Anything that is unknown is rendered as its pickle, so we can let any
         object that we don't understand through without changes::
 
             >>> from flatsurvey.reporting.json import Json
