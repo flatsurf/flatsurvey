@@ -104,6 +104,9 @@ class OrbitClosure(Goal, Command):
         self._lower_bound = pyflatsurf.flatsurf.Bound(0)
         self._upper_bound = pyflatsurf.flatsurf.Bound(0)
 
+        from flatsurvey.reporting.report import ProgressReporting
+        self._progress = ProgressReporting(self._report, self)
+
     async def consume_cache(self):
         r"""
         Try to resolve this goal from cached previous runs.
@@ -316,9 +319,7 @@ class OrbitClosure(Goal, Command):
 
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
-        # TODO: Unify progress reporting.
-        self._report.progress(
-            source=self,
+        self._progress.progress(
             what="dimension",
             count=self.dimension,
             total=self._surface.orbit_closure_dimension_upper_bound,
@@ -377,6 +378,8 @@ class OrbitClosure(Goal, Command):
             and not self._deformed
             and self.dimension > 3
         ):
+            self._progress.progress(message="deforming surface")
+
             tangents = [
                 orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]
             ]
@@ -440,14 +443,15 @@ class OrbitClosure(Goal, Command):
 
                         raise Deformation.Restart(surface, old=self._surface)
                     except cppyy.gbl.std.invalid_argument:
-                        # TODO: Report progress.
+                        self._progress.progress(message="failed to deform surface, retrying")
                         continue
 
                 scale *= 2
 
                 if not eligibles:
+                    self._progress.progress(message="failed to deform surface")
+
                     import logging
-                    # TODO: Report as progress?
                     logging.error("Cannot deform. No tangent vector can be used to deform.")
                     break
 
