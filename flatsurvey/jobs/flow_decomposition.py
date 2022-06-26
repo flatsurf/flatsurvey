@@ -115,6 +115,22 @@ class FlowDecompositions(Processor, Command):
             >>> decompositions._current
             FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components
 
+        TESTS:
+
+        Check that the JSON output works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> decompositions = FlowDecompositions(surface=surface, report=report, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+
+            >>> asyncio.run(decompositions.produce())
+            True
+
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "flow-decompositions": [{"orientation": {"type": "Vector<eantic::renf_elem_class>", "pickle": "..."}, "cylinders": 1, "minimal": 0, "undetermined": 0, "value": null}]}
+
         """
         start = time.perf_counter()
         self._current = self._surface.orbit_closure().decomposition(
@@ -122,7 +138,6 @@ class FlowDecompositions(Processor, Command):
         )
         cost += time.perf_counter() - start
 
-        # TODO: Test JSON output.
         await self._report.result(
             self,
             # flatsurf::FlowDecomposition cannot be serialized yet: https://github.com/flatsurf/flatsurf/issues/274

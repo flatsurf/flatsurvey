@@ -160,6 +160,17 @@ class Json(Reporter, Command):
 
         return characteristics
 
+    def _simplify_unknown(self, value):
+        r"""
+        Return the argument in a way that JSON serialization can make sense of.
+
+        EXAMPLES::
+
+        TODO: Actually test something
+
+        """
+        return value
+
     def flush(self):
         r"""
         Write reported data out as a JSON stream.
