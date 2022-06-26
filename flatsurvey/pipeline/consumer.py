@@ -60,7 +60,7 @@ class Consumer:
     """
     COMPLETED = False
 
-    def __init__(self, producers):
+    def __init__(self, producers, report=None):
         self._producers = producers
 
         # Some consumers can be resolved, e.g., when we are sure that we
@@ -72,6 +72,12 @@ class Consumer:
         # objects they generate.
         for producer in producers:
             producer.register_consumer(self)
+
+        if report is None:
+            from flatsurvey.reporting import Report
+            report = Report([])
+
+        self._report = report
 
     @property
     def resolved(self):

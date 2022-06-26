@@ -61,7 +61,7 @@ TESTS::
     Reports:
       json      Writes results in JSON format.
       log       Writes progress and results as an unstructured log file.
-      progress  TODO
+      progress  Reports progress on the command line.
       report    Generic reporting of results.
       yaml      Writes results to a YAML file.
     <BLANKLINE>

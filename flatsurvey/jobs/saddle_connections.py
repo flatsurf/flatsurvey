@@ -50,8 +50,8 @@ class SaddleConnections(Producer, Command):
     DEFAULT_LIMIT = None
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
-        super().__init__()
+    def __init__(self, surface, report=None, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
+        super().__init__(report=report)
 
         self._connections = None
         # TODO: Unify progress reporting.

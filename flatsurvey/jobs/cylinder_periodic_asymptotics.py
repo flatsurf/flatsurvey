@@ -81,7 +81,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.reporting import Report
-            >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.reporting import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
@@ -118,6 +118,18 @@ class CylinderPeriodicAsymptotics(Goal, Command):
 
             >>> goal.resolved
             True
+
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json
+
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([Json(surface, stream=stdout)]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
 
         """
         if not self._cache_only:

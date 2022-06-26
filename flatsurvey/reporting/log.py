@@ -149,11 +149,16 @@ class Log(Reporter, Command):
 
         """
         if advance is not None:
-            raise NotImplementedError("text log cannot keep track of progress; advance keyword not supported")
+            return
 
-        line = f"{what}: {count}/{total or '?'}"
-        if message:
-            line = f"{line} {message}"
+        if count is not None and what is not None:
+            line = f"{what}: {count}/{total or '?'}"
+            if message:
+                line = f"{line} {message}"
+        elif message is not None:
+            line = message
+        else:
+            return
 
         self.log(source, line)
 

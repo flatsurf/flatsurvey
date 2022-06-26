@@ -48,10 +48,16 @@ class Producer:
     """
     EXHAUSTED = False
 
-    def __init__(self):
+    def __init__(self, report=None):
         self._consumers = set()
         self._current = None
         self._exhausted = False
+
+        if report is None:
+            from flatsurvey.reporting import Report
+            report = Report([])
+
+        self._report = report
 
     async def produce(self):
         r"""

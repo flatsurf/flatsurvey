@@ -457,7 +457,7 @@ class OrbitClosure(Goal, Command):
             # TODO: Test JSON output.
             await self._report.result(
                 self,
-                None,
+                self._surface.orbit_closure(),
                 dimension=self.dimension,
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,

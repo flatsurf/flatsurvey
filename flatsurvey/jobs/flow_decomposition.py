@@ -67,7 +67,7 @@ class FlowDecompositions(Processor, Command):
 
     @copy_args_to_internal_fields
     def __init__(
-        self, surface, report, saddle_connection_orientations, limit=DEFAULT_LIMIT
+        self, surface, saddle_connection_orientations, report=None, limit=DEFAULT_LIMIT
     ):
         super().__init__(producers=[saddle_connection_orientations], report=report)
 

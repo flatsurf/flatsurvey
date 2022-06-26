@@ -58,14 +58,8 @@ class Processor(Producer, Consumer):
     """
 
     def __init__(self, producers, report=None):
-        Producer.__init__(self)
-        Consumer.__init__(self, producers=producers)
-
-        if report is None:
-            from flatsurvey.reporting import Report
-            report = Report([])
-
-        self._report = report
+        Producer.__init__(self, report=report)
+        Consumer.__init__(self, producers=producers, report=report)
 
         self._produced = False
 

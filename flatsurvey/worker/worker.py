@@ -14,8 +14,8 @@ TESTS::
       Explore a surface.
     Options:
       --debug
-      --help        Show this message and exit.
-      -v, --verbose Enable verbose message, repeat for debug message.
+      --help         Show this message and exit.
+      -v, --verbose  Enable verbose message, repeat for debug message.
     Cache:
       local-cache  A cache of previous results stored in local JSON files.
       pickles      Access a database of pickles storing parts of previous
@@ -52,7 +52,7 @@ TESTS::
     Reports:
       json      Writes results in JSON format.
       log       Writes progress and results as an unstructured log file.
-      progress  TODO
+      progress  Reports progress on the command line.
       report    Generic reporting of results.
       yaml      Writes results to a YAML file.
     Surfaces:
@@ -131,7 +131,6 @@ def process(commands, debug, verbose):
 
         >>> from flatsurvey.test.cli import invoke
         >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
-        [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
         [Ngon([1, 1, 1])] [OrbitClosure] dimension: 2/2
         [Ngon([1, 1, 1])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
 
