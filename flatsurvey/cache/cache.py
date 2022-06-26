@@ -74,20 +74,23 @@ class Cache(Command):
 
         self._cache = {}
 
-        with report.progress(self, what="files", count=0, total=len(jsons), activity="loading cache"):
-            for json in jsons:
-                parsed = load(json)
+        if jsons:
+            with report.progress(self, what="files", count=0, total=len(jsons), activity="loading cache"):
+                for json in jsons:
+                    report.progress(self, message=f"parsing {json.name}")
 
-                for section, results in parsed.items():
-                    self._cache.setdefault(section, []).extend(results)
+                    parsed = load(json)
 
-                report.progress(self, advance=1, message=f"processed {json.name}")
+                    for section, results in parsed.items():
+                        self._cache.setdefault(section, []).extend(results)
 
-            report.progress(self, message="done")
+                    report.progress(self, advance=1)
 
-            self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
-            self._defaults = [{}]
-            self._shas = {}
+                report.progress(self, message="done")
+
+        self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
+        self._defaults = [{}]
+        self._shas = {}
 
     @classmethod
     @click.command(
