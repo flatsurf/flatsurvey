@@ -1,5 +1,5 @@
 r"""
-TODO
+Prepare surfaces for a survey and spawn processes to resolve the goals of the survey.
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
