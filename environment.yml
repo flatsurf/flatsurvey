@@ -17,6 +17,7 @@ dependencies:
   - pytest
   - pytest-xdist
   - python-dateutil
+  - rich
   - ruamel.yaml
   - sage-flatsurf >=0.4.4
   - pip:
