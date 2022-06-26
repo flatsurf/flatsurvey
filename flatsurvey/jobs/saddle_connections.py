@@ -54,8 +54,9 @@ class SaddleConnections(Producer, Command):
         super().__init__(report=report)
 
         self._connections = None
-        # TODO: Unify progress reporting.
-        self._progress = None
+
+        from flatsurvey.reporting.report import ProgressReporting
+        self._progress = ProgressReporting(self._report, self)
 
     def _by_length(self):
         self.__connections = (
@@ -87,19 +88,17 @@ class SaddleConnections(Producer, Command):
         self._connections = iter(self.__connections)
 
     def _produce(self):
-        if self._progress is None:
-            self._token = self._report.progress(self, count=0, what="connections", activity="enumerating saddle connections")
-            self._progress = self._token.__enter__()
+        self._progress.progress(count=0, what="connections", activity="enumerating saddle connections")
 
         if self._connections is None:
             self._by_length()
         try:
             self._current = next(self._connections)
 
-            self._progress(advance=1)
+            self._progress.advance(advance=1)
             return not Producer.EXHAUSTED
         except StopIteration:
-            self._token.__exit__(None, None, None)
+            self._progress.hide()
             return Producer.EXHAUSTED
 
     @classmethod

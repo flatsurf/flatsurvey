@@ -213,5 +213,5 @@ class ProgressReporting:
 
     def hide(self):
         if self._progress is not None:
-            self._token.__exit__()
+            self._token.__exit__(None, None, None)
             self._progress = None
