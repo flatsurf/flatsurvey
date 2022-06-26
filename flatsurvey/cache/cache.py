@@ -84,7 +84,11 @@ class Cache(Command):
                     name = json.name if hasattr(json, "name") else "JSON"
                     report.progress(self, message=f"parsing {name}")
 
-                    parsed = load(json)
+                    try:
+                        parsed = load(json)
+                    except Exception:
+                        import logging
+                        logging.error(f"Failed to parse {name}")
 
                     for section, results in parsed.items():
                         self._cache.setdefault(section, []).extend(results)
