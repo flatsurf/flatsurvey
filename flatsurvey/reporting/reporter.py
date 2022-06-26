@@ -141,7 +141,7 @@ class Reporter:
         if isinstance(value, type(ZZ())):
             return int(value)
 
-        if isinstance(value, (str, int, float)):
+        if isinstance(value, (str, int, float, type(None))):
             return value
 
         return self._simplify_unknown(value)

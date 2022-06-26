@@ -281,11 +281,13 @@ class OrbitClosure(Goal, Command):
 
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
+        # TODO: Unify progress reporting.
         self._report.progress(
             source=self,
             what="dimension",
             count=self.dimension,
             total=self._surface.orbit_closure_dimension_upper_bound,
+            activity="orbit closure",
         )
 
         assert (
@@ -452,11 +454,10 @@ class OrbitClosure(Goal, Command):
 
     async def report(self):
         if self._resolved != Goal.COMPLETED:
-            orbit_closure = self._surface.orbit_closure()
             # TODO: Test JSON output.
             await self._report.result(
                 self,
-                orbit_closure,
+                None,
                 dimension=self.dimension,
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,

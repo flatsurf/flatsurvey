@@ -180,3 +180,37 @@ class Report(Command):
     def flush(self):
         for reporter in self._reporters:
             reporter.flush()
+
+
+class ProgressReporting:
+    r"""
+    A helper that displays progress in a reporter from a single source.
+    """
+    def __init__(self, report, source):
+        self._report = report
+        self._source = source
+        self._progress = None
+
+    def advance(self, **kwargs):
+        r"""
+        Update the progress display from the arguments.
+        """
+        if self._progress is None:
+            return
+
+        self.progress(**kwargs)
+
+    def progress(self, **kwargs):
+        r"""
+        Make sure that progress is shown and update it from the arguments.
+        """
+        if self._progress is None:
+            self._token = self._report.progress(self._source, **kwargs)
+            self._progress = self._token.__enter__()
+
+        self._progress(**kwargs)
+
+    def hide(self):
+        if self._progress is not None:
+            self._token.__exit__()
+            self._progress = None

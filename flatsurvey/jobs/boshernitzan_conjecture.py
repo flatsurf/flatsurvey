@@ -87,6 +87,9 @@ class BoshernitzanConjecture(Goal, Command):
             for assertion in self._saddle_connection_orientations.assertions
         }
 
+        from flatsurvey.reporting.report import ProgressReporting
+        self._progress = ProgressReporting(report, self)
+
     async def consume_cache(self):
         r"""
         Try to resolve this goal from cached previous runs.
@@ -328,6 +331,8 @@ class BoshernitzanConjecture(Goal, Command):
             {"surface": {...}, "boshernitzan-conjecture": [{"assertion": "b", "value": true}, {"assertion": "c", "value": true}]}
 
         """
+        self._progress.progress(count=0, total=len(self._verdict), what="conjectures", activity="verifying conjectures")
+
         if decomposition.undeterminedComponents():
             for assertion, verdict in self._verdict.items():
                 if verdict is None:
@@ -364,6 +369,8 @@ class BoshernitzanConjecture(Goal, Command):
         return not Goal.COMPLETED
 
     async def _report_assertion(self, assertion, result, **kwargs):
+        self._progress.advance(advance=1, message=f"({assertion}) does not hold" if result is False else None)
+
         await self._report.result(
             self,
             result,

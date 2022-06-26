@@ -188,9 +188,11 @@ def process(subcommands, dry_run=False, load=None, debug=False, verbose=0):
         if dry_run:
             load = 0
 
+        import sys
         import asyncio
         from flatsurvey.scheduler import Scheduler
-        asyncio.run(
+        loop = asyncio.get_event_loop()
+        sys.exit(loop.run_until_complete(
             Scheduler(
                 surface_generators,
                 bindings=bindings,
@@ -200,7 +202,7 @@ def process(subcommands, dry_run=False, load=None, debug=False, verbose=0):
                 load=load,
                 debug=debug,
             ).start()
-        )
+        ))
     except Exception:
         if debug:
             pdb.post_mortem()

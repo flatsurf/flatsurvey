@@ -292,6 +292,8 @@ class Scheduler:
         return commands
 
     async def _run(self, command, name, progress):
+        command = tuple(command)
+
         if self._dry_run:
             if not self._quiet:
                 logging.info(" ".join(command))
@@ -335,33 +337,52 @@ class Scheduler:
                 loop = get_event_loop()
 
                 def consume_progress():
+                    tokens = {}
+                    entered = {}
+
                     while True:
                         try:
                             report = progress_queue.get()
+                            try:
+                                code = report[0]
+                                if code == "crash":
+                                    code, message = report
+                                    progress(source=command, activity=name, message=f"process crashed: {message}")
+                                    break
+                                elif code == "exit":
+                                    import time
+                                    time.sleep(2)
+                                    break
+                                elif code == "progress":
+                                    code, identifier, source, count, advance, total, what, message, parent, activity = report
 
-                            code = report[0]
-                            if code == "crash":
-                                code, message = report
-                                progress(source=command, activity=name, message=f"process crashed: {message}")
-                                break
-                            elif code == "exit":
-                                break
-                            elif code == "progress":
-                                code, source, count, advance, total, what, message, parent, activity = report
+                                    source = tuple(command) + (source,)
 
-                                source = tuple(command) + (source,)
+                                    if parent is None:
+                                        parent = command
+                                    else:
+                                        parent = tuple(command) + (parent,)
 
-                                if parent is None:
-                                    parent = command
+                                    tokens[identifier] = self._report.progress(source=source, count=count, advance=advance, total=total, what=what, message=message, parent=parent, activity=activity)
+                                elif code == "enter_context":
+                                    code, identifier = report
+
+                                    entered.setdefault(identifier, [])
+                                    entered[identifier].append((tokens[identifier], tokens[identifier].__enter__()))
+                                elif code == "exit_context":
+                                    code, identifier = report
+
+                                    context = entered[identifier].pop()[0]
+                                    context.__exit__(None, None, None)
                                 else:
-                                    parent = tuple(command) + (parent,)
+                                    raise NotImplementedError(code)
 
-                                self._report.progress(source=source, count=count, advance=advance, total=total, what=what, message=message, parent=parent, activity=activity)
-                            else:
-                                raise NotImplementedError(code)
+                            except Exception:
+                                print("Failed to process", report)
+                                raise
                         except Exception:
-                            # TODO: Handle exceptions
-                            print("unhandled exception")
+                            # When anything goes wrong here, we stop to consume
+                            # progress so this thread does not hang forever.
                             import traceback
                             traceback.print_exc()
                             break
@@ -371,6 +392,7 @@ class Scheduler:
                 from threading import Thread
                 progress_consumer = Thread(target=consume_progress)
                 progress_consumer.start()
+
                 await done
                 progress_consumer.join()
 
