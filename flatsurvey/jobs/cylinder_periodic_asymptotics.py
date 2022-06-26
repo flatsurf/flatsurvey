@@ -211,7 +211,6 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
             >>> report = Report([Json(surface, stream=stdout)])
             >>> ccp = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=None)
 

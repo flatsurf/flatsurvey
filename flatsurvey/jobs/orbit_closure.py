@@ -116,12 +116,11 @@ class OrbitClosure(Goal, Command):
             >>> surface = Ngon((1, 1, 1))
             >>> connections = SaddleConnections(surface)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> make_goal = lambda cache: OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
-            >>> goal = make_goal(None)
+            >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -131,7 +130,7 @@ class OrbitClosure(Goal, Command):
         artificial cache::
 
             >>> from io import StringIO
-            >>> goal = make_goal(Cache(jsons=[StringIO(
+            >>> cache = Cache(jsons=[StringIO(
             ... '''{"orbit-closure": [{
             ...   "surface": {
             ...     "type": "Ngon",
@@ -144,11 +143,28 @@ class OrbitClosure(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "dense": true
-            ... }]}''')], pickles=None, report=None))
+            ... }]}''')], pickles=None, report=None)
+
+            >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
+
+        TESTS:
+
+        Check that JSON output for this goal works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> goal = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"dense": true, "cached": true, "value": null}]}
 
         """
         with self._cache.defaults({"dense": None}):
@@ -157,7 +173,6 @@ class OrbitClosure(Goal, Command):
             verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
-            # TODO: Test JSON output.
             await self._report.result(self, result=None, dense=verdict, cached=True)
             self._resolved = Goal.COMPLETED
 
@@ -261,6 +276,26 @@ class OrbitClosure(Goal, Command):
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 4/6
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 6/6
             [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
+
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> oc = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(oc.report())
+            >>> report.flush()
+            {"surface": {"angles": [1, 3, 5], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"dimension": 6, "directions": 1, "directions_with_cylinders": 1, "dense": true, "value": {"type": "GL2ROrbitClosure", "pickle": "..."}}]}
 
         """
         self._directions += 1
@@ -454,7 +489,6 @@ class OrbitClosure(Goal, Command):
 
     async def report(self):
         if self._resolved != Goal.COMPLETED:
-            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 self._surface.orbit_closure(),
