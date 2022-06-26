@@ -14,7 +14,8 @@ TESTS::
       Explore a surface.
     Options:
       --debug
-      --help   Show this message and exit.
+      --help        Show this message and exit.
+      -v, --verbose Enable verbose message, repeat for debug message.
     Cache:
       local-cache  A cache of previous results stored in local JSON files.
       pickles      Access a database of pickles storing parts of previous
@@ -97,7 +98,7 @@ from flatsurvey.worker.restart import Restart
     "--verbose",
     "-v",
     count=True,
-    help="Enable verbose message, repeat for debug message",
+    help="Enable verbose message, repeat for debug message.",
 )
 def worker(debug, verbose):
     r"""

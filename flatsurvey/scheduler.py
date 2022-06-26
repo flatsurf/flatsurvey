@@ -1,3 +1,6 @@
+r"""
+TODO
+"""
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
@@ -168,7 +171,10 @@ class Scheduler:
         shared.append(ListBindingSpec("reporters", reporters))
 
         import pinject
-        objects = pinject.new_object_graph(modules=[], binding_specs=shared)
+        import flatsurvey.reporting.report
+        objects = pinject.new_object_graph(modules=[
+            flatsurvey.reporting.report
+            ], binding_specs=shared)
 
         def share(binding):
             if binding.scope == "SHARED":
@@ -185,7 +191,7 @@ class Scheduler:
         from flatsurvey.pipeline.util import provide
         return provide("report", objects)
 
-    async def _render_command(self, surface, progress):
+    async def _render_command(self, surface, progress=None):
         r"""
         Return the command to invoke a worker to compute the ``goals`` for ``surface``.
 
@@ -196,9 +202,13 @@ class Scheduler:
         >>> scheduler = Scheduler(generators=[], bindings=[], goals=[OrbitClosure], reporters=[])
         >>> command = scheduler._render_command(Ngon([1, 1, 1]))
         >>> asyncio.run(command)  # doctest: +ELLIPSIS
-        ['python', '-m', 'flatsurvey.worker', 'orbit-closure', 'pickle', '--base64', '...']
+        ['orbit-closure', 'pickle', '--base64', '...']
 
         """
+        if progress is None:
+            def progress(source, **kwargs):
+                return self._report.progress(source=source, **kwargs)
+
         bindings = list(self._bindings)
 
         from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec

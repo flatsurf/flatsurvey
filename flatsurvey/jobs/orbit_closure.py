@@ -144,7 +144,7 @@ class OrbitClosure(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "dense": true
-            ... }]}''')], pickles=None))
+            ... }]}''')], pickles=None, report=None))
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -282,10 +282,10 @@ class OrbitClosure(Goal, Command):
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
         self._report.progress(
-            self,
-            "dimension",
-            self.dimension,
-            self._surface.orbit_closure_dimension_upper_bound,
+            source=self,
+            what="dimension",
+            count=self.dimension,
+            total=self._surface.orbit_closure_dimension_upper_bound,
         )
 
         assert (
@@ -430,7 +430,7 @@ class OrbitClosure(Goal, Command):
             ...   "dense": null
             ... }, {
             ...   "dense": null
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> OrbitClosure.reduce(cache.get("orbit-closure")) is None
             True
 
@@ -441,7 +441,7 @@ class OrbitClosure(Goal, Command):
             ...   "dense": null
             ... }, {
             ...   "dense": true
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> OrbitClosure.reduce(cache.get("orbit-closure")) is True
             True
 

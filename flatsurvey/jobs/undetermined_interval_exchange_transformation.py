@@ -117,7 +117,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": "IET(…)"
-            ... }]}''')], pickles=None))
+            ... }]}''')], pickles=None, report=None))
 
             >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])

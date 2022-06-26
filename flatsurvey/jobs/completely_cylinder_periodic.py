@@ -156,7 +156,7 @@ class CompletelyCylinderPeriodic(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": false
-            ... }]}''')], pickles=None), log)
+            ... }]}''')], pickles=None, report=None), log)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved

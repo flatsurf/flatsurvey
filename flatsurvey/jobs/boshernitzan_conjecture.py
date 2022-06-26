@@ -128,7 +128,7 @@ class BoshernitzanConjecture(Goal, Command):
             ...   },
             ...   "assertion": "c",
             ...   "result": false
-            ... }]}''')], pickles=None))
+            ... }]}''')], pickles=None, report=None))
 
             >>> asyncio.run(goal.consume_cache())
 
@@ -204,7 +204,7 @@ class BoshernitzanConjecture(Goal, Command):
             ... }, {
             ...   "assertion": "a",
             ...   "result": null
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture")) is None
             True
 
@@ -217,7 +217,7 @@ class BoshernitzanConjecture(Goal, Command):
             ... }, {
             ...   "assertion": "a",
             ...   "result": false
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             False
 
@@ -230,7 +230,7 @@ class BoshernitzanConjecture(Goal, Command):
             ... }, {
             ...   "assertion": "a",
             ...   "result": true
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             True
 
@@ -243,7 +243,7 @@ class BoshernitzanConjecture(Goal, Command):
             ... }, {
             ...   "assertion": "a",
             ...   "result": true
-            ... }]}''')], pickles=None)
+            ... }]}''')], pickles=None, report=None)
             >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             Traceback (most recent call last):
             ...

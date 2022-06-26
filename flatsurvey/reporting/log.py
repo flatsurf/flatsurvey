@@ -149,11 +149,13 @@ class Log(Reporter, Command):
 
         """
         if advance is not None:
-            raise NotImplementedError
-        if message is not None:
-            raise NotImplementedError
+            raise NotImplementedError("text log cannot keep track of progress; advance keyword not supported")
 
-        self.log(source, f"{what}: {count}/{total or '?'}")
+        line = f"{what}: {count}/{total or '?'}"
+        if message:
+            line = f"{line} {message}"
+
+        self.log(source, line)
 
     async def result(self, source, result, **kwargs):
         r"""

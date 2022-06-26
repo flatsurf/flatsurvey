@@ -90,7 +90,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         artificial cache::
 
             >>> from io import StringIO
-            >>> cache = Cache(pickles=None, jsons=[StringIO(
+            >>> cache = Cache(jsons=[StringIO(
             ... '''{"cylinder-periodic-asymptotics": [{
             ...   "surface": {
             ...     "type": "Ngon",
@@ -103,7 +103,7 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "distribution": [1]
-            ... }]}''')])
+            ... }]}''')], pickles=None, report=None)
             >>> goal = CylinderPeriodicAsymptotics(report=Report([Log(surface)]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
             >>> async def results(self):

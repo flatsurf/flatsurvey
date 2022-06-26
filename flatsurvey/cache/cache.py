@@ -52,7 +52,7 @@ class Cache(Command):
     EXAMPLES::
 
         >>> from flatsurvey.cache.pickles import Pickles
-        >>> Cache(pickles=None, jsons=())
+        >>> Cache(pickles=None, jsons=(), report=None)
         local-cache
 
     """
@@ -74,10 +74,15 @@ class Cache(Command):
 
         self._cache = {}
 
+        if report is None:
+            from flatsurvey.reporting import Report
+            report = Report(reporters=[])
+
         if jsons:
             with report.progress(self, what="files", count=0, total=len(jsons), activity="loading cache"):
                 for json in jsons:
-                    report.progress(self, message=f"parsing {json.name}")
+                    name = json.name if hasattr(json, "name") else "JSON"
+                    report.progress(self, message=f"parsing {name}")
 
                     parsed = load(json)
 
@@ -177,7 +182,7 @@ class Cache(Command):
 
             >>> from flatsurvey.cache.pickles import Pickles
             >>> from io import StringIO
-            >>> cache = Cache(jsons=(StringIO('{"A": [{}]}'),), pickles=None)
+            >>> cache = Cache(jsons=(StringIO('{"A": [{}]}'),), pickles=None, report=None)
             >>> cache.defaults()
             {}
 
@@ -298,7 +303,7 @@ class Cache(Command):
             ... b'h\x1a(h\xca]q\xfd(h!h"\x85q\xfeRq\xffh!h\x06\x85r\x00\x01\x00\x00Rr\x01\x01\x00\x00h!X\x04\x00\x00\x00-3/2r\x02\x01\x00\x00\x85r\x03\x01\x00\x00Rr\x04\x01\x00\x00h!X\x02\x00\x00\x00-1r\x05\x01\x00\x00\x85r\x06\x01\x00\x00Rr\x07\x01\x00'
             ... b'\x00e\x89\x89tr\x08\x01\x00\x00Rr\t\x01\x00\x00\x86r\n\x01\x00\x00Rr\x0b\x01\x00\x00eK\x03\x88tr\x0c\x01\x00\x00Rr\r\x01\x00\x00\x87r\x0e\x01\x00\x00Rr\x0f\x01\x00\x00.'
             ... ]
-            >>> cache = Cache(jsons=[StringIO(json)], pickles=Pickles(pickles))
+            >>> cache = Cache(jsons=[StringIO(json)], pickles=Pickles(pickles), report=None)
 
         Then we can query all cached results for a goal::
 

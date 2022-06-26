@@ -20,6 +20,7 @@ TESTS::
       --help         Show this message and exit.
       -N, --dry-run  Do not spawn any workers.
       -l, --load L   Do not start workers until load is below L.
+      -v, --verbose  Enable verbose message, repeat for debug message.
     <BLANKLINE>
     Cache:
       local-cache  A cache of previous results stored in local JSON files.
@@ -117,7 +118,7 @@ import flatsurvey.surfaces
     "--verbose",
     "-v",
     count=True,
-    help="Enable verbose message, repeat for debug message",
+    help="Enable verbose message, repeat for debug message.",
 )
 def survey(dry_run, load, debug, verbose):
     r"""

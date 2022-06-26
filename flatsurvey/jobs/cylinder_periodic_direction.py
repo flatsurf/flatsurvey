@@ -117,7 +117,7 @@ class CylinderPeriodicDirection(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": true
-            ... }]}''')], pickles=None))
+            ... }]}''')], pickles=None, report=None))
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved

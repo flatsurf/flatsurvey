@@ -28,7 +28,7 @@ class Node:
     EXAMPLES::
 
         >>> from flatsurvey.cache import Cache
-        >>> cache = Cache(pickles=None)
+        >>> cache = Cache(pickles=None, report=None)
         >>> Node(1, cache=cache, kind=None)
         1
 
@@ -46,7 +46,7 @@ class Node:
         EXAMPLES::
 
             >>> from flatsurvey.cache import Cache
-            >>> cache = Cache(pickles=None)
+            >>> cache = Cache(pickles=None, report=None)
             >>> Node({}, cache=cache, kind=None)
             {}
 
@@ -61,7 +61,7 @@ class Node:
 
             >>> from io import StringIO
             >>> from flatsurvey.cache import Cache
-            >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None)
+            >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None, report=None)
             >>> node = Node({"surface": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}, cache=cache, kind=None)
             >>> node.surface.type
             'Ngon'
@@ -97,7 +97,7 @@ class ReferenceNode(Node):
 
         >>> from io import StringIO
         >>> from flatsurvey.cache import Cache
-        >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None)
+        >>> cache = Cache(jsons=[StringIO('{"surface": [{"type": "Ngon", "angles": [1, 2, 4], "pickle": "a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da"}]}')], pickles=None, report=None)
         >>> ReferenceNode('a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da', "surface", cache=cache)
         {'type': 'Ngon', 'angles': [1, 2, 4], 'pickle': 'a1b54e02ade464584920abcbfd07faaa71afac1d5b455a56d5cf790ccf5528da'}
 

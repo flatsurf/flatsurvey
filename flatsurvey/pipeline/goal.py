@@ -70,7 +70,7 @@ class Goal(Consumer):
     def __init__(self, producers, report, cache, cache_only=DEFAULT_CACHE_ONLY):
         if self._cache is None:
             from flatsurvey.cache import Cache
-            self._cache = Cache(pickles=None)
+            self._cache = Cache(pickles=None, report=None)
 
         if self._report is None:
             from flatsurvey.reporting import Report

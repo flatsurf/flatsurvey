@@ -51,6 +51,7 @@ class Report(Command):
         >>> report.log(report, "invisible message because no reporter has been registered")
 
     """
+
     def __init__(self, reporters, ignore=None):
         self._reporters = reporters
         self._ignore = ignore or []
@@ -128,7 +129,7 @@ class Report(Command):
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
             >>> report = Report([log, log])
-            >>> report.progress(surface, what="dimension", count=13, total=37)
+            >>> context = report.progress(surface, what="dimension", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
