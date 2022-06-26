@@ -96,7 +96,6 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
             >>> log = Log(surface)
-            >>> make_goal = lambda cache: UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 
         We mock some artificial results from previous runs and consume that
         artificial cache. Since we set ``--cache-only``, a result is reported
@@ -104,7 +103,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
             >>> import asyncio
             >>> from io import StringIO
-            >>> goal = make_goal(Cache(jsons=[StringIO(
+            >>> cache = Cache(jsons=[StringIO(
             ... '''{"undetermined-iet": [{
             ...   "surface": {
             ...     "type": "Ngon",
@@ -117,7 +116,8 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             ...     "angles": [1, 1, 1]
             ...   },
             ...   "result": "IET(…)"
-            ... }]}''')], pickles=None, report=None))
+            ... }]}''')], pickles=None, report=None)
+            >>> goal = UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 
             >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])
@@ -127,6 +127,25 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             >>> goal.resolved
             True
 
+        TESTS:
+
+        Check that JSON output for this goal works; actually it does not do
+        anything useful yet. What should it do?
+
+        ::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
+            >>> goal = UndeterminedIntervalExchangeTransformation(report=report, surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "undetermined-iet --cache-only": [{"iets": ["IET(\u2026)", "IET(\u2026)"], "cached": true, "value": null}]}
+
         """
         if not self._cache_only:
             return
@@ -135,7 +154,6 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
         iets = [result.result for result in results]
 
-        # TODO: Test JSON output.
         await self._report.result(self, None, iets=iets, cached=True)
         self._resolved = Goal.COMPLETED
 
@@ -235,8 +253,11 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             UndeterminedIntervalExchangeTransformation._enable_hacks()
 
             # Forget the surface structure of this IET
+            import cppyy
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
+
+            import pyintervalxt
             iet = pyintervalxt.IntervalExchangeTransformation(
                 list(construction[0]), list(construction[1])
             )
@@ -254,10 +275,10 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
                 list(construction[0]), list(construction[1])
             )
 
-            # pyintervalxt fails to serialize IETs. See #10.
-            # TODO: Test JSON output.
+            # Once #18 has been fixed, we should properly test this.
             await self._report.result(
                 self,
+                # pyintervalxt fails to serialize IETs. See #10.
                 str(iet),
                 surface=self._surface,
                 degree=degree,
