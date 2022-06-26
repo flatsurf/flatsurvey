@@ -126,10 +126,13 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> goal = CylinderPeriodicAsymptotics(report=Report([Json(surface, stream=stdout)]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> goal = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
             >>> import asyncio
             >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-asymptotics --cache-only": [{"distributions": [[1, 2], [1]], "cached": true, "value": null}]}
 
         """
         if not self._cache_only:
@@ -142,7 +145,6 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution
         # would be skewed.
-        # TODO: Test JSON output.
         await self._report.result(self, None, distributions=distributions, cached=True)
         self._resolved = Goal.COMPLETED
 
@@ -202,6 +204,26 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             >>> asyncio.run(report)
             [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distribution: [6.92820323027551])
 
+        TESTS:
+
+        Verify that the JSON output works::
+
+            >>> from sys import stdout
+            >>> from flatsurvey.reporting import Json
+
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> report = Report([Json(surface, stream=stdout)])
+            >>> ccp = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(ccp.report())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-asymptotics": [{"distribution": [6.92820323027551], "value": null}]}
+
         """
         if decomposition.minimalComponents():
             self._results.append(False)
@@ -233,7 +255,6 @@ class CylinderPeriodicAsymptotics(Goal, Command):
                 logging.warning(f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders.")
             distribution = sorted([r for r in distribution if r])
 
-            # TODO: Test JSON output.
             await self._report.result(
                 self,
                 result,
