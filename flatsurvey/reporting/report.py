@@ -186,6 +186,7 @@ class ProgressReporting:
     r"""
     A helper that displays progress in a reporter from a single source.
     """
+
     def __init__(self, report, source):
         self._report = report
         self._source = source
@@ -207,8 +208,8 @@ class ProgressReporting:
         if self._progress is None:
             self._token = self._report.progress(self._source, **kwargs)
             self._progress = self._token.__enter__()
-
-        self._progress(**kwargs)
+        else:
+            self._progress(**kwargs)
 
     def hide(self):
         if self._progress is not None:
