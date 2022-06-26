@@ -141,7 +141,32 @@ class Cache(Command):
 
     def sources(self, *sources):
         r"""
-        TODO: Document and test.
+        The sources from which the cache should operate.
+
+        If ``sources`` are given, returns a context. Instruct the cache to read
+        from these sources as long as the context is active.
+
+        If no arguments are given, return the sources the cache is currently
+        using.
+
+        EXAMPLES:
+
+        Normally, the cache will try to read from cached data. If none is
+        available, it will fall back to :meth:`defaults` if any were specified, if
+        these are not available, it will try to reconstruct the cached pickle
+        (which can be very slow)::
+
+            >>> from flatsurvey.cache.pickles import Pickles
+            >>> cache = Cache(pickles=None, jsons=(), report=None)
+            >>> cache.sources()
+            ('CACHE', 'DEFAULTS', 'PICKLE')
+
+        We can change the order temporarily::
+
+            >>> with cache.sources("DEFAULTS"):
+            ...     cache.sources()
+            ('DEFAULTS',)
+
         """
         if len(sources) == 0:
             return self._sources[-1]
@@ -225,9 +250,9 @@ class Cache(Command):
         :meth:`Goal._consume_cache` which calls this method.
 
         However, the cache can also be queried manually. Let's suppose that we
-        have a cache from previous runs::
+        have a cache from previous runs.
 
-        # TODO: Create an issue that these pickles should be more compact.
+        The pickles in this example are huge. We should improve that, see #10::
 
             >>> from flatsurvey.cache.pickles import Pickles
             >>> from io import StringIO

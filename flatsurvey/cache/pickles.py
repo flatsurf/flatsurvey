@@ -4,7 +4,8 @@ Access a database of pickles storing parts of previous computations.
 This modules supplements :module:`flatsurvey.cache.Cache`. The cache in JSON
 files contains references to pickles. These pickles are resolved here.
 
-TODO: Examples
+Currently, this is mostly a placeholder. We have lots of pickles from previous
+runs but unpickling them is not implemented in much generality, see #10.
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -31,8 +32,6 @@ from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.command import Command
 
-
-# TODO: Actually implement all of this.
 
 class Pickles(Command):
     def __init__(self, providers=()):
@@ -90,9 +89,9 @@ class PickleProvider:
     def load(self, raw):
         # Work around some current problems in many of our pickles:
         # - Pickles import sage.rings.number_field but SageMath cannot handle
-        #   this so we get a circular import. # TODO: open an issue
+        #   this so we get a circular import. See #10.
         import sage.all
-        # - Pickles use cppyy.gbl.flatsurf but it's not available yet somehow. # TODO: open an issue
+        # - Pickles use cppyy.gbl.flatsurf but it's not available yet somehow. See #10.
         import pyflatsurf
 
         from pickle import loads
