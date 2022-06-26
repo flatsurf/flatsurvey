@@ -377,7 +377,8 @@ class Progress(Reporter, Command):
         Update the state of this instance.
         """
         if count is not None and advance is not None:
-            raise ValueError("not both, count and advance can be given")
+            count = count + advance
+            advance = None
 
         if count is not None:
             if self._count is None:

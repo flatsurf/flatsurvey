@@ -88,7 +88,7 @@ class BoshernitzanConjecture(Goal, Command):
         }
 
         from flatsurvey.reporting.report import ProgressReporting
-        self._progress = ProgressReporting(self._report, self)
+        self._progress = ProgressReporting(self._report, self, defaults=dict(count=0, total=len(self._verdict), what="conjectures", activity="verifying conjectures"))
 
     async def consume_cache(self):
         r"""

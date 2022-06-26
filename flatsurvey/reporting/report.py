@@ -187,10 +187,11 @@ class ProgressReporting:
     A helper that displays progress in a reporter from a single source.
     """
 
-    def __init__(self, report, source):
+    def __init__(self, report, source, defaults=None):
         self._report = report
         self._source = source
         self._progress = None
+        self._defaults = defaults
 
     def advance(self, **kwargs):
         r"""
@@ -206,6 +207,7 @@ class ProgressReporting:
         Make sure that progress is shown and update it from the arguments.
         """
         if self._progress is None:
+            kwargs = dict(kwargs, **self._defaults or {})
             self._token = self._report.progress(self._source, **kwargs)
             self._progress = self._token.__enter__()
         else:
