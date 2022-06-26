@@ -158,10 +158,9 @@ class OrbitClosure(Goal, Command):
 
         Check that JSON output for this goal works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json, Report
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> goal = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
 
             >>> import asyncio
@@ -284,10 +283,9 @@ class OrbitClosure(Goal, Command):
 
         Check that the JSON output for this goal works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
             >>> oc = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 

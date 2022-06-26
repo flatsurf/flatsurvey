@@ -123,10 +123,9 @@ class CylinderPeriodicAsymptotics(Goal, Command):
 
         Check that the JSON output for this goal works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> goal = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
 
             >>> import asyncio
@@ -208,10 +207,9 @@ class CylinderPeriodicAsymptotics(Goal, Command):
 
         Verify that the JSON output works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> ccp = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=None)
 
             >>> import asyncio

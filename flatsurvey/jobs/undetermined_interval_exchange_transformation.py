@@ -134,10 +134,9 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
         ::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json, Report
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
             >>> goal = UndeterminedIntervalExchangeTransformation(report=report, surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 

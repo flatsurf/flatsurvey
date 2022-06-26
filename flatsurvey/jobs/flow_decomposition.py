@@ -119,10 +119,9 @@ class FlowDecompositions(Processor, Command):
 
         Check that the JSON output works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> decompositions = FlowDecompositions(surface=surface, report=report, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
 
             >>> asyncio.run(decompositions.produce())

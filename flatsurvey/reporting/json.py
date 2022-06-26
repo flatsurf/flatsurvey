@@ -164,9 +164,21 @@ class Json(Reporter, Command):
         r"""
         Return the argument in a way that JSON serialization can make sense of.
 
-        EXAMPLES::
+        EXAMPLES:
 
-        TODO: Actually test something
+        Anything that is unknown is renderede as its pickle, so we can let any
+        object that we don't understand through without changes::
+
+            >>> from flatsurvey.reporting.json import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json(surface)
+
+            >>> import asyncio
+            >>> asyncio.run(json.result("verdict", result=asyncio))
+
+            >>> json.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [{"type": "module", "pickle": "..."}]}
 
         """
         return value

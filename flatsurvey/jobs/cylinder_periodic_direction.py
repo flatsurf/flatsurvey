@@ -127,10 +127,9 @@ class CylinderPeriodicDirection(Goal, Command):
 
         Check that the JSON output for this goal works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json, Report
 
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> goal = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=cache)
 
             >>> import asyncio
@@ -225,11 +224,10 @@ class CylinderPeriodicDirection(Goal, Command):
 
         Verify that the JSON output works::
 
-            >>> from sys import stdout
             >>> from flatsurvey.reporting import Json, Report
 
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> report = Report([Json(surface, stream=stdout)])
+            >>> report = Report([Json(surface)])
             >>> cpd = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=None)
 
             >>> import asyncio
