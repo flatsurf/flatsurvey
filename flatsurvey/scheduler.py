@@ -39,6 +39,7 @@ class Scheduler:
         bindings,
         goals,
         reporters,
+        queue=128,
         dry_run=False,
         load=None,
         quiet=False,
@@ -53,6 +54,7 @@ class Scheduler:
         self._bindings = bindings
         self._goals = goals
         self._reporters = reporters
+        self._queue_limit = queue
         self._dry_run = dry_run
         self._load = load
         self._quiet = quiet
@@ -73,8 +75,6 @@ class Scheduler:
         >>> asyncio.run(scheduler.start())
 
         """
-        MAX_QUEUE = 32
-
         try:
             with self._report.progress(self, activity="Survey", count=0, what="tasks queued") as scheduling_progress:
                 scheduling_progress(activity="running survey")
@@ -115,7 +115,7 @@ class Scheduler:
 
                                         continue
 
-                                if len(queued_commands) >= MAX_QUEUE or (not surfaces and queued_commands):
+                                if len(queued_commands) >= self._queue_limit or (not surfaces and queued_commands):
                                     message.append("queue full")
                                     import asyncio
                                     await asyncio.sleep(1)

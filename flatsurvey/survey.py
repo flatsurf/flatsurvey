@@ -17,10 +17,11 @@ TESTS::
     <BLANKLINE>
     Options:
       --debug
-      --help         Show this message and exit.
-      -N, --dry-run  Do not spawn any workers.
-      -l, --load L   Do not start workers until load is below L.
-      -v, --verbose  Enable verbose message, repeat for debug message.
+      --help               Show this message and exit.
+      -N, --dry-run        Do not spawn any workers.
+      -l, --load L         Do not start workers until load is below L.
+      -q, --queue INTEGER  Jobs to prepare in the background for scheduling.
+      -v, --verbose        Enable verbose message, repeat for debug message.
     <BLANKLINE>
     Cache:
       local-cache  A cache of previous results stored in local JSON files.
@@ -115,12 +116,19 @@ import flatsurvey.surfaces
     help="Do not start workers until load is below L.",
 )
 @click.option(
+    "--queue",
+    "-q",
+    type=int,
+    default=128,
+    help="Jobs to prepare in the background for scheduling.",
+)
+@click.option(
     "--verbose",
     "-v",
     count=True,
     help="Enable verbose message, repeat for debug message.",
 )
-def survey(dry_run, load, debug, verbose):
+def survey(dry_run, load, debug, queue, verbose):
     r"""
     Main command, runs a survey; specific survey objects and goals are
     registered automatically as subcommands.
@@ -131,6 +139,8 @@ def survey(dry_run, load, debug, verbose):
     _ = load
     # For technical reasons, debug needs to be a parameter here. It is consumed by process() below.
     _ = debug
+    # For technical reasons, queue needs to be a parameter here. It is consumed by process() below.
+    _ = queue
     # For technical reasons, verbose needs to be a parameter here. It is consumed by process() below.
     _ = verbose
 
@@ -147,7 +157,7 @@ for commands in [
 
 
 @survey.result_callback()
-def process(subcommands, dry_run=False, load=None, debug=False, verbose=0):
+def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbose=0):
     r"""
     Run the specified subcommands of ``survey``.
 
@@ -198,6 +208,7 @@ def process(subcommands, dry_run=False, load=None, debug=False, verbose=0):
                 bindings=bindings,
                 goals=goals,
                 reporters=reporters,
+                queue=queue,
                 dry_run=dry_run,
                 load=load,
                 debug=debug,
