@@ -43,10 +43,10 @@ class Consumer:
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
         >>> isinstance(connections, Consumer)
         False
-        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
         >>> isinstance(orientations, Consumer)
         True
 
@@ -92,8 +92,8 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
             >>> orientations.resolved
             False
 
@@ -115,8 +115,8 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> import asyncio
             >>> consume = orientations.consume(next(iter(surface.flat_triangulation().connections())), cost=0)
@@ -158,8 +158,8 @@ class Consumer:
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
             >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> connections = SaddleConnections(surface, report=None)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
             >>> oc = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
             >>> import asyncio
@@ -191,9 +191,9 @@ class Consumer:
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
             >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
+            >>> connections = SaddleConnections(surface, report=None)
             >>> log = Log(surface=surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
             >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
             >>> import asyncio

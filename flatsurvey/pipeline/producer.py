@@ -40,7 +40,7 @@ class Producer:
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
 
         >>> isinstance(connections, Producer)
         True
@@ -70,7 +70,7 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
+            >>> connections = SaddleConnections(surface=surface, report=None)
 
             >>> import asyncio
             >>> produce = connections.produce()
@@ -101,7 +101,7 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, limit=0)
+            >>> connections = SaddleConnections(surface=surface, limit=0, report=None)
 
         For a producer to be exhausted, it has to be asked to :meth:`produce`
         at least once unsuccesfully. This is a bit unfortunate, but due to the
@@ -137,11 +137,11 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
+            >>> connections = SaddleConnections(surface=surface, report=None)
 
         Creating a consumer calls this method implicitly::
 
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> connections._consumers
             {saddle-connection-orientations}

@@ -48,10 +48,10 @@ class Processor(Producer, Consumer):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
         >>> isinstance(connections, Processor)
         False
-        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
         >>> isinstance(orientations, Processor)
         True
 
@@ -74,8 +74,8 @@ class Processor(Producer, Consumer):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> import asyncio
             >>> produce = orientations.produce()

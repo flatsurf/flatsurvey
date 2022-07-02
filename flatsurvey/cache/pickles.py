@@ -95,7 +95,10 @@ class PickleProvider:
         import pyflatsurf
 
         from pickle import loads
-        return loads(raw)
+        try:
+            return loads(raw)
+        except Exception:
+            raise Exception(f"Failed to unpickle {raw}")
 
 
 class StaticPickleProvider(PickleProvider):

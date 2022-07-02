@@ -50,8 +50,8 @@ class Goal(Consumer):
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> from flatsurvey.jobs.orbit_closure import OrbitClosure
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections))
+        >>> connections = SaddleConnections(surface, report=None)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
         >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
         >>> isinstance(goal, Goal)
         True

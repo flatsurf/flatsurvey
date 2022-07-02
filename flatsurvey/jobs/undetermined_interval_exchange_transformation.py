@@ -54,8 +54,8 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, SaddleConnectionOrientations
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface)
-        >>> orientations = SaddleConnectionOrientations(connections)
+        >>> connections = SaddleConnections(surface, report=None)
+        >>> orientations = SaddleConnectionOrientations(connections, report=None)
         >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=orientations)
         >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=None)
         undetermined-iet
@@ -93,7 +93,7 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
             >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
+            >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface, report=None), report=None)
             >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
             >>> log = Log(surface)
 

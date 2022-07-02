@@ -45,7 +45,7 @@ class SaddleConnectionOrientations(Processor, Command):
     """
 
     @copy_args_to_internal_fields
-    def __init__(self, saddle_connections, report=None):
+    def __init__(self, saddle_connections, report):
         super().__init__(producers=[saddle_connections], report=report)
         self._seen = None
 

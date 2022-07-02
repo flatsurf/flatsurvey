@@ -201,8 +201,7 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
         import sys
         import asyncio
         from flatsurvey.scheduler import Scheduler
-        loop = asyncio.get_event_loop()
-        sys.exit(loop.run_until_complete(
+        sys.exit(asyncio.new_event_loop().run_until_complete(
             Scheduler(
                 surface_generators,
                 bindings=bindings,
