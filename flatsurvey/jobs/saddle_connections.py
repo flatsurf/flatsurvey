@@ -50,13 +50,13 @@ class SaddleConnections(Producer, Command):
     DEFAULT_LIMIT = None
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, report=None, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
+    def __init__(self, surface, report, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
         super().__init__(report=report)
 
         self._connections = None
 
         from flatsurvey.reporting.report import ProgressReporting
-        self._progress = ProgressReporting(self._report, self)
+        self._progress = ProgressReporting(self._report, self, defaults=dict(count=0, what="connections", activity="enumerating saddle connections"))
 
     def _by_length(self):
         self.__connections = (
@@ -88,14 +88,12 @@ class SaddleConnections(Producer, Command):
         self._connections = iter(self.__connections)
 
     def _produce(self):
-        self._progress.progress(count=0, what="connections", activity="enumerating saddle connections")
-
         if self._connections is None:
             self._by_length()
         try:
             self._current = next(self._connections)
 
-            self._progress.advance(advance=1)
+            self._progress.progress(advance=1)
             return not Producer.EXHAUSTED
         except StopIteration:
             self._progress.hide()

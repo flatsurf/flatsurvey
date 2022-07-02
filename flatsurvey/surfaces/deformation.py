@@ -54,11 +54,15 @@ class Deformation(Surface):
     def __ne__(self, other):
         return not (self == other)
 
+    def cache_predicate(self, exact, cache=None):
+        return lambda result: False
+
     class Restart(flatsurvey.worker.restart.Restart):
         def __init__(self, deformed, old):
             self._deformation = Deformation(deformed=deformed, old=old)
 
         def rewrite_bound(self, bound):
+            from flatsurvey.pipeline.util import FactoryBindingSpec
             if isinstance(bound, Surface):
                 return [
                     FactoryBindingSpec(

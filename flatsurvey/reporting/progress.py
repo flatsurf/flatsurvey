@@ -141,6 +141,12 @@ class Progress(Reporter, Command):
     def command(self):
         return ["progress"]
 
+    def deform(self, deformation):
+        return {
+            "bindings": Progress.bindings(),
+            "reporters": [Progress],
+        }
+
     def progress(self, source, count=None, advance=None, total=None, what=None, message=None, parent=None, activity=None):
         r"""
         Implements :meth:`Reporter.progress`.
@@ -456,3 +462,10 @@ class RemoteProgress(Reporter):
             RemoteProgress._progress_queue.put(("exit_context", identifier))
 
         return progress()
+
+    def deform(self, deformation):
+        from flatsurvey.pipeline.util import FactoryBindingSpec
+        return {
+            "bindings": [FactoryBindingSpec("progress", lambda: self, scope="SHARED")],
+            "reporters": [RemoteProgress],
+        }
