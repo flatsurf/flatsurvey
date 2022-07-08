@@ -63,6 +63,7 @@ class Deformation(Surface):
 
         def rewrite_bound(self, bound):
             from flatsurvey.pipeline.util import FactoryBindingSpec
+
             if isinstance(bound, Surface):
                 return [
                     FactoryBindingSpec(

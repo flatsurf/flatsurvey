@@ -65,9 +65,7 @@ class Report(Command):
     )
     @click.option("--ignore", type=str, multiple=True)
     def click(ignore):
-        return {
-            "bindings": Report.bindings(ignore)
-        }
+        return {"bindings": Report.bindings(ignore)}
 
     def log(self, source, message, **kwargs):
         r"""
@@ -115,7 +113,17 @@ class Report(Command):
         for reporter in self._reporters:
             await reporter.result(source, result, **kwargs)
 
-    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        what=None,
+        total=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Report that some progress has been made in the resolution of the
         computation ``source``. Now we are at ``count`` of ``total`` given as
@@ -134,7 +142,19 @@ class Report(Command):
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
-        contexts = [reporter.progress(source=source, what=what, count=count, advance=advance, total=total, parent=parent, activity=activity, message=message) for reporter in self._reporters]
+        contexts = [
+            reporter.progress(
+                source=source,
+                what=what,
+                count=count,
+                advance=advance,
+                total=total,
+                parent=parent,
+                activity=activity,
+                message=message,
+            )
+            for reporter in self._reporters
+        ]
         contexts = [context for context in contexts if context is not None]
 
         from contextlib import contextmanager

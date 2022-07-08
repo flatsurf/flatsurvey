@@ -79,7 +79,10 @@ class BoshernitzanConjecture(Goal, Command):
             )
 
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._verdict = {
@@ -88,7 +91,17 @@ class BoshernitzanConjecture(Goal, Command):
         }
 
         from flatsurvey.reporting.report import ProgressReporting
-        self._progress = ProgressReporting(self._report, self, defaults=dict(count=0, total=len(self._verdict), what="conjectures", activity="verifying conjectures"))
+
+        self._progress = ProgressReporting(
+            self._report,
+            self,
+            defaults=dict(
+                count=0,
+                total=len(self._verdict),
+                what="conjectures",
+                activity="verifying conjectures",
+            ),
+        )
 
     async def consume_cache(self):
         r"""
@@ -367,7 +380,10 @@ class BoshernitzanConjecture(Goal, Command):
         return not Goal.COMPLETED
 
     async def _report_assertion(self, assertion, result, **kwargs):
-        self._progress.progress(advance=1, message=f"({assertion}) does not hold" if result is False else None)
+        self._progress.progress(
+            advance=1,
+            message=f"({assertion}) does not hold" if result is False else None,
+        )
 
         await self._report.result(
             self,

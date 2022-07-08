@@ -54,6 +54,7 @@ class Progress(Reporter, Command):
         self._activities = []
 
         import threading
+
         self._rlock = threading.RLock()
 
         self._dirty = True
@@ -69,9 +70,11 @@ class Progress(Reporter, Command):
         self._message = ""
 
         from rich.console import Group
+
         self._visualization = Group()
 
         from rich.progress import Progress
+
         self._progress = Progress()
         self._start_time = self._progress.get_time()
         self._create_task()
@@ -97,6 +100,7 @@ class Progress(Reporter, Command):
         if cls._live is None:
             from rich.live import Live
             from rich.console import Group
+
             cls._live = Live(Group("…"), transient=True)
             cls._live.start()
             cls._live._owner = root
@@ -132,9 +136,12 @@ class Progress(Reporter, Command):
     @classmethod
     def bindings(cls):
         from flatsurvey.pipeline.util import PartialBindingSpec
+
         # Note that this is a hack, see #42.
         if RemoteProgress._progress_queue:
-            return [PartialBindingSpec(RemoteProgress, name="progress", scope="SHARED")()]
+            return [
+                PartialBindingSpec(RemoteProgress, name="progress", scope="SHARED")()
+            ]
         else:
             return [PartialBindingSpec(Progress, scope="SHARED")()]
 
@@ -147,7 +154,17 @@ class Progress(Reporter, Command):
             "reporters": [Progress],
         }
 
-    def progress(self, source, count=None, advance=None, total=None, what=None, message=None, parent=None, activity=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        total=None,
+        what=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Implements :meth:`Reporter.progress`.
 
@@ -158,7 +175,14 @@ class Progress(Reporter, Command):
         """
         with self._rlock:
             _activity = self._get_activity(source, parent=parent, create=True)
-            _activity.update(count=count, advance=advance, what=what, total=total, message=message, activity=activity)
+            _activity.update(
+                count=count,
+                advance=advance,
+                what=what,
+                total=total,
+                message=message,
+                activity=activity,
+            )
             return _activity
 
     def __enter__(self):
@@ -251,7 +275,9 @@ class Progress(Reporter, Command):
         """
         import rich.progress
 
-        self._activities = [activity for activity in self._activities if activity._visible]
+        self._activities = [
+            activity for activity in self._activities if activity._visible
+        ]
 
         if self._parent is None:
             if not self._activities:
@@ -259,7 +285,10 @@ class Progress(Reporter, Command):
                 return
 
             from rich.console import Group
-            self._visualization = Group(*[activity.redraw() for activity in self._activities])
+
+            self._visualization = Group(
+                *[activity.redraw() for activity in self._activities]
+            )
         else:
             panel = self._parent._parent is None and self._parent._activities != [self]
 
@@ -272,10 +301,14 @@ class Progress(Reporter, Command):
 
                 if self._total is None:
                     if self._what and self._count is not None:
-                        progress_columns.append("[gray37]({task.completed} {task.fields[what]})")
+                        progress_columns.append(
+                            "[gray37]({task.completed} {task.fields[what]})"
+                        )
                 else:
                     if self._what and self._count is not None:
-                        progress_columns.append("[grey37]({task.completed}/{task.total} {task.fields[what]})")
+                        progress_columns.append(
+                            "[grey37]({task.completed}/{task.total} {task.fields[what]})"
+                        )
 
                 progress_columns.append(rich.progress.TimeElapsedColumn())
 
@@ -283,20 +316,36 @@ class Progress(Reporter, Command):
 
                 self._create_task()
 
-                content = [Progress.ConditionalRenderable(
-                    lambda: self._message,
-                    Progress.LambdaRenderable(lambda: f"[blue]{self._message}"))]
+                content = [
+                    Progress.ConditionalRenderable(
+                        lambda: self._message,
+                        Progress.LambdaRenderable(lambda: f"[blue]{self._message}"),
+                    )
+                ]
 
                 if self._activities:
-                    content.append(rich.padding.Padding(
-                        rich.console.Group(*[child.redraw() for child in self._activities]),
-                        (0, 0, 0, 2)))
+                    content.append(
+                        rich.padding.Padding(
+                            rich.console.Group(
+                                *[child.redraw() for child in self._activities]
+                            ),
+                            (0, 0, 0, 2),
+                        )
+                    )
 
-                self._visualization = rich.panel.Panel(rich.console.Group(self._progress, *content), title=self._title or "")
+                self._visualization = rich.panel.Panel(
+                    rich.console.Group(self._progress, *content),
+                    title=self._title or "",
+                )
             elif self._total:
-                progress_columns = ["[green]{task.description}", rich.progress.BarColumn()]
+                progress_columns = [
+                    "[green]{task.description}",
+                    rich.progress.BarColumn(),
+                ]
                 if self._what:
-                    progress_columns.append("[grey37]({task.completed}/{task.total} {task.fields[what]})")
+                    progress_columns.append(
+                        "[grey37]({task.completed}/{task.total} {task.fields[what]})"
+                    )
                 progress_columns.append(rich.progress.TimeElapsedColumn())
 
                 self._progress = rich.progress.Progress(*progress_columns)
@@ -305,16 +354,25 @@ class Progress(Reporter, Command):
 
                 visualization = [self._progress]
 
-                visualization.append(Progress.ConditionalRenderable(
-                    lambda: self._message,
-                    rich.padding.Padding(
-                        Progress.LambdaRenderable(lambda: f"[blue]{self._message}"),
-                        (0, 0, 0, 2))))
+                visualization.append(
+                    Progress.ConditionalRenderable(
+                        lambda: self._message,
+                        rich.padding.Padding(
+                            Progress.LambdaRenderable(lambda: f"[blue]{self._message}"),
+                            (0, 0, 0, 2),
+                        ),
+                    )
+                )
 
                 if self._activities:
-                    visualization.append(rich.padding.Padding(
-                        rich.console.Group(*[child.redraw() for child in self._activities]),
-                        (0, 0, 0, 2)))
+                    visualization.append(
+                        rich.padding.Padding(
+                            rich.console.Group(
+                                *[child.redraw() for child in self._activities]
+                            ),
+                            (0, 0, 0, 2),
+                        )
+                    )
 
                 self._visualization = rich.console.Group(*visualization)
             else:
@@ -322,14 +380,18 @@ class Progress(Reporter, Command):
                     lambda: self._message,
                     rich.padding.Padding(
                         Progress.LambdaRenderable(lambda: f"[blue]{self._message}"),
-                        (0, 0, 0, 2)))
+                        (0, 0, 0, 2),
+                    ),
+                )
 
                 progress_columns = [
                     "[green]{task.description}",
                     rich.progress.SpinnerColumn(),
                 ]
                 if self._what and self._count is not None:
-                    progress_columns.append("[gray37]({task.completed} {task.fields[what]})")
+                    progress_columns.append(
+                        "[gray37]({task.completed} {task.fields[what]})"
+                    )
 
                 progress_columns.append(rich.progress.RenderableColumn(message))
 
@@ -340,9 +402,14 @@ class Progress(Reporter, Command):
                 visualization = [self._progress]
 
                 if self._activities:
-                    visualization.append(rich.padding.Padding(
-                        rich.console.Group(*[child.redraw() for child in self._activities]),
-                        (0, 0, 0, 2)))
+                    visualization.append(
+                        rich.padding.Padding(
+                            rich.console.Group(
+                                *[child.redraw() for child in self._activities]
+                            ),
+                            (0, 0, 0, 2),
+                        )
+                    )
 
                 self._visualization = rich.console.Group(*visualization)
 
@@ -375,10 +442,24 @@ class Progress(Reporter, Command):
         r"""
         Recreate the rich task representing this progress.
         """
-        self._task = self._progress.add_task(self._activity, message=self._message, total=self._total, what=self._what, completed=self._count or 0)
+        self._task = self._progress.add_task(
+            self._activity,
+            message=self._message,
+            total=self._total,
+            what=self._what,
+            completed=self._count or 0,
+        )
         self._progress.tasks[self._task].start_time = self._start_time
 
-    def update(self, count=None, advance=None, total=None, what=None, message=None, activity=None):
+    def update(
+        self,
+        count=None,
+        advance=None,
+        total=None,
+        what=None,
+        message=None,
+        activity=None,
+    ):
         r"""
         Update the state of this instance.
         """
@@ -442,7 +523,17 @@ class RemoteProgress(Reporter):
     """
     _progress_queue = None
 
-    def progress(self, source, count=None, advance=None, total=None, what=None, message=None, parent=None, activity=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        total=None,
+        what=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         if parent is not None:
             parent = str(parent)
 
@@ -451,7 +542,20 @@ class RemoteProgress(Reporter):
         else:
             identifier = str(source) + "-" + parent
 
-        RemoteProgress._progress_queue.put(("progress", identifier, str(source), count, advance, total, what, message, parent, activity))
+        RemoteProgress._progress_queue.put(
+            (
+                "progress",
+                identifier,
+                str(source),
+                count,
+                advance,
+                total,
+                what,
+                message,
+                parent,
+                activity,
+            )
+        )
 
         from contextlib import contextmanager
 
@@ -465,6 +569,7 @@ class RemoteProgress(Reporter):
 
     def deform(self, deformation):
         from flatsurvey.pipeline.util import FactoryBindingSpec
+
         return {
             "bindings": [FactoryBindingSpec("progress", lambda: self, scope="SHARED")],
             "reporters": [RemoteProgress],

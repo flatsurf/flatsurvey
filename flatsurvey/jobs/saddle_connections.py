@@ -56,7 +56,14 @@ class SaddleConnections(Producer, Command):
         self._connections = None
 
         from flatsurvey.reporting.report import ProgressReporting
-        self._progress = ProgressReporting(self._report, self, defaults=dict(count=0, what="connections", activity="enumerating saddle connections"))
+
+        self._progress = ProgressReporting(
+            self._report,
+            self,
+            defaults=dict(
+                count=0, what="connections", activity="enumerating saddle connections"
+            ),
+        )
 
     def _by_length(self):
         self.__connections = (

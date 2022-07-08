@@ -54,11 +54,13 @@ class Json(Reporter, Command):
         json
 
     """
+
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
         super().__init__()
 
         import sys
+
         self._stream = stream or sys.stdout
 
         self._data = {"surface": surface}
@@ -156,7 +158,9 @@ class Json(Reporter, Command):
             characteristics = obj._flatsurvey_characteristics()
 
         characteristics.setdefault("type", type(obj).__name__)
-        characteristics.setdefault("pickle", base64.encodebytes(dumps(obj)).decode('utf-8').strip())
+        characteristics.setdefault(
+            "pickle", base64.encodebytes(dumps(obj)).decode("utf-8").strip()
+        )
 
         return characteristics
 
@@ -204,5 +208,6 @@ class Json(Reporter, Command):
 
         """
         import json
+
         self._stream.write(json.dumps(self._data, default=self._serialize_to_pickle))
         self._stream.flush()

@@ -74,6 +74,7 @@ class Yaml(Reporter, Command):
         self._data = {"surface": surface}
 
         import sys
+
         self._stream = stream or sys.stdout
 
         from ruamel.yaml import YAML
@@ -108,7 +109,7 @@ class Yaml(Reporter, Command):
             result:
 
         """
-        return representer.represent_scalar('tag:yaml.org,2002:null', '')
+        return representer.represent_scalar("tag:yaml.org,2002:null", "")
 
     @classmethod
     def _represent_as_pickle(cls, representer, data):
@@ -258,6 +259,7 @@ class Yaml(Reporter, Command):
         r"""
         Wrapper for objects that should be stored as their pickles in the YAML output.
         """
+
         @copy_args_to_internal_fields
         def __init__(self, raw):
             pass

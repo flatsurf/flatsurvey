@@ -75,7 +75,10 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
     async def consume_cache(self):
@@ -149,7 +152,9 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.get(self, self._surface.cache_predicate(False, cache=self._cache))
+        results = self._cache.get(
+            self, self._surface.cache_predicate(False, cache=self._cache)
+        )
 
         iets = [result.result for result in results]
 
@@ -253,10 +258,12 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
             # Forget the surface structure of this IET
             import cppyy
+
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
 
             import pyintervalxt
+
             iet = pyintervalxt.IntervalExchangeTransformation(
                 list(construction[0]), list(construction[1])
             )

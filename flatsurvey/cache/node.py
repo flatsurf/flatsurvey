@@ -75,7 +75,9 @@ class Node:
 
                 if source == "PICKLE":
                     if isinstance(self._value, dict) and "pickle" in self._value:
-                        instance = self._cache.unpickle(self._value["pickle"], self._kind)
+                        instance = self._cache.unpickle(
+                            self._value["pickle"], self._kind
+                        )
                         return getattr(instance, name)
 
                 if source == "DEFAULTS":

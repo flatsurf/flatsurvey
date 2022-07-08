@@ -73,7 +73,10 @@ class CylinderPeriodicDirection(Goal, Command):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._directions = 0
@@ -138,7 +141,12 @@ class CylinderPeriodicDirection(Goal, Command):
             {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"cached": true, "value": true}]}
 
         """
-        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
+        results = self._cache.get(
+            self,
+            self._flow_decompositions._surface.cache_predicate(
+                False, cache=self._cache
+            ),
+        )
 
         verdict = self.reduce(results)
 

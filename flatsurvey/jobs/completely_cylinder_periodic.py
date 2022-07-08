@@ -75,7 +75,10 @@ class CompletelyCylinderPeriodic(Goal, Command):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._undetermined_directions = 0
@@ -168,7 +171,12 @@ class CompletelyCylinderPeriodic(Goal, Command):
             {"surface": {...}, "completely-cylinder-periodic": [{"cached": true, "value": false}]}
 
         """
-        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
+        results = self._cache.get(
+            self,
+            self._flow_decompositions._surface.cache_predicate(
+                False, cache=self._cache
+            ),
+        )
 
         verdict = self.reduce(results)
 

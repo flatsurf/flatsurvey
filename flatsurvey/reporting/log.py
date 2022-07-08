@@ -132,7 +132,17 @@ class Log(Reporter, Command):
             "reporters": [Log],
         }
 
-    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        what=None,
+        total=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Write a progress update to the log.
 

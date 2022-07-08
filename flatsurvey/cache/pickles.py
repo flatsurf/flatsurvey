@@ -50,7 +50,7 @@ class Pickles(Command):
         metavar="PATH",
         multiple=True,
         type=str,
-        help="local directory to search for pickles"
+        help="local directory to search for pickles",
     )
     def click(dir):
         providers = [DirectoryPickleProvider(d) for d in dir]
@@ -91,10 +91,12 @@ class PickleProvider:
         # - Pickles import sage.rings.number_field but SageMath cannot handle
         #   this so we get a circular import. See #10.
         import sage.all
+
         # - Pickles use cppyy.gbl.flatsurf but it's not available yet somehow. See #10.
         import pyflatsurf
 
         from pickle import loads
+
         try:
             return loads(raw)
         except Exception:
@@ -106,6 +108,7 @@ class StaticPickleProvider(PickleProvider):
         self._pickle = data
 
         from hashlib import sha256
+
         sha = sha256()
         sha.update(data)
         self._digest = sha.hexdigest()

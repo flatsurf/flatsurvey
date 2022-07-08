@@ -147,11 +147,11 @@ def survey(dry_run, load, debug, queue, verbose):
 
 # Register objects and goals as subcommans of "survey".
 for commands in [
-        flatsurvey.cache.commands,
-        flatsurvey.surfaces.generators,
-        flatsurvey.reporting.commands,
-        flatsurvey.jobs.commands,
-        ]:
+    flatsurvey.cache.commands,
+    flatsurvey.surfaces.generators,
+    flatsurvey.reporting.commands,
+    flatsurvey.jobs.commands,
+]:
     for command in commands:
         survey.add_command(command)
 
@@ -178,6 +178,7 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
 
     if verbose:
         import logging
+
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
@@ -201,18 +202,21 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
         import sys
         import asyncio
         from flatsurvey.scheduler import Scheduler
-        sys.exit(asyncio.new_event_loop().run_until_complete(
-            Scheduler(
-                surface_generators,
-                bindings=bindings,
-                goals=goals,
-                reporters=reporters,
-                queue=queue,
-                dry_run=dry_run,
-                load=load,
-                debug=debug,
-            ).start()
-        ))
+
+        sys.exit(
+            asyncio.new_event_loop().run_until_complete(
+                Scheduler(
+                    surface_generators,
+                    bindings=bindings,
+                    goals=goals,
+                    reporters=reporters,
+                    queue=queue,
+                    dry_run=dry_run,
+                    load=load,
+                    debug=debug,
+                ).start()
+            )
+        )
     except Exception:
         if debug:
             pdb.post_mortem()

@@ -43,6 +43,7 @@ class Reporter:
         True
 
     """
+
     def log(self, source, message, **kwargs):
         r"""
         Write ``message`` emitted by ``source`` to this log.
@@ -81,7 +82,17 @@ class Reporter:
         """
         pass
 
-    def progress(self, source, count=None, advance=None, what=None, total=None, message=None, parent=None, activity=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        what=None,
+        total=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Report that ``source`` has made some progress.
 
@@ -138,6 +149,7 @@ class Reporter:
 
         """
         from sage.all import ZZ
+
         if isinstance(value, type(ZZ())):
             return int(value)
 
@@ -199,6 +211,8 @@ class Reporter:
             return list(self._simplify(entry) for entry in value)
 
         if isinstance(value, dict):
-            return {self._simplify(key): self._simplify(v) for (key, v) in value.items()}
+            return {
+                self._simplify(key): self._simplify(v) for (key, v) in value.items()
+            }
 
         return self._simplify_primitive(value)

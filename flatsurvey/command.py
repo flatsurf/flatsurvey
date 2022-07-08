@@ -38,6 +38,7 @@ class Command:
         True
 
     """
+
     @classmethod
     def name(cls):
         r"""

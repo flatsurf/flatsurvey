@@ -90,7 +90,10 @@ class OrbitClosure(Goal, Command):
         cache_only=Goal.DEFAULT_CACHE_ONLY,
     ):
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._cylinders_without_increase = 0
@@ -105,6 +108,7 @@ class OrbitClosure(Goal, Command):
         self._upper_bound = pyflatsurf.flatsurf.Bound(0)
 
         from flatsurvey.reporting.report import ProgressReporting
+
         self._progress = ProgressReporting(self._report, self)
 
     async def consume_cache(self):
@@ -170,7 +174,9 @@ class OrbitClosure(Goal, Command):
 
         """
         with self._cache.defaults({"dense": None}):
-            results = self._cache.get(self, self._surface.cache_predicate(False, cache=self._cache))
+            results = self._cache.get(
+                self, self._surface.cache_predicate(False, cache=self._cache)
+            )
 
             verdict = self.reduce(results)
 
@@ -325,8 +331,7 @@ class OrbitClosure(Goal, Command):
         )
 
         assert (
-            self.dimension
-            <= self._surface.orbit_closure_dimension_upper_bound
+            self.dimension <= self._surface.orbit_closure_dimension_upper_bound
         ), "%s <= %s" % (
             self.dimension,
             self._surface.orbit_closure_dimension_upper_bound,
@@ -335,10 +340,7 @@ class OrbitClosure(Goal, Command):
         if dimension != self.dimension:
             self._cylinders_without_increase = 0
 
-        if (
-            self.dimension
-            == self._surface.orbit_closure_dimension_upper_bound
-        ):
+        if self.dimension == self._surface.orbit_closure_dimension_upper_bound:
             await self.report()
             return Goal.COMPLETED
 
@@ -371,11 +373,7 @@ class OrbitClosure(Goal, Command):
 
             return Goal.COMPLETED
 
-        if (
-            dimension != self.dimension
-            and not self._deformed
-            and self.dimension > 3
-        ):
+        if dimension != self.dimension and not self._deformed and self.dimension > 3:
             self._progress.progress(message="deforming surface")
 
             tangents = [
@@ -441,7 +439,9 @@ class OrbitClosure(Goal, Command):
 
                         raise Deformation.Restart(surface, old=self._surface)
                     except cppyy.gbl.std.invalid_argument:
-                        self._progress.progress(message="failed to deform surface, retrying")
+                        self._progress.progress(
+                            message="failed to deform surface, retrying"
+                        )
                         continue
 
                 scale *= 2
@@ -450,7 +450,10 @@ class OrbitClosure(Goal, Command):
                     self._progress.progress(message="failed to deform surface")
 
                     import logging
-                    logging.error("Cannot deform. No tangent vector can be used to deform.")
+
+                    logging.error(
+                        "Cannot deform. No tangent vector can be used to deform."
+                    )
                     break
 
         return not Goal.COMPLETED

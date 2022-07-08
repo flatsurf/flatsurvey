@@ -65,7 +65,10 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY
     ):
         super().__init__(
-            producers=[flow_decompositions], report=report, cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._results = []
@@ -137,7 +140,12 @@ class CylinderPeriodicAsymptotics(Goal, Command):
         if not self._cache_only:
             return
 
-        results = self._cache.get(self, self._flow_decompositions._surface.cache_predicate(False, cache=self._cache))
+        results = self._cache.get(
+            self,
+            self._flow_decompositions._surface.cache_predicate(
+                False, cache=self._cache
+            ),
+        )
 
         distributions = [node.distribution for node in results]
 
@@ -249,7 +257,10 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             undetermineds = len([r for r in distribution if r is None])
             if undetermineds:
                 import logging
-                logging.warning(f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders.")
+
+                logging.warning(
+                    f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
+                )
             distribution = sorted([r for r in distribution if r])
 
             await self._report.result(

@@ -92,7 +92,11 @@ from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
 
 
-@click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""", )
+@click.group(
+    chain=True,
+    cls=CommandWithGroups,
+    help=r"""Explore a surface.""",
+)
 @click.option("--debug", is_flag=True)
 @click.option(
     "--verbose",
@@ -143,6 +147,7 @@ def process(commands, debug, verbose):
 
     if verbose:
         import logging
+
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
@@ -182,7 +187,11 @@ class Worker:
     """
 
     @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters, ):
+    def __init__(
+        self,
+        goals,
+        reporters,
+    ):
         pass
 
     @classmethod

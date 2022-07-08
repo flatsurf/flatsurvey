@@ -75,6 +75,7 @@ class Consumer:
 
         if report is None:
             from flatsurvey.reporting import Report
+
             report = Report([])
 
         self._report = report

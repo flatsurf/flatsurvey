@@ -102,6 +102,7 @@ class Ngon(Surface):
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
             import logging
+
             logging.warning(
                 "Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?"
             )
@@ -544,15 +545,20 @@ class Ngon(Surface):
             return True
 
         if cache is not None:
-            surfaces = set([surface.pickle for surface in cache.get("surface", surface_predicate)])
+            surfaces = set(
+                [surface.pickle for surface in cache.get("surface", surface_predicate)]
+            )
 
             def predicate(result):
                 surface = result.surface
                 from flatsurvey.cache.node import ReferenceNode
+
                 if isinstance(surface, ReferenceNode):
                     return surface.pickle in surfaces
                 return surface_predicate(surface)
+
         else:
+
             def predicate(result):
                 return surface_predicate(result.surface)
 
@@ -832,10 +838,9 @@ def partitions(total, n):
 
 __test__ = {
     # Work around https://trac.sagemath.org/ticket/33951
-    'Ngon._lengths': Ngon._lengths.__doc__,
+    "Ngon._lengths": Ngon._lengths.__doc__,
     # Work around https://trac.sagemath.org/ticket/33951
-    'Ngon._polygon': Ngon.polygon.__doc__,
+    "Ngon._polygon": Ngon.polygon.__doc__,
     # Work around https://trac.sagemath.org/ticket/33951
-    'Ngon._surface': Ngon._surface.__doc__,
-
+    "Ngon._surface": Ngon._surface.__doc__,
 }

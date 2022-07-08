@@ -67,19 +67,24 @@ class Cache(Command):
         def load(file):
             try:
                 import orjson
+
                 return orjson.loads(file.read())
             except ModuleNotFoundError:
                 import json
+
                 return json.loads(file.read())
 
         self._cache = {}
 
         if report is None:
             from flatsurvey.reporting import Report
+
             report = Report(reporters=[])
 
         if jsons:
-            with report.progress(self, what="files", count=0, total=len(jsons), activity="loading cache"):
+            with report.progress(
+                self, what="files", count=0, total=len(jsons), activity="loading cache"
+            ):
                 for json in jsons:
                     name = json.name if hasattr(json, "name") else "JSON"
                     report.progress(self, message=f"parsing {name}")
@@ -88,6 +93,7 @@ class Cache(Command):
                         parsed = load(json)
                     except Exception:
                         import logging
+
                         logging.error(f"Failed to parse {name}")
 
                     for section, results in parsed.items():
@@ -121,6 +127,7 @@ class Cache(Command):
 
         for j in json:
             import os.path
+
             if os.path.isdir(j):
                 for root, dirs, files in os.walk(j):
                     for f in files:
@@ -129,9 +136,7 @@ class Cache(Command):
             else:
                 jsons.append(open(j, "rb"))
 
-        return {
-            "bindings": Cache.bindings(jsons)
-        }
+        return {"bindings": Cache.bindings(jsons)}
 
     def command(self):
         return ["local-cache"] + [f"--json={json.name}" for json in self._jsons]
@@ -197,7 +202,9 @@ class Cache(Command):
         queried, or all buckets if ``None``.
         """
         if self._pickles is None:
-            raise NotImplementedError("cannot unpickle since no pickle source has been passed to this cache")
+            raise NotImplementedError(
+                "cannot unpickle since no pickle source has been passed to this cache"
+            )
 
         return self._pickles.unpickle(pickle, kind)
 
@@ -389,6 +396,7 @@ class Cache(Command):
             section = section.name()
 
         if predicate is None:
+
             def predicate(node):
                 return True
 
@@ -413,7 +421,9 @@ class Cache(Command):
 
         if single:
             if len(results) > 1:
-                raise ValueError(f"expected at most one result but found {len(results)}")
+                raise ValueError(
+                    f"expected at most one result but found {len(results)}"
+                )
 
             if len(results) == 0:
                 raise KeyError
@@ -424,7 +434,9 @@ class Cache(Command):
 
     def _from_sha(self, section, sha):
         if section not in self._shas:
-            self._shas[section] = {entry["pickle"]: entry for entry in self._cache[section]}
+            self._shas[section] = {
+                entry["pickle"]: entry for entry in self._cache[section]
+            }
 
         return self.make(self._shas[section][sha], section)
 
@@ -439,7 +451,7 @@ class Cache(Command):
             return None
 
         if isinstance(value, list):
-            if name.endswith('s'):
+            if name.endswith("s"):
                 name = name[:-1]
             else:
                 name = None
@@ -447,10 +459,12 @@ class Cache(Command):
 
         if isinstance(value, str) and name in ["surface"]:
             from flatsurvey.cache.node import ReferenceNode
+
             return ReferenceNode(value, "surface", cache=self)
 
         if isinstance(value, (bool, int, str)):
             return value
 
         from flatsurvey.cache.node import Node
+
         return Node(value, cache=self, kind=kind)

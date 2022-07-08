@@ -76,13 +76,21 @@ class Scheduler:
 
         """
         try:
-            with self._report.progress(self, activity="Survey", count=0, what="tasks queued") as scheduling_progress:
+            with self._report.progress(
+                self, activity="Survey", count=0, what="tasks queued"
+            ) as scheduling_progress:
                 scheduling_progress(activity="running survey")
 
-                with scheduling_progress("executing tasks", activity="executing tasks", count=0, what="tasks running") as execution_progress:
+                with scheduling_progress(
+                    "executing tasks",
+                    activity="executing tasks",
+                    count=0,
+                    what="tasks running",
+                ) as execution_progress:
                     submitted_tasks = []
 
                     from collections import deque
+
                     queued_commands = deque()
 
                     surfaces = [iter(generator) for generator in self._generators]
@@ -90,6 +98,7 @@ class Scheduler:
                     try:
                         while True:
                             import asyncio
+
                             await asyncio.sleep(0)
 
                             message = []
@@ -98,9 +107,11 @@ class Scheduler:
                                 if queued_commands:
                                     # Attempt to run a task (unless the load is too high)
                                     import os
+
                                     load = os.getloadavg()[0]
 
                                     import psutil
+
                                     psutil.cpu_percent(None)
                                     cpu = psutil.cpu_percent(0.01)
 
@@ -110,23 +121,38 @@ class Scheduler:
                                         message.append(f"CPU {cpu:.1f}% too high")
                                     else:
                                         import asyncio
+
                                         surface, command = queued_commands.popleft()
-                                        submitted_tasks.append(asyncio.create_task(self._run(command, surface, execution_progress)))
+                                        submitted_tasks.append(
+                                            asyncio.create_task(
+                                                self._run(
+                                                    command, surface, execution_progress
+                                                )
+                                            )
+                                        )
 
                                         continue
 
-                                if len(queued_commands) >= self._queue_limit or (not surfaces and queued_commands):
+                                if len(queued_commands) >= self._queue_limit or (
+                                    not surfaces and queued_commands
+                                ):
                                     message.append("queue full")
                                     import asyncio
+
                                     await asyncio.sleep(1)
                                     continue
                             finally:
-                                scheduling_progress(count=len(queued_commands), message=" and ".join(message))
+                                scheduling_progress(
+                                    count=len(queued_commands),
+                                    message=" and ".join(message),
+                                )
 
                             if not surfaces and not queued_commands:
                                 break
 
-                            with scheduling_progress(source="rendering task", activity="rendering task") as rendering_progress:
+                            with scheduling_progress(
+                                source="rendering task", activity="rendering task"
+                            ) as rendering_progress:
                                 generator = surfaces[0]
                                 surfaces = surfaces[1:] + surfaces[:1]
 
@@ -136,9 +162,14 @@ class Scheduler:
                                     surfaces.pop()
                                     continue
 
-                                rendering_progress(message="determining goals", activity=f"rendering task for {surface}")
+                                rendering_progress(
+                                    message="determining goals",
+                                    activity=f"rendering task for {surface}",
+                                )
 
-                                command = await self._render_command(surface, scheduling_progress)
+                                command = await self._render_command(
+                                    surface, scheduling_progress
+                                )
 
                                 if command is None:
                                     continue
@@ -147,16 +178,24 @@ class Scheduler:
                                 scheduling_progress(count=len(queued_commands))
 
                     except KeyboardInterrupt:
-                        scheduling_progress(message="stopped scheduling of new jobs as requested", activity="waiting for pending tasks")
+                        scheduling_progress(
+                            message="stopped scheduling of new jobs as requested",
+                            activity="waiting for pending tasks",
+                        )
                     else:
-                        scheduling_progress(message="all jobs have been scheduled", activity="waiting for pending tasks")
+                        scheduling_progress(
+                            message="all jobs have been scheduled",
+                            activity="waiting for pending tasks",
+                        )
 
                     import asyncio
+
                     await asyncio.gather(*submitted_tasks)
 
         except Exception:
             if self._debug:
                 import pdb
+
                 pdb.post_mortem()
 
             raise
@@ -165,23 +204,32 @@ class Scheduler:
         shared = [binding for binding in self._bindings if binding.scope == "SHARED"]
 
         from flatsurvey.reporting.progress import Progress
-        reporters = [reporter for reporter in self._reporters if reporter.name() == Progress.name()]
+
+        reporters = [
+            reporter
+            for reporter in self._reporters
+            if reporter.name() == Progress.name()
+        ]
 
         from flatsurvey.pipeline.util import ListBindingSpec
+
         shared.append(ListBindingSpec("reporters", reporters))
 
         import pinject
         import flatsurvey.reporting.report
-        objects = pinject.new_object_graph(modules=[
-            flatsurvey.reporting.report
-            ], binding_specs=shared)
+
+        objects = pinject.new_object_graph(
+            modules=[flatsurvey.reporting.report], binding_specs=shared
+        )
 
         def share(binding):
             if binding.scope == "SHARED":
                 from flatsurvey.pipeline.util import provide
+
                 object = provide(binding.name, objects)
 
                 from flatsurvey.pipeline.util import FactoryBindingSpec
+
                 return FactoryBindingSpec(binding.name, lambda: object)
 
             return binding
@@ -189,6 +237,7 @@ class Scheduler:
         self._bindings = [share(binding) for binding in self._bindings]
 
         from flatsurvey.pipeline.util import provide
+
         return provide("report", objects)
 
     async def _render_command(self, surface, progress=None):
@@ -206,6 +255,7 @@ class Scheduler:
 
         """
         if progress is None:
+
             def progress(source, **kwargs):
                 return self._report.progress(source=source, **kwargs)
 
@@ -251,12 +301,15 @@ class Scheduler:
             def __init__(self, goals):
                 self._goals = goals
 
-        goals = [
-            goal
-            for goal in objects.provide(Goals)._goals
-        ]
+        goals = [goal for goal in objects.provide(Goals)._goals]
 
-        with progress("resolving goals from cached data", activity="resolvivg goals from cached data", total=len(goals), count=0, what="goals") as resolving_progress:
+        with progress(
+            "resolving goals from cached data",
+            activity="resolvivg goals from cached data",
+            total=len(goals),
+            count=0,
+            what="goals",
+        ) as resolving_progress:
             for goal in goals:
                 await goal.consume_cache()
                 resolving_progress(advance=1)
@@ -271,6 +324,7 @@ class Scheduler:
 
         for binding in self._bindings:
             from flatsurvey.pipeline.util import provide
+
             binding = provide(binding.name, objects)
             if binding in reporters:
                 continue
@@ -282,6 +336,7 @@ class Scheduler:
             # We already consumed the cache above. There is no need to have the
             # worker reread the cache.
             from flatsurvey.cache import Cache
+
             if binding.name() == Cache.name():
                 continue
 
@@ -304,6 +359,7 @@ class Scheduler:
         progress_queue = Queue()
 
         with self._report.progress(source=command, activity=name) as worker_progress:
+
             def work(command, progress_queue):
                 try:
                     from flatsurvey.worker.worker import worker
@@ -312,17 +368,27 @@ class Scheduler:
                     runner = CliRunner()
 
                     from flatsurvey.reporting.progress import RemoteProgress
+
                     RemoteProgress._progress_queue = progress_queue
 
-                    invocation = runner.invoke(worker, args=command, catch_exceptions=False)
+                    invocation = runner.invoke(
+                        worker, args=command, catch_exceptions=False
+                    )
                     output = invocation.output.strip()
                     if output:
                         from logging import warning
+
                         warning("Task produced output on stdout:\n" + output)
                 except Exception as e:
                     from logging import error
                     import traceback
-                    error("Process crashed: " + " ".join(command) + "\n" + traceback.format_exc())
+
+                    error(
+                        "Process crashed: "
+                        + " ".join(command)
+                        + "\n"
+                        + traceback.format_exc()
+                    )
                     progress_queue.put(("crash", str(e)))
                 else:
                     progress_queue.put(("exit",))
@@ -333,6 +399,7 @@ class Scheduler:
                 worker.start()
 
                 from asyncio import Future, get_event_loop
+
                 done = Future()
                 loop = get_event_loop()
 
@@ -347,14 +414,30 @@ class Scheduler:
                                 code = report[0]
                                 if code == "crash":
                                     code, message = report
-                                    progress(source=command, activity=name, message=f"process crashed: {message}")
+                                    progress(
+                                        source=command,
+                                        activity=name,
+                                        message=f"process crashed: {message}",
+                                    )
                                     break
                                 elif code == "exit":
                                     import time
+
                                     time.sleep(2)
                                     break
                                 elif code == "progress":
-                                    code, identifier, source, count, advance, total, what, message, parent, activity = report
+                                    (
+                                        code,
+                                        identifier,
+                                        source,
+                                        count,
+                                        advance,
+                                        total,
+                                        what,
+                                        message,
+                                        parent,
+                                        activity,
+                                    ) = report
 
                                     source = tuple(command) + (source,)
 
@@ -363,12 +446,26 @@ class Scheduler:
                                     else:
                                         parent = tuple(command) + (parent,)
 
-                                    tokens[identifier] = self._report.progress(source=source, count=count, advance=advance, total=total, what=what, message=message, parent=parent, activity=activity)
+                                    tokens[identifier] = self._report.progress(
+                                        source=source,
+                                        count=count,
+                                        advance=advance,
+                                        total=total,
+                                        what=what,
+                                        message=message,
+                                        parent=parent,
+                                        activity=activity,
+                                    )
                                 elif code == "enter_context":
                                     code, identifier = report
 
                                     entered.setdefault(identifier, [])
-                                    entered[identifier].append((tokens[identifier], tokens[identifier].__enter__()))
+                                    entered[identifier].append(
+                                        (
+                                            tokens[identifier],
+                                            tokens[identifier].__enter__(),
+                                        )
+                                    )
                                 elif code == "exit_context":
                                     code, identifier = report
 
@@ -384,12 +481,14 @@ class Scheduler:
                             # When anything goes wrong here, we stop to consume
                             # progress so this thread does not hang forever.
                             import traceback
+
                             traceback.print_exc()
                             break
 
                     loop.call_soon_threadsafe(done.set_result, None)
 
                 from threading import Thread
+
                 progress_consumer = Thread(target=consume_progress)
                 progress_consumer.start()
 
