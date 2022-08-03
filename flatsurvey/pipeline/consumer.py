@@ -29,6 +29,8 @@ Any goal of a computation implements the Consumer interface::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
+
 
 class Consumer:
     r"""
@@ -138,6 +140,7 @@ class Consumer:
 
         return self._resolved
 
+    @abstractmethod
     async def _consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and
@@ -146,7 +149,6 @@ class Consumer:
 
         Actual consumers must implement this method.
         """
-        raise NotImplementedError
 
     async def resolve(self):
         r"""

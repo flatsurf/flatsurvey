@@ -264,7 +264,7 @@ class BoshernitzanConjectureOrientations(Producer, Command):
         if n == 0:
             return vector(z.base_ring(), (1, 0))
         elif n < 0:
-            raise NotImplementedError
+            raise NotImplementedError("power with negative exponent not implemented yet")
         elif n % 2 == 0:
             return self._pow(mul(z, z), n // 2)
         else:

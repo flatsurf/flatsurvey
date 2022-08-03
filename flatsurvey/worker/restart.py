@@ -17,6 +17,7 @@
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
 from flatsurvey.pipeline.util import provide
 
 
@@ -55,15 +56,18 @@ class Restart(Exception):
         bindings = self.rewrite_bound(bound)
 
         if len(bindings) != 1:
-            raise NotImplementedError
+            raise NotImplementedError("cannot rewrite more than one binding yet")
 
         return bindings[0]
 
+    @abstractmethod
     def rewrite_goal(self, goal, objects):
-        raise NotImplementedError
+        pass
 
+    @abstractmethod
     def rewrite_reporter(self, reporter, objects):
-        raise NotImplementedError
+        pass
 
+    @abstractmethod
     def rewrite_bound(self, bound):
-        raise NotImplementedError
+        pass

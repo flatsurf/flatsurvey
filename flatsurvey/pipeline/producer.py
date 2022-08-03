@@ -27,7 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import time
+from abc import abstractmethod
 
 
 class Producer:
@@ -82,6 +82,7 @@ class Producer:
             -3
 
         """
+        import time
         start = time.perf_counter()
         if self._produce() == Producer.EXHAUSTED:
             self._exhausted = True
@@ -150,6 +151,7 @@ class Producer:
         """
         self._consumers.add(consumer)
 
+    @abstractmethod
     def _produce(self):
         r"""
         Produce something and return whether nothing new can be produced
@@ -158,4 +160,3 @@ class Producer:
         Actual producers must implement this method.
 
         """
-        raise NotImplementedError

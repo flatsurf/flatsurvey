@@ -27,6 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
 from sage.misc.cachefunc import cached_method
 
 
@@ -124,6 +125,7 @@ class Surface:
             S = S.erase_marked_points()
         return S
 
+    @abstractmethod
     def _surface(self):
         r"""
         Return a sage-flatsurf translation surface.
@@ -137,7 +139,6 @@ class Surface:
             TranslationSurface built from 6 polygons
 
         """
-        raise NotImplementedError
 
     def command(self):
         r"""

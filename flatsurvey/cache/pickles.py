@@ -84,7 +84,7 @@ class PickleProvider:
         if isinstance(data, bytes):
             return StaticPickleProvider(data)
 
-        raise NotImplementedError
+        raise NotImplementedError("PickleProvider.make() has not been implemented yet")
 
     def load(self, raw):
         # Work around some current problems in many of our pickles:
@@ -121,9 +121,9 @@ class StaticPickleProvider(PickleProvider):
 
 class DirectoryPickleProvider(PickleProvider):
     def __init__(self, path):
-        raise NotImplementedError
+        raise NotImplementedError("DirectoryPickleProvider not implemented yet")
 
 
 class GitHubPickleProvider(PickleProvider):
     def __init__(self, organization, project):
-        raise NotImplementedError
+        raise NotImplementedError("GitHubPickleProvider not implemented yet")

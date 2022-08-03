@@ -20,6 +20,8 @@ Utilities for subcommands that can be invoked from the command line.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
+
 
 class Command:
     r"""
@@ -57,6 +59,7 @@ class Command:
         """
         return cls.click.name
 
+    @abstractmethod
     def command(self):
         r"""
         Return the command that can be invoked to get this object in its
@@ -73,7 +76,6 @@ class Command:
             ['log']
 
         """
-        raise NotImplementedError(f"{type(self)} does not implement command()")
 
     def __repr__(self):
         r"""

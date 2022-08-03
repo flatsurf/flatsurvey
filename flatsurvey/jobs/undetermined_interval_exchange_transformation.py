@@ -302,4 +302,4 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
         This goal does not support this operation.
         """
-        raise NotImplementedError
+        raise NotImplementedError("undetermined-interval-exchange-transformation cannot summarize historic data yet")

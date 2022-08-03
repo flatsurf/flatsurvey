@@ -77,12 +77,12 @@ class Deformation(Surface):
             goal = objects.provide(goal)
             goals = goal.deform(deformation=self._deformation)["goals"]
             if len(goals) != 1:
-                raise NotImplementedError
+                raise NotImplementedError("cannot rewrite more than one goal yet")
             return goals[0]
 
         def rewrite_reporter(self, reporter, objects):
             reporter = objects.provide(reporter)
             reporters = reporter.deform(deformation=self._deformation)["reporters"]
             if len(reporters) != 1:
-                raise NotImplementedError
+                raise NotImplementedError("cannot rewrite more than one reporter yet")
             return reporters[0]

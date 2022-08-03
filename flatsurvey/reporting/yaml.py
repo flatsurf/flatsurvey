@@ -276,4 +276,4 @@ class Yaml(Reporter, Command):
 
         @classmethod
         def from_yaml(self, constructor, obj):
-            raise NotImplementedError
+            raise NotImplementedError("cannot read pickle from YAML yet")
