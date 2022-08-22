@@ -1,3 +1,9 @@
+r"""
+Entrypoint for the flatsurvey worker that is spawned to work on individual
+tasks of a survey.
+
+See :module:flatsurvey.worker.worker` for details.
+"""
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
