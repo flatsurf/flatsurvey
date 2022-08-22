@@ -1,3 +1,8 @@
+r"""
+Entrypoint to run surveys.
+
+See :module:`flatsurvey.survey` for details.
+"""
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
