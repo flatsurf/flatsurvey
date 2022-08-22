@@ -51,7 +51,6 @@ class Cache(Command):
 
     EXAMPLES::
 
-        >>> from flatsurvey.cache.pickles import Pickles
         >>> Cache(pickles=None, jsons=(), report=None)
         local-cache
 
@@ -133,20 +132,69 @@ class Cache(Command):
                     for f in files:
                         if f.endswith(".json"):
                             jsons.append(open(os.path.join(root, f), "rb"))
+            if hasattr(j, "fileno"):
+                import os
+                jsons.append(os.fdopen(os.dup(j.fileno())))
             else:
                 jsons.append(open(j, "rb"))
 
         return {"bindings": Cache.bindings(jsons)}
 
     def command(self):
+        r"""
+        Return command that can be used to create this cache from the command
+        line.
+
+        EXAMPLES::
+
+            >>> cache = Cache(pickles=None, jsons=(), report=None)
+            >>> cache.command()
+            ['local-cache']
+
+        """
         return ["local-cache"] + [f"--json={json.name}" for json in self._jsons]
 
     @classmethod
     def bindings(cls, jsons):
+        r"""
+        Return the dependency injection bindings provided by this class.
+
+        EXAMPLES::
+
+            >>> Cache.bindings([])
+            [cache binding to Cache]
+
+        """
         return [PartialBindingSpec(Cache, name="cache", scope="SHARED")(jsons=jsons)]
 
     def deform(self, deformation):
-        return {"bindings": Cache.bindings()}
+        r"""
+        Return how this cache transforms when a deformation of the studied
+        surface happens.
+
+        Returns the original :meth:`bindings` unchanged since the cache is not
+        affected by a deformation.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+
+            >>> cache = Cache(pickles=None, jsons=(), report=None)
+            >>> surface = Ngon((1, 1, 1))
+
+        We deform the surface by doubling every edge::
+
+            >>> from pyflatsurf import flatsurf
+            >>> T = surface.flat_triangulation()
+            >>> deformation = T + [T.fromHalfEdge(e.positive()) for e in T.edges()]
+
+        The cache does not change with this deformation::
+
+            >>> cache.deform(deformation)
+            {'bindings': [cache binding to Cache]}
+
+        """
+        return {"bindings": Cache.bindings(jsons=self._jsons)}
 
     def sources(self, *sources):
         r"""
@@ -165,7 +213,6 @@ class Cache(Command):
         these are not available, it will try to reconstruct the cached pickle
         (which can be very slow)::
 
-            >>> from flatsurvey.cache.pickles import Pickles
             >>> cache = Cache(pickles=None, jsons=(), report=None)
             >>> cache.sources()
             ('CACHE', 'DEFAULTS', 'PICKLE')
@@ -200,6 +247,32 @@ class Cache(Command):
 
         The storage might have multiple buckets. The bucket for ``kind`` is
         queried, or all buckets if ``None``.
+
+        EXAMPLES::
+
+            >>> cache = Cache(pickles=None, jsons=(), report=None)
+            >>> cache.unpickle("not-found", kind=None)
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: cannot unpickle since no pickle source has been passed to this cache
+
+        We create some demo data to actually be able to unpickle something::
+
+            >>> from hashlib import sha256
+            >>> from pickle import dumps
+
+            >>> sha = sha256()
+            >>> pickle = dumps("stored value")
+            >>> sha.update(pickle)
+            >>> digest = sha.hexdigest()
+
+        Load the cached pickle::
+
+            >>> from flatsurvey.cache.pickles import Pickles
+            >>> cache = Cache(pickles=Pickles([pickle]), report=None)
+            >>> cache.unpickle(digest, kind=None)
+            'stored value'
+
         """
         if self._pickles is None:
             raise NotImplementedError(
@@ -216,7 +289,6 @@ class Cache(Command):
 
         When no parameters are provided, the defaults are returned::
 
-            >>> from flatsurvey.cache.pickles import Pickles
             >>> from io import StringIO
             >>> cache = Cache(jsons=(StringIO('{"A": [{}]}'),), pickles=None, report=None)
             >>> cache.defaults()
