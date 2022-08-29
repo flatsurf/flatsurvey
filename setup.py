@@ -25,8 +25,9 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "flatsurvey=flatsurvey.__main__:survey",
-            "flatsurvey-worker=flatsurvey.worker.__main__:worker",
+            "flatsurvey=flatsurvey.survey:survey",
+            "flatsurvey-worker=flatsurvey.worker.worker:worker",
+            "flatsurvey-maintenance=flatsurvey.cache.maintenance:cli",
         ],
     },
     package_data={

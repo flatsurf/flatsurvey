@@ -60,7 +60,7 @@ def cli(debug, verbose):
 
 
 @cli.result_callback()
-def process(commansd, debug, verbose):
+def process(commands, debug, verbose):
     r"""
     Run the specified subcommands of ``cli``.
 
