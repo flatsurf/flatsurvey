@@ -1,3 +1,8 @@
+r"""
+Entrypoint to build caches and perform maintencance on cache files.
+
+See :module:`flatsurvey.cache.maintenance`.
+"""
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
