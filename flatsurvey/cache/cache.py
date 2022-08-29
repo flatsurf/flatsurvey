@@ -94,9 +94,9 @@ class Cache(Command):
                         import logging
 
                         logging.error(f"Failed to parse {name}")
-
-                    for section, results in parsed.items():
-                        self._cache.setdefault(section, []).extend(results)
+                    else:
+                        for section, results in parsed.items():
+                            self._cache.setdefault(section, []).extend(results)
 
                     report.progress(self, advance=1)
 
@@ -505,6 +505,21 @@ class Cache(Command):
         return results
 
     def _from_sha(self, section, sha):
+        r"""
+        Return the entry whose pickle SHA is ``sha`` from the ``section`` of
+        the cache.
+
+        EXAMPLES::
+
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=(StringIO('''{"surface": [{
+            ...   "pickle": "some-unique-pickle-hash"
+            ... }]}'''),), pickles=None, report=None)
+
+            >>> cache._from_sha("surface", "some-unique-pickle-hash")
+            {'pickle': 'some-unique-pickle-hash'}
+
+        """
         if section not in self._shas:
             self._shas[section] = {
                 entry["pickle"]: entry for entry in self._cache[section]
@@ -513,6 +528,30 @@ class Cache(Command):
         return self.make(self._shas[section][sha], section)
 
     def make(self, value, name, kind=None):
+        r"""
+        Return a cache node for ``name`` holding ``value`` of type ``kind``.
+
+        EXAMPLES::
+
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=(StringIO('''{"surface": [{
+            ...   "pickle": "some-unique-pickle-hash"
+            ... }]}'''),), pickles=None, report=None)
+
+            >>> cache.make({"dimension": 1337}, "OrbitClosure")
+            {'dimension': 1337}
+
+        Lists are unpacked into lists of cache nodes::
+
+            >>> cache.make([{"dimension": 13}, {"dimension": 37}], "OrbitClosures")
+            [{'dimension': 13}, {'dimension': 37}]
+
+        Some specific ``name``s references cache nodes of a different kind::
+
+            >>> cache.make("some-unique-pickle-hash", "surface")
+            {'pickle': 'some-unique-pickle-hash'}
+
+        """
         if kind is None:
             if isinstance(value, dict) and "type" in value:
                 kind = value["type"]
