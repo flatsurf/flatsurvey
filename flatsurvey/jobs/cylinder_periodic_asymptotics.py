@@ -6,7 +6,7 @@ directions such that all circumferences are shorter than some `R`.  For this,
 you should limit the length of saddle connections considered.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "cylinder-periodic-asymptotics", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker cylinder-periodic-asymptotics [OPTIONS]
     Determines the maximum circumference of all cylinders in each cylinder

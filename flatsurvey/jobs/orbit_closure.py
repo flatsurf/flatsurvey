@@ -8,7 +8,7 @@ investigated that would lead us to the full space.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "orbit-closure", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker orbit-closure [OPTIONS]
       Determines the GL₂(R) orbit closure of ``surface``.

@@ -2,7 +2,7 @@ r"""
 The saddle connections on a translation surface.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "saddle-connections", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker saddle-connections [OPTIONS]
       Saddle connections on the surface.

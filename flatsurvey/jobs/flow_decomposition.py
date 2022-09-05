@@ -10,7 +10,7 @@ However, you can still change some of the behaviour of this module through the
 number of Zorich induction steps:
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "flow-decompositions", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker flow-decompositions [OPTIONS]
       Turns directions coming from saddle connections into flow decompositions.

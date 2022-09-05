@@ -4,7 +4,7 @@ Translation surfaces coming from unfoldings of n-gons
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "ngon", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: worker ngon [OPTIONS]
       Unfolding of an n-gon with prescribed angles.
@@ -16,7 +16,7 @@ EXAMPLES::
                                      for triangles, exact-real otherwise]
       --help                         Show this message and exit.
 
-    >>> from flatsurvey.__main__ import survey
+    >>> from flatsurvey.survey import survey
     >>> invoke(survey, "ngons", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: survey ngons [OPTIONS]
       The translation surfaces that come from unfolding n-gons.

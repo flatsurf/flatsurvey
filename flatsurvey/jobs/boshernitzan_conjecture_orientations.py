@@ -4,7 +4,7 @@ Directions in $S^1(2d')$.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "boshernitzan-conjecture-orientations", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker boshernitzan-conjecture-orientations [OPTIONS]
       Produces directions in $S^1(2d')$, i.e., corresponding to certain roots of unity, as used in Conjecture 2.2 of Boshernitzan's *Billiards and Rational Periodic Directions in Polygons*.

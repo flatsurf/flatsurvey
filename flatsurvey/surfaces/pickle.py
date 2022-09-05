@@ -6,7 +6,7 @@ This is used internally to pass surfaces from the survey invocation to the worke
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "pickle", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker pickle [OPTIONS]
       A base64 encoded pickle.

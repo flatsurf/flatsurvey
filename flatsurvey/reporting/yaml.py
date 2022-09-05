@@ -4,7 +4,7 @@ Writes computation results as YAML files.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "yaml", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker yaml [OPTIONS]
       Writes results to a YAML file.

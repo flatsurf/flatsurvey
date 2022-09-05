@@ -4,7 +4,7 @@ Reports progress of hierarchical tasks.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "progress", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker progress [OPTIONS]
       Reports progress on the command line.

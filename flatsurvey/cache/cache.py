@@ -9,7 +9,7 @@ supported a GraphQL backend but it turned out to be impractical.)
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "local-cache", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker local-cache [OPTIONS]
       A cache of previous results stored in local JSON files.

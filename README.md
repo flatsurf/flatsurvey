@@ -1,6 +1,6 @@
 Automation scripts for the [flatsurf](https://github.com/flatsurf) stack to survey large sets of objects.
 
-To perform a full survey, use [`flatsurvey`](./flatsurvey/__main__.py). To investigate a single object, run [`flatsurvey-worker`](./flatsurvey/worker/__main__.py).
+To perform a full survey, use [`flatsurvey`](./flatsurvey/survey.py). To investigate a single object, run [`flatsurvey-worker`](./flatsurvey/worker/worker.py).
 
 For example, here is a typical survey that collects data about triangles, quadrilaterals, and pentagons:
 

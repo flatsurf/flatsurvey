@@ -2,7 +2,7 @@ r"""
 The saddle connections on a translation surface.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "saddle-connection-orientations", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker saddle-connection-orientations [OPTIONS]
       Orientations of saddle connections on the surface, i.e., the vectors of

@@ -4,7 +4,7 @@ Writes progress and results as an unstructured log file.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "log", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker log [OPTIONS]
       Writes progress and results as an unstructured log file.

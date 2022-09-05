@@ -6,7 +6,7 @@ is such a direction but we can never say "no" _all_ directions have a
 non-cylinder.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "cylinder-periodic-direction", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker cylinder-periodic-direction [OPTIONS]
       Determines whether there is a direction for which the surface decomposes

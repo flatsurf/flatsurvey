@@ -4,7 +4,7 @@ Writes results as JSON files.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "json", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker json [OPTIONS]
       Writes results in JSON format.
