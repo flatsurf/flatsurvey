@@ -63,15 +63,6 @@ class Cache(Command):
         report,
         jsons=(),
     ):
-        def load(file):
-            try:
-                import orjson
-
-                return orjson.loads(file.read())
-            except ModuleNotFoundError:
-                import json
-
-                return json.loads(file.read())
 
         self._cache = {}
 
@@ -89,7 +80,7 @@ class Cache(Command):
                     report.progress(self, message=f"parsing {name}")
 
                     try:
-                        parsed = load(json)
+                        parsed = Cache.load(json)
                     except Exception:
                         import logging
 
@@ -105,6 +96,21 @@ class Cache(Command):
         self._sources = [("CACHE", "DEFAULTS", "PICKLE")]
         self._defaults = [{}]
         self._shas = {}
+
+    @staticmethod
+    def load(file):
+        r"""
+        Load a JSON file with orjson if installed, otherwise with Python's
+        standard json.
+        """
+        try:
+            import orjson
+
+            return orjson.loads(file.read())
+        except ModuleNotFoundError:
+            import json
+
+            return json.loads(file.read())
 
     @classmethod
     @click.command(
@@ -303,7 +309,7 @@ class Cache(Command):
         ::
 
             >>> with cache.defaults({"type": "B"}):
-            ...     cache.get("A")[0].type
+            ...     cache.get("A", single=True).type
             'B'
 
         """

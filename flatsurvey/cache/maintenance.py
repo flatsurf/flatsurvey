@@ -13,6 +13,9 @@ TESTS::
       --debug
       --help         Show this message and exit.
       -v, --verbose  Enable verbose message, repeat for debug message.
+    <BLANKLINE>
+    Commands:
+      split
 
 """
 # *********************************************************************
@@ -35,8 +38,12 @@ TESTS::
 # *********************************************************************
 
 import click
+import pinject
 
 from flatsurvey.ui.group import CommandWithGroups
+from flatsurvey.cache.split import Split
+from flatsurvey.pipeline.util import ListBindingSpec
+import flatsurvey.reporting.log
 
 
 @click.group(
@@ -57,6 +64,9 @@ def cli(debug, verbose):
 
     Specific tasks are registered as subcommands.
     """
+
+
+cli.add_command(Split.click)
 
 
 @cli.result_callback()
@@ -80,4 +90,56 @@ def process(commands, debug, verbose):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
-    raise NotImplementedError
+    try:
+        objects = Maintenance.make_object_graph(commands)
+
+        import asyncio
+        asyncio.run(objects.provide(Maintenance).start())
+    except Exception:
+        if debug:
+            pdb.post_mortem()
+        raise
+
+
+class Maintenance:
+    """
+    TODO: Document me. This is essentially a clone of Worker.
+    """
+    @classmethod
+    def make_object_graph(cls, commands):
+        bindings = []
+        goals = []
+        reporters = []
+
+        for command in commands:
+            bindings.extend(command.get("bindings", []))
+            goals.extend(command.get("goals", []))
+            reporters.extend(command.get("reporters", []))
+
+        bindings.append(ListBindingSpec("goals", goals))
+        bindings.append(
+            ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log])
+        )
+
+        return pinject.new_object_graph(
+            modules=[
+                flatsurvey.reporting,
+                flatsurvey.maintenance
+            ],
+            binding_specs=bindings,
+        )
+
+    async def start(self):
+        r"""
+        Run until all our goals are resolved.
+        """
+        try:
+            for goal in self._goals:
+                await goal.consume_cache()
+            for goal in self._goals:
+                await goal.resolve()
+        finally:
+            for goal in self._goals:
+                await goal.report()
+        for reporter in self._reporters:
+            reporter.flush()
