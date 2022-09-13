@@ -1,5 +1,5 @@
 r"""
-TODO
+Splits cache files into smaller files.
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -33,14 +33,14 @@ class Split(Goal, Command):
     Split ``json`` into smaller JSON files of size roughly ``limit``.
     """
     @copy_args_to_internal_fields
-    def __init__(self, json, limit):
-        pass
+    def __init__(self, json, limit, report):
+        super().__init__(producers=[], report=report, cache=None)
 
     @classmethod
     @click.command(name="split")
     @click.argument('json', nargs=1, type=click.Path(exists=True))
     @click.option('--limit', type=str, help="chunk size limit", default="32MB")
-    def click(cls, json, limit):
+    def click(json, limit):
         return {
             "goals": [Split],
             "bindings":  [

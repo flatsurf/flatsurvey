@@ -74,3 +74,6 @@ class Goal(Consumer):
             self._cache = Cache(pickles=None, report=None)
 
         super().__init__(producers=producers, report=report)
+
+    async def consume_cache(self):
+        pass

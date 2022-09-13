@@ -42,7 +42,8 @@ import pinject
 
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.cache.split import Split
-from flatsurvey.pipeline.util import ListBindingSpec
+from flatsurvey.cache.join import Join
+from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
 import flatsurvey.reporting.log
 
 
@@ -67,6 +68,7 @@ def cli(debug, verbose):
 
 
 cli.add_command(Split.click)
+cli.add_command(Join.click)
 
 
 @cli.result_callback()
@@ -105,6 +107,9 @@ class Maintenance:
     """
     TODO: Document me. This is essentially a clone of Worker.
     """
+    @pinject.copy_args_to_internal_fields
+    def __init__(self, goals, reporters): pass
+
     @classmethod
     def make_object_graph(cls, commands):
         bindings = []
@@ -120,13 +125,17 @@ class Maintenance:
         bindings.append(
             ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log])
         )
+        bindings.append(
+            FactoryBindingSpec("surface", lambda: None)
+        )
 
         return pinject.new_object_graph(
             modules=[
                 flatsurvey.reporting,
-                flatsurvey.maintenance
+                flatsurvey.cache.maintenance
             ],
             binding_specs=bindings,
+            allow_injecting_none=True,
         )
 
     async def start(self):
