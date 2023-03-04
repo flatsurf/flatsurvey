@@ -60,6 +60,8 @@ class Join(Goal, Command):
             with open(json) as input:
                 parsed = flatsurvey.cache.cache.Cache.load(input)
                 for key in parsed:
+                    if not isinstance(parsed[key], list):
+                        raise NotImplementedError(f"cannot join entries for '{key}' because it's not list")
                     aggregate[key].extend(parsed[key])
 
         for key in aggregate:
