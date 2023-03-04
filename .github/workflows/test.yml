@@ -31,3 +31,24 @@ jobs:
           # Make sure that initialization message does not show up in doctest output.
           python -c 'import cppyy'
           pytest -n auto -x --doctest-modules flatsurvey
+      - name: run survey
+        shell: bash -l {0}
+        run: |
+          flatsurvey orbit-closure ngons --vertices 3 --limit 7 json
+      - name: build cache database from previous run
+        shell: bash -l {0}
+        run: |
+          # Shrink cache files by externalizing the referenced surfaces.
+          mkdir -p pickles
+          flatsurvey-cache externalize-pickles --inplace --pickles pickles/ *.json
+
+          # Creata single cache file from the runs.
+          flatsurvey-cache join *.json
+
+          cat orbit-closure.json
+      - name: run survey from cache
+        shell: bash -l {0}
+        run: |
+          # TODO: Add doctest that verifies that --cache-only exits 1 if the queries cannot be answered from the cache
+          flatsurvey orbit-closure ngons --vertices 3 --limit 7 local-cache --json orbit-closure.json
+          flatsurvey orbit-closure ngons --vertices 3 --limit 7 local-cache --json orbit-closure.json --cache-only
