@@ -44,6 +44,7 @@ import pinject
 from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.cache.split import Split
 from flatsurvey.cache.join import Join
+from flatsurvey.cache.externalize_pickles import ExternalizePickles
 from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
 import flatsurvey.reporting.log
 
@@ -70,6 +71,7 @@ def cli(debug, verbose):
 
 cli.add_command(Split.click)
 cli.add_command(Join.click)
+cli.add_command(ExternalizePickles.click)
 
 
 @cli.result_callback()

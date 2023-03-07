@@ -49,7 +49,7 @@ class Split(Goal, Command):
             ]
         }
 
-    def run(self):
+    async def resolve(self):
         from humanfriendly import parse_size
         limit = parse_size(self._limit)
 
