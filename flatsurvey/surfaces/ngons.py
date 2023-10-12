@@ -533,7 +533,7 @@ class Ngon(Surface):
                 lengths = tuple(length * 2 for length in lengths)
             return lengths
 
-        raise Exception("giving up on", E)
+        raise Exception(f"giving up on {E}")
 
     def cache_predicate(self, exact, cache=None):
         def surface_predicate(surface):
