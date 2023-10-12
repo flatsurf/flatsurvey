@@ -25,7 +25,7 @@ import inspect
 import pinject.bindings
 
 
-def ListBindingSpec(name, sequence):
+def ListBindingSpec(name, sequence, scope=None):
     r"""
     Return a BindingSpec that provides the instances of the types in
     ``sequence`` as a list.
@@ -58,11 +58,12 @@ def ListBindingSpec(name, sequence):
         {f"provide_{name}": provider, "__repr__": lambda self: f"{name}->{sequence}"},
     )()
     binding.name = name
+    binding.scope = scope or "DEFAULT"
 
     return binding
 
 
-def PartialBindingSpec(prototype, name=None):
+def PartialBindingSpec(prototype, name=None, scope=None):
     r"""
     A decorator to wrap the callable ``prototype`` and creates a BindingSpec to
     provide it with some of its arguments bound.
@@ -114,16 +115,17 @@ def PartialBindingSpec(prototype, name=None):
             (pinject.BindingSpec,),
             {
                 f"provide_{name}": provider,
-                "__repr__": lambda self: f"{name}->{prototype.__name__}",
+                "__repr__": lambda self: f"{name} binding to {prototype.__name__}",
             },
         )()
         binding.name = name
+        binding.scope = scope or "DEFAULT"
         return binding
 
     return wrap
 
 
-def FactoryBindingSpec(name, prototype):
+def FactoryBindingSpec(name, prototype, scope=None):
     r"""
     Return a BindingSpec that calls ``prototype`` as a provider for ``name``.
 
@@ -152,6 +154,7 @@ def FactoryBindingSpec(name, prototype):
         {f"provide_{name}": provider, "__repr__": lambda self: f"{name}->{prototype}"},
     )()
     binding.name = name
+    binding.scope = scope or "DEFAULT"
 
     return binding
 

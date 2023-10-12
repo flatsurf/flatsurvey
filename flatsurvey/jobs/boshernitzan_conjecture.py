@@ -4,7 +4,7 @@ Tests a conjecture by Boshernitzan in triangles.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "boshernitzan-conjecture", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker boshernitzan-conjecture [OPTIONS]
       Determines whether Conjecture 2.2 in Boshernitzan's *Billiards and Rational
@@ -40,9 +40,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class BoshernitzanConjecture(Goal):
+class BoshernitzanConjecture(Goal, Command):
     r"""
     Determines whether Conjecture 2.2 in Boshernitzan's *Billiards and Rational
     Periodic Directions in Polygons* holds for this surface.
@@ -50,12 +51,10 @@ class BoshernitzanConjecture(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
         >>> surface = Ngon((1, 1, 1))
         >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-        >>> BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+        >>> BoshernitzanConjecture(surface=surface, report=None, flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
         boshernitzan-conjecture
 
     """
@@ -80,13 +79,29 @@ class BoshernitzanConjecture(Goal):
             )
 
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._verdict = {
             assertion: None
             for assertion in self._saddle_connection_orientations.assertions
         }
+
+        from flatsurvey.reporting.report import ProgressReporting
+
+        self._progress = ProgressReporting(
+            self._report,
+            self,
+            defaults=dict(
+                count=0,
+                total=len(self._verdict),
+                what="conjectures",
+                activity="verifying conjectures",
+            ),
+        )
 
     async def consume_cache(self):
         r"""
@@ -95,45 +110,64 @@ class BoshernitzanConjecture(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
-            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+            >>> make_goal = lambda cache: BoshernitzanConjecture(surface=surface, report=None, flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=cache)
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
+            >>> goal = make_goal(None)
+
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             False
 
-        We mock some artificial results from previous runs and consume that
-        artificial cache::
+        We resolve from cached results::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"data": {"assertion": "ignored", "result": None}}
-            ...    yield {"data": {"assertion": "ignored", "result": True}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> goal = make_goal(Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "assertion": "b",
+            ...   "result": false
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "assertion": "c",
+            ...   "result": false
+            ... }]}''')], pickles=None, report=None))
+
+            >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
         """
         for assertion in self._verdict:
-            results = self._cache.results(
-                surface=self._surface,
-                job=self,
-                filter=f'assertion: {{ equalTo: "{assertion}" }}',
-            )
 
-            verdict = await results.reduce()
+            surface_predicate = self._surface.cache_predicate(False, cache=self._cache)
+
+            def predicate(result):
+                if not surface_predicate(result):
+                    return False
+
+                if result.assertion != assertion:
+                    return False
+
+                return True
+
+            results = self._cache.get(self, predicate)
+
+            verdict = self.reduce(results)
 
             if verdict is not None or self._cache_only:
                 self._verdict[assertion] = verdict
@@ -177,32 +211,76 @@ class BoshernitzanConjecture(Goal):
 
         EXAMPLES::
 
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': None}])
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': False}])
-            False
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': None}, {'assertion': 'ignored', 'result': True}])
+            >>> from flatsurvey.cache import Cache
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }]}''')], pickles=None, report=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture")) is None
             True
-            >>> BoshernitzanConjecture.reduce([{'assertion': 'ignored', 'result': False}, {'assertion': 'ignored', 'result': True}])
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": false
+            ... }]}''')], pickles=None, report=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
+            False
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": null
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": true
+            ... }]}''')], pickles=None, report=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
+            True
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"boshernitzan-conjecture": [{
+            ...   "assertion": "a",
+            ...   "result": false
+            ... }, {
+            ...   "assertion": "a",
+            ...   "result": true
+            ... }]}''')], pickles=None, report=None)
+            >>> BoshernitzanConjecture.reduce(cache.get("boshernitzan-conjecture"))
             Traceback (most recent call last):
             ...
-            ValueError: historic results are contradictory
+            ValueError: historic results are contradictory: ...
 
         """
-        if not results:
+        if len(results) == 0:
             return None
 
-        assertion = results[0]["assertion"]
-        if any(result["assertion"] != assertion for result in results):
+        assertions = set([result.assertion for result in results])
+        if len(assertions) != 1:
             raise ValueError(
-                "cannot consolidate results relating to different conjectures"
+                f"cannot consolidate results relating to different conjectures: {assertions}"
             )
 
-        results = [result["result"] for result in results]
+        results = [result.result for result in results]
 
         if any(result is True for result in results) and any(
             result is False for result in results
         ):
-            raise ValueError("historic results are contradictory")
+            raise ValueError(f"historic results are contradictory: {results}")
 
         if any(result is False for result in results):
             return False
@@ -220,12 +298,11 @@ class BoshernitzanConjecture(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
             >>> surface = Ngon((1, 1, 1))
             >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
             >>> log = Log(surface=surface)
-            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=Report([])), saddle_connection_orientations=orientations, cache=Cache())
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
 
         We investigate all directions and conclude that Boshernitzan's
         conjecture holds for this triangle (note that we do not check the
@@ -243,6 +320,28 @@ class BoshernitzanConjecture(Goal):
             >>> asyncio.run(goal.report())
             [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: b)
             [Ngon([1, 1, 1])] [BoshernitzanConjecture] True (assertion: c)
+
+        TESTS:
+
+        Test that correct JSON output is produced::
+
+            >>> from flatsurvey.reporting import Json
+            >>> surface = Ngon((1, 1, 1))
+            >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
+            >>> log = Json(surface=surface)
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
+
+            >>> import asyncio
+            >>> asyncio.run(orientations.produce())
+            True
+            >>> asyncio.run(orientations.produce())
+            True
+            >>> asyncio.run(orientations.produce())
+            False
+
+            >>> asyncio.run(goal.report())
+            >>> log.flush()
+            {"surface": {...}, "boshernitzan-conjecture": [{"assertion": "b", "value": true}, {"assertion": "c", "value": true}]}
 
         """
         if decomposition.undeterminedComponents():
@@ -281,6 +380,11 @@ class BoshernitzanConjecture(Goal):
         return not Goal.COMPLETED
 
     async def _report_assertion(self, assertion, result, **kwargs):
+        self._progress.progress(
+            advance=1,
+            message=f"({assertion}) does not hold" if result is False else None,
+        )
+
         await self._report.result(
             self,
             result,
@@ -289,8 +393,29 @@ class BoshernitzanConjecture(Goal):
         )
 
     async def report(self, result=None, **kwargs):
+        r"""
+        Report a ``result`` for the current surface.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Json, Report
+            >>> from flatsurvey.jobs import BoshernitzanConjecture, BoshernitzanConjectureOrientations, FlowDecompositions
+            >>> surface = Ngon((1, 1, 1))
+            >>> orientations = BoshernitzanConjectureOrientations(surface=surface)
+            >>> log = Json(surface=surface)
+            >>> goal = BoshernitzanConjecture(surface=surface, report=Report([log]), flow_decompositions=FlowDecompositions(surface=surface, saddle_connection_orientations=orientations, report=None), saddle_connection_orientations=orientations, cache=None)
+
+        Report that no conclusion could be reached::
+
+            >>> import asyncio
+            >>> asyncio.run(goal.report())
+            >>> log.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}}
+
+        """
         if result is not None:
-            raise NotImplementedError
+            raise NotImplementedError("boshernitzan-conjecture has no default reporting yet")
 
         for assertion in self._verdict:
             if (

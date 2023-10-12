@@ -27,11 +27,11 @@ line interface that is used to generate them.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from .deformation import Deformation
-from .ngons import Ngon, Ngons
-from .pickle import pickle
-from .surface import Surface
-from .thurston_veech import ThurstonVeech, ThurstonVeechs
+from flatsurvey.surfaces.deformation import Deformation
+from flatsurvey.surfaces.ngons import Ngon, Ngons
+from flatsurvey.surfaces.pickle import pickle
+from flatsurvey.surfaces.surface import Surface
+from flatsurvey.surfaces.thurston_veech import ThurstonVeech, ThurstonVeechs
 
 generators = [Ngons.click, ThurstonVeechs.click]
 

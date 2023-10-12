@@ -4,7 +4,7 @@ Writes progress and results as an unstructured log file.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "log", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker log [OPTIONS]
       Writes progress and results as an unstructured log file.
@@ -39,9 +39,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class Log(Reporter):
+class Log(Reporter, Command):
     r"""
     Writes progress and results as an unstructured log file.
 
@@ -131,7 +132,17 @@ class Log(Reporter):
             "reporters": [Log],
         }
 
-    def progress(self, source, unit, count, total=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        what=None,
+        total=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Write a progress update to the log.
 
@@ -141,13 +152,25 @@ class Log(Reporter):
             >>> surface = Ngon((1, 1, 1))
 
             >>> log = Log(surface)
-            >>> log.progress(source=surface, unit='progress', count=10, total=100)
+            >>> log.progress(source=surface, what='progress', count=10, total=100)
             [Ngon([1, 1, 1])] [Ngon] progress: 10/100
-            >>> log.progress(source=surface, unit='dimension', count=10)
+            >>> log.progress(source=surface, what='dimension', count=10)
             [Ngon([1, 1, 1])] [Ngon] dimension: 10/?
 
         """
-        self.log(source, f"{unit}: {count}/{total or '?'}")
+        if advance is not None:
+            return
+
+        if count is not None and what is not None:
+            line = f"{what}: {count}/{total or '?'}"
+            if message:
+                line = f"{line} {message}"
+        elif message is not None:
+            line = message
+        else:
+            return
+
+        self.log(source, line)
 
     async def result(self, source, result, **kwargs):
         r"""
@@ -175,7 +198,7 @@ class Log(Reporter):
         self.log(source, result, **kwargs)
 
     def command(self):
-        command = ["log"]
+        command = [self.name()]
         import sys
 
         if self._stream is not sys.stdout:

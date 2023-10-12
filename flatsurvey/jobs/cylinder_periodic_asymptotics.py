@@ -6,7 +6,7 @@ directions such that all circumferences are shorter than some `R`.  For this,
 you should limit the length of saddle connections considered.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "cylinder-periodic-asymptotics", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker cylinder-periodic-asymptotics [OPTIONS]
     Determines the maximum circumference of all cylinders in each cylinder
@@ -41,9 +41,10 @@ from pinject import copy_args_to_internal_fields
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class CylinderPeriodicAsymptotics(Goal):
+class CylinderPeriodicAsymptotics(Goal, Command):
     r"""
     Determines the maximum circumference of all cylinders in each cylinder
     periodic direction.
@@ -51,12 +52,10 @@ class CylinderPeriodicAsymptotics(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting.report import Report
-        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CylinderPeriodicAsymptotics(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+        >>> CylinderPeriodicAsymptotics(report=None, flow_decompositions=flow_decompositions, cache=None)
         cylinder-periodic-asymptotics
 
     """
@@ -66,7 +65,10 @@ class CylinderPeriodicAsymptotics(Goal):
         self, report, flow_decompositions, cache, cache_only=Goal.DEFAULT_CACHE_ONLY
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._results = []
@@ -80,27 +82,39 @@ class CylinderPeriodicAsymptotics(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.cache import Cache
-            >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.reporting import Report
+            >>> from flatsurvey.reporting import Log
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> cache = Cache()
-            >>> log = Log(surface)
-            >>> goal = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
 
         We mock some artificial results from previous runs and consume that
         artificial cache::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"cylinder-periodic-asymptotics": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "distribution": [1, 2]
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "distribution": [1]
+            ... }]}''')], pickles=None, report=None)
+            >>> goal = CylinderPeriodicAsymptotics(report=Report([Log(surface)]), flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+
             >>> async def results(self):
             ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1, 2]}}
             ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"distribution": [1]}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (cached) (distributions: [[1, 2], [1]])
 
         The goal is marked as completed, since we had set ``cache_only`` above::
@@ -108,18 +122,32 @@ class CylinderPeriodicAsymptotics(Goal):
             >>> goal.resolved
             True
 
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface)])
+            >>> goal = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=cache, cache_only=True)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-asymptotics --cache-only": [{"distributions": [[1, 2], [1]], "cached": true, "value": null}]}
+
         """
         if not self._cache_only:
             return
 
-        results = self._cache.results(
-            surface=self._flow_decompositions._surface, job=self
+        results = self._cache.get(
+            self,
+            self._flow_decompositions._surface.cache_predicate(
+                False, cache=self._cache
+            ),
         )
 
-        distributions = [
-            [d() if callable(d) else d for d in node["distribution"]]
-            async for node in results.nodes()
-        ]
+        distributions = [node.distribution for node in results]
 
         # We do not merge the distributions into a single distribution since
         # they might be of unequal length and therefore the result distribution
@@ -164,12 +192,11 @@ class CylinderPeriodicAsymptotics(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+            >>> ccp = CylinderPeriodicAsymptotics(report=Report([log]), flow_decompositions=flow_decompositions, cache=None)
 
         Investigate in a single direction::
 
@@ -184,13 +211,31 @@ class CylinderPeriodicAsymptotics(Goal):
             >>> asyncio.run(report)
             [Ngon([1, 1, 1])] [CylinderPeriodicAsymptotics] ¯\_(ツ)_/¯ (distribution: [6.92820323027551])
 
+        TESTS:
+
+        Verify that the JSON output works::
+
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface)])
+            >>> ccp = CylinderPeriodicAsymptotics(report=report, flow_decompositions=flow_decompositions, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(ccp.report())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-asymptotics": [{"distribution": [6.92820323027551], "value": null}]}
+
         """
         if decomposition.minimalComponents():
             self._results.append(False)
         elif decomposition.undeterminedComponents():
             self._results.append(None)
         else:
-            # TODO: Is area() twice the area? See #8.
+            # Is area() twice the area? See #8.
             def float_height(component):
                 height = float(component.height())
                 vertical = component.vertical().vertical()
@@ -211,7 +256,9 @@ class CylinderPeriodicAsymptotics(Goal):
 
             undetermineds = len([r for r in distribution if r is None])
             if undetermineds:
-                print(
+                import logging
+
+                logging.warning(
                     f"warning: {undetermineds} undetermined components most likely minimal but might be very long cylinders."
                 )
             distribution = sorted([r for r in distribution if r])

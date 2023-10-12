@@ -1,10 +1,10 @@
 r"""
-Writes computation results as machine readable YAML files.
+Writes computation results as YAML files.
 
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "yaml", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker yaml [OPTIONS]
       Writes results to a YAML file.
@@ -35,31 +35,13 @@ EXAMPLES::
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.pipeline.util import FactoryBindingSpec
 from flatsurvey.ui.group import GroupedCommand
+from flatsurvey.command import Command
 
 
-class Pickle:
-    def __init__(self, raw):
-        self._raw = raw
-
-    @classmethod
-    def to_yaml(cls, representer, data):
-        import base64
-
-        return representer.represent_scalar(
-            "tag:yaml.org,2002:binary",
-            base64.encodebytes(data._raw).decode("ascii"),
-            style="",
-        )
-
-    @classmethod
-    def from_yaml(self, constructor, obj):
-        raise NotImplementedError
-
-
-class Yaml(Reporter):
+class Yaml(Reporter, Command):
     r"""
     Writes results to a YAML file.
 
@@ -71,10 +53,9 @@ class Yaml(Reporter):
 
         >>> import asyncio
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
-        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.reporting import Report
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+        >>> ccp = CompletelyCylinderPeriodic(report=Report([log]), flow_decompositions=flow_decompositions, cache=None)
         >>> report = ccp.report()
         >>> asyncio.run(report)
 
@@ -88,63 +69,77 @@ class Yaml(Reporter):
 
     @copy_args_to_internal_fields
     def __init__(self, surface, stream=None):
+        super().__init__()
+
+        self._data = {"surface": surface}
+
         import sys
 
         self._stream = stream or sys.stdout
-
-        self._data = {"surface": surface}
 
         from ruamel.yaml import YAML
 
         self._yaml = YAML()
         self._yaml.width = 2**16
         self._yaml.representer.default_flow_style = None
-        self._yaml.representer.add_representer(None, Yaml._represent_undefined)
+        self._yaml.representer.add_representer(type(None), Yaml._represent_as_null)
+        self._yaml.representer.add_representer(None, Yaml._represent_as_pickle)
         self._yaml.register_class(type(self._data["surface"]))
-        self._yaml.register_class(Pickle)
+        self._yaml.register_class(Yaml.Pickle)
 
     @classmethod
-    def _represent_undefined(cls, representer, data):
+    def _represent_as_null(cls, representer, data):
+        r"""
+        Return a YAML serialization as ``null``.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+
+        This is registered for ``None``::
+
+            >>> log = Yaml(surface)
+
+            >>> log._data["result"] = log._simplify(None)
+
+            >>> log.flush()
+            surface:
+            ...
+            result:
+
+        """
+        return representer.represent_scalar("tag:yaml.org,2002:null", "")
+
+    @classmethod
+    def _represent_as_pickle(cls, representer, data):
+        r"""
+        Return a YAML serialization by serializing to a pickle.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+
+        This is registered for any type that does not implement YAML serialization::
+
+            >>> log = Yaml(surface)
+
+            >>> log._data["result"] = log._simplify(log)
+
+            >>> log.flush()
+            surface:
+            ...
+            result: {pickle: !!binary ...
+
+        """
         import pickle
 
         return representer.represent_data(
             {
-                "pickle": Pickle(pickle.dumps(data)),
-                "repr": repr(data),
+                "pickle": Yaml.Pickle(pickle.dumps(data)),
             }
         )
-
-    def _render(self, *args, **kwargs):
-        if len(args) == 0:
-            return self._render(kwargs)
-
-        if len(args) > 1:
-            return self._render(args, **kwargs)
-
-        value = args[0]
-        if not kwargs:
-            from sage.all import ZZ
-
-            if type(value) is type(ZZ()):
-                value = int(value)
-            if hasattr(type(value), "to_yaml"):
-                self._yaml.representer.add_representer(type(value), type(value).to_yaml)
-            return value
-
-        value = self._render(value)
-        ret = self._render(kwargs)
-        if isinstance(value, dict):
-            ret.update(value)
-        else:
-            ret["value"] = value
-
-            from pickle import dumps
-
-            try:
-                dumps(value)
-            except Exception as e:
-                ret["value"] = "Failed: " + str(e)
-        return ret
 
     async def result(self, source, result, **kwargs):
         r"""
@@ -158,7 +153,7 @@ class Yaml(Reporter):
 
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, CompletelyCylinderPeriodic
             >>> from flatsurvey.reporting import Report
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([log]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([log]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
 
         Write the first two flow decompositions to the YAML output:
 
@@ -179,7 +174,36 @@ class Yaml(Reporter):
 
         """
         self._data.setdefault(str(source), [])
-        self._data[str(source)].append(self._render(result, **kwargs))
+        self._data[str(source)].append(self._simplify(result, **kwargs))
+
+    def _simplify_unknown(self, value):
+        r"""
+        Return the argument in a way that YAML serialization can make sense of.
+
+        EXAMPLES:
+
+        Anything that is unknown is rendered as its pickle, so we can let any
+        object that we don't understand through without changes::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> log = Yaml(surface)
+
+            >>> import asyncio
+            >>> asyncio.run(log.result("verdict", result=asyncio))
+
+            >>> log.flush()
+            surface:
+            ...
+            verdict:
+            - {pickle: !!binary "gASVNgAAAAAAAACMEXNhZ2UubWlzYy5mcGlja2xllIwOdW5waWNrbGVNb2R1bGWUk5SMB2FzeW5j\naW+UhZRSlC4=\n"}
+
+        """
+        if hasattr(type(value), "to_yaml"):
+            self._yaml.representer.add_representer(type(value), type(value).to_yaml)
+            return value
+
+        return value
 
     def flush(self):
         r"""
@@ -230,3 +254,26 @@ class Yaml(Reporter):
         if self._stream is not sys.stdout:
             command.append(f"--output={self._stream.name}")
         return command
+
+    class Pickle:
+        r"""
+        Wrapper for objects that should be stored as their pickles in the YAML output.
+        """
+
+        @copy_args_to_internal_fields
+        def __init__(self, raw):
+            pass
+
+        @classmethod
+        def to_yaml(cls, representer, data):
+            import base64
+
+            return representer.represent_scalar(
+                "tag:yaml.org,2002:binary",
+                base64.encodebytes(data._raw).decode("ascii"),
+                style="",
+            )
+
+        @classmethod
+        def from_yaml(self, constructor, obj):
+            raise NotImplementedError("cannot read pickle from YAML yet")

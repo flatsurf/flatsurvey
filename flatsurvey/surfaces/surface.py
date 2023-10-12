@@ -27,6 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
 from sage.misc.cachefunc import cached_method
 
 
@@ -41,6 +42,9 @@ class Surface:
         True
 
     """
+
+    def __init__(self, eliminate_marked_points=True):
+        self._eliminate_marked_points = eliminate_marked_points
 
     def reference(self):
         r"""
@@ -57,6 +61,8 @@ class Surface:
         """
         return None
 
+    # This should probably live on the OrbitClosure job and not here so
+    # it is pickled correctly, see #44.
     @cached_method
     def orbit_closure(self):
         r"""
@@ -66,7 +72,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1), 'exact-real').orbit_closure()
-            GL(2,R)-orbit closure of dimension at least 2 in H_1(0^3) (ambient dimension 4)
+            GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2)
 
         """
         from flatsurf import GL2ROrbitClosure
@@ -111,7 +117,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).surface()
-
+            Translation Surface in H_1(0) built from 2 equilateral triangles
 
         """
         S = self._surface()
@@ -119,6 +125,7 @@ class Surface:
             S = S.erase_marked_points()
         return S
 
+    @abstractmethod
     def _surface(self):
         r"""
         Return a sage-flatsurf translation surface.
@@ -129,10 +136,9 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1))._surface()
-            TranslationSurface built from 6 polygons
+            Minimal Translation Cover of Genus 0 Rational Cone Surface built from 2 equilateral triangles
 
         """
-        raise NotImplementedError
 
     def command(self):
         r"""
@@ -184,3 +190,11 @@ class Surface:
 
         """
         return {}
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.orbit_closure": Surface.orbit_closure.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.surface": Surface.surface.__doc__,
+}

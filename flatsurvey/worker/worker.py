@@ -7,17 +7,23 @@ python -m survey.worker ngon -a 1 -a 2 -a 3 -a 4 orbit-closure
 ```
 
 TESTS::
-    
-    >>> from ..test.cli import invoke
+
+    >>> from flatsurvey.test.cli import invoke
     >>> invoke(worker) # doctest: +NORMALIZE_WHITESPACE
     Usage: worker [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
       Explore a surface.
     Options:
       --debug
-      --help   Show this message and exit.
+      --help         Show this message and exit.
+      -v, --verbose  Enable verbose message, repeat for debug message.
     Cache:
-      cache  A cache of previous results stored behind a GraphQL API in the cloud.
+      local-cache  A cache of previous results stored in local JSON files.
+      pickles      Access a database of pickles storing parts of previous
+                   computations.
     Goals:
+      boshernitzan-conjecture        Determines whether Conjecture 2.2 in
+                                     Boshernitzan's *Billiards and Rational Periodic
+                                     Directions in Polygons* holds for this surface.
       completely-cylinder-periodic   Determines whether for all directions given by
                                      saddle connections, the decomposition of the
                                      surface is completely cylinder periodic, i.e.,
@@ -32,9 +38,11 @@ TESTS::
                                      Transformations.
     Intermediates:
       boshernitzan-conjecture-orientations
-                                      Produces some particular directions in
-                                      triangles related to a conjecture of
-                                      Boshernitzan.
+                                      Produces directions in $S^1(2d')$, i.e.,
+                                      corresponding to certain roots of unity, as
+                                      used in Conjecture 2.2 of Boshernitzan's
+                                      *Billiards and Rational Periodic Directions in
+                                      Polygons*.
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
       saddle-connection-orientations  Orientations of saddle connections on the
@@ -42,10 +50,11 @@ TESTS::
                                       connections irrespective of scaling and sign.
       saddle-connections              Saddle connections on the surface.
     Reports:
-      graphql  Reports results to our GraphQL cloud database.
-      log      Writes progress and results as an unstructured log file.
-      report   Generic reporting of results.
-      yaml     Writes results to a YAML file.
+      json      Writes results in JSON format.
+      log       Writes progress and results as an unstructured log file.
+      progress  Reports progress on the command line.
+      report    Generic reporting of results.
+      yaml      Writes results to a YAML file.
     Surfaces:
       ngon            Unfolding of an n-gon with prescribed angles.
       pickle          A base64 encoded pickle.
@@ -83,9 +92,19 @@ from flatsurvey.ui.group import CommandWithGroups
 from flatsurvey.worker.restart import Restart
 
 
-@click.group(chain=True, cls=CommandWithGroups, help=r"""Explore a surface.""")
+@click.group(
+    chain=True,
+    cls=CommandWithGroups,
+    help=r"""Explore a surface.""",
+)
 @click.option("--debug", is_flag=True)
-def worker(debug):
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    help="Enable verbose message, repeat for debug message.",
+)
+def worker(debug, verbose):
     r"""
     Main command to invoke the worker; specific objects and goals are
     registered automatically as subcommands.
@@ -105,7 +124,7 @@ for kind in [
 
 
 @worker.result_callback()
-def process(commands, debug):
+def process(commands, debug, verbose):
     r"""
     Run the specified subcommands of ``worker``.
 
@@ -114,9 +133,8 @@ def process(commands, debug):
     We compute the orbit closure of the unfolding of a equilateral triangle,
     i.e., the torus::
 
-        >>> from ..test.cli import invoke
+        >>> from flatsurvey.test.cli import invoke
         >>> invoke(worker, "ngon", "-a", "1", "-a", "1", "-a", "1", "orbit-closure")
-        [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (-6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
         [Ngon([1, 1, 1])] [OrbitClosure] dimension: 2/2
         [Ngon([1, 1, 1])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2) (dimension: 2) (directions: 1) (directions_with_cylinders: 1) (dense: True)
 
@@ -126,6 +144,12 @@ def process(commands, debug):
         import signal
 
         signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
+
+    if verbose:
+        import logging
+
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
     try:
         while True:
@@ -163,7 +187,11 @@ class Worker:
     """
 
     @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters):
+    def __init__(
+        self,
+        goals,
+        reporters,
+    ):
         pass
 
     @classmethod
@@ -198,8 +226,6 @@ class Worker:
     async def start(self):
         r"""
         Run until all our goals are resolved.
-
-        TODO
         """
         try:
             for goal in self._goals:
@@ -211,7 +237,3 @@ class Worker:
                 await goal.report()
         for reporter in self._reporters:
             reporter.flush()
-
-
-if __name__ == "__main__":
-    worker()

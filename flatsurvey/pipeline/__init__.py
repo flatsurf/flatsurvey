@@ -28,7 +28,7 @@ targeted by an edge. (And Processors when they are both.)
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from .consumer import Consumer
-from .goal import Goal
-from .processor import Processor
-from .producer import Producer
+from flatsurvey.pipeline.consumer import Consumer
+from flatsurvey.pipeline.goal import Goal
+from flatsurvey.pipeline.processor import Processor
+from flatsurvey.pipeline.producer import Producer
