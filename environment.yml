@@ -19,8 +19,6 @@ dependencies:
   - python-dateutil
   - rich
   - ruamel.yaml
-  - sage-flatsurf >=0.4.4
+  - sage-flatsurf >=0.5.2,<0.6
   - pip:
-    - aioresponses
-    - gql==3.0.0a6
     - pinject
