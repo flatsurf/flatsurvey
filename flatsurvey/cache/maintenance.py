@@ -15,6 +15,7 @@ TESTS::
       -v, --verbose  Enable verbose message, repeat for debug message.
     <BLANKLINE>
     Commands:
+      externalize-pickles
       join
       split
 
