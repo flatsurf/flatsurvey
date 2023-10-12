@@ -5,7 +5,8 @@ EXAMPLES::
 
     >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
     >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
-    TranslationSurface built from 3 polygons
+    Translation Surface in H_2(2) built from a square and 2 rectangles
+
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -49,9 +50,10 @@ class ThurstonVeech(Surface):
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
         >>> S = TV.surface()
         >>> S
-        TranslationSurface built from 3 polygons
+        Translation Surface in H_2(2) built from a square and 2 rectangles
         >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
+
     """
 
     def __init__(self, hp, vp, hm, vm):
@@ -102,6 +104,7 @@ class ThurstonVeech(Surface):
             'An origami'
             >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
+
         """
         from sage.all import QQ
 
@@ -121,7 +124,7 @@ class ThurstonVeech(Surface):
 
     @cached_method
     def origami(self):
-        return self._thurston_veech()._o
+        return self._thurston_veech()._origami
 
     @cached_method
     def _thurston_veech(self):
@@ -162,6 +165,7 @@ class ThurstonVeech(Surface):
             >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
             >>> TV.orientable_automorphisms()
             Group(())
+
         """
         o = self.origami()
         n = o.nb_squares()

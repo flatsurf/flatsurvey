@@ -117,7 +117,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).surface()
-            TranslationSurface built from 2 polygons
+            Translation Surface in H_1(0) built from 2 equilateral triangles
 
         """
         S = self._surface()
@@ -136,7 +136,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1))._surface()
-            TranslationSurface built from 6 polygons
+            Minimal Translation Cover of Genus 0 Rational Cone Surface built from 2 equilateral triangles
 
         """
 

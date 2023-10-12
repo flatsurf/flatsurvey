@@ -81,7 +81,7 @@ class Ngon(Surface):
         >>> S = Ngon((1, 1, 1)); S
         Ngon([1, 1, 1])
         >>> S.surface()
-        TranslationSurface built from 2 polygons
+        Translation Surface in H_1(0) built from 2 equilateral triangles
 
     """
 
@@ -572,7 +572,7 @@ class Ngon(Surface):
         EXAMPLES::
 
             >>> Ngon((1, 1, 1)).polygon()
-            Polygon: (0, 0), (4, 0), (2, 2*c)
+            Polygon(vertices=[(0, 0), (4, 0), (2, 2*c)])
 
         """
         from flatsurf import EquiangularPolygons
