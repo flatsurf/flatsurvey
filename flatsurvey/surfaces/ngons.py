@@ -455,9 +455,9 @@ class Ngon(Surface):
     @property
     def orbit_closure_dimension_upper_bound(self):
         if not hasattr(self, "_bound"):
-            from flatsurf import EquiangularPolygons
+            from flatsurf import EuclideanPolygonsWithAngles
 
-            self._bound = EquiangularPolygons(
+            self._bound = EuclideanPolygonsWithAngles(
                 *self.angles
             ).billiard_unfolding_stratum_dimension(
                 "half-translation", marked_points=not self._eliminate_marked_points
@@ -482,9 +482,9 @@ class Ngon(Surface):
             (8, 2/3*c, 2*c)
 
         """
-        from flatsurf import EquiangularPolygons
+        from flatsurf import EuclideanPolygonsWithAngles
 
-        E = EquiangularPolygons(*self.angles)
+        E = EuclideanPolygonsWithAngles(*self.angles)
         if self.length == "exact-real":
             from pyexactreal import ExactReals
 
@@ -522,10 +522,13 @@ class Ngon(Surface):
 
         for n in range(1024):
             lengths = random_lengths()
+
+            from flatsurf import Polygon
             try:
-                E(lengths)
+                Polygon(angles=self.angles, lengths=lengths)
             except ValueError:
                 continue
+
             while min(lengths) < 1:
                 lengths = tuple(length * 2 for length in lengths)
             return lengths
@@ -575,17 +578,14 @@ class Ngon(Surface):
             Polygon(vertices=[(0, 0), (4, 0), (2, 2*c)])
 
         """
-        from flatsurf import EquiangularPolygons
-
-        E = EquiangularPolygons(*self.angles)
-
-        return E(self._lengths())
+        from flatsurf import Polygon
+        return Polygon(angles=self.angles, lengths=self._lengths())
 
     @cached_method
     def _surface(self):
         from flatsurf import similarity_surfaces
 
-        S = similarity_surfaces.billiard(self.polygon(), rational=True)
+        S = similarity_surfaces.billiard(self.polygon())
         S = S.minimal_cover(cover_type="translation")
         return S
 
