@@ -98,6 +98,20 @@ class Ngon(Surface):
 
         self.length = length
         if lengths is not None:
+            from flatsurf import EuclideanPolygonsWithAngles
+
+            # Support old pickles where polygon edge lengths are scaled by the
+            # length of the slopes.
+            # When we find such lengths, we set _lengths (and poison it with
+            # the wrong value.) However, we override the cache of polygon() so
+            # _lengths should never be accessed.
+            # TODO: Check that nobody else uses _lengths.
+            slopes = EuclideanPolygonsWithAngles(*self.angles).slopes()
+            edges = [l * r for (l, r) in zip(lengths, slopes)]
+            if sum(edges) == 0:
+                from flatsurf import Polygon
+                self.polygon.set_cache(Polygon(edges=edges))
+
             self._lengths.set_cache(tuple(lengths))
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
