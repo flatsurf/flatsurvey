@@ -490,9 +490,7 @@ class Ngon(Surface):
 
             R = ExactReals(E.base_ring())
         elif self.length == "e-antic":
-            from pyeantic import RealEmbeddedNumberField
-
-            R = RealEmbeddedNumberField(E.base_ring())
+            R = E.base_ring()
         else:
             raise NotImplementedError(self.length)
 
@@ -506,7 +504,7 @@ class Ngon(Surface):
 
             U = L.ambient_space().subspace([])
 
-            lengths = free_module_element(R, len(self.angles))
+            lengths = []
             rays = list(L.rays())
             shuffle(rays)
             for ray in rays:
@@ -516,7 +514,7 @@ class Ngon(Surface):
                     length = R.zero()
                     while length <= 0:
                         length = R.random_element() if lengths else R.one()
-                    lengths += length * ray
+                    lengths.append(length)
 
             return tuple(lengths)
 
