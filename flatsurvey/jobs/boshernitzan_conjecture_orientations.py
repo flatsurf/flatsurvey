@@ -147,17 +147,17 @@ class BoshernitzanConjectureOrientations(Producer, Command):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import BoshernitzanConjectureOrientations
             >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 1)))._directions
-            [(4, 0), (0, 4)]
+            [(1, 0), (0, 1)]
 
         ::
 
             >>> BoshernitzanConjectureOrientations(Ngon((1, 1, 2)))._directions
-            [(0, 2), (1, -1)]
+            [(0, 1), (1/2, -1/2)]
 
         ::
 
             >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 6)))._directions
-            [(0, 32)]
+            [(0, 1)]
 
         ::
 
@@ -167,7 +167,7 @@ class BoshernitzanConjectureOrientations(Producer, Command):
         ::
 
             >>> BoshernitzanConjectureOrientations(Ngon((2, 3, 34)))._directions
-            [(0, 256)]
+            [(0, 1)]
 
         """
         directions = []
