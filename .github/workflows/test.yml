@@ -25,6 +25,10 @@ jobs:
         run: |
           mamba env update --quiet -n test -f environment.yml
           conda list
+      - name: install flatsurvey
+        shell: bash -l {0}
+        run: |
+          pip install -e .
       - name: doctest
         shell: bash -l {0}
         run: |
