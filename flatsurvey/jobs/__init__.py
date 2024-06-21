@@ -4,12 +4,7 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
-from flatsurvey.jobs.boshernitzan_conjecture import BoshernitzanConjecture
-from flatsurvey.jobs.boshernitzan_conjecture_orientations import (
-    BoshernitzanConjectureOrientations,
-)
 from flatsurvey.jobs.completely_cylinder_periodic import CompletelyCylinderPeriodic
-from flatsurvey.jobs.cylinder_periodic_asymptotics import CylinderPeriodicAsymptotics
 from flatsurvey.jobs.cylinder_periodic_direction import CylinderPeriodicDirection
 from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 
@@ -44,10 +39,7 @@ commands = [
     CompletelyCylinderPeriodic.click,
     FlowDecompositions.click,
     CylinderPeriodicDirection.click,
-    CylinderPeriodicAsymptotics.click,
     SaddleConnections.click,
     SaddleConnectionOrientations.click,
-    BoshernitzanConjectureOrientations.click,
-    BoshernitzanConjecture.click,
     UndeterminedIntervalExchangeTransformation.click,
 ]

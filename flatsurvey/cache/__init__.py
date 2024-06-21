@@ -21,6 +21,5 @@ Reads caches of previous results.
 # *********************************************************************
 
 from flatsurvey.cache.cache import Cache
-from flatsurvey.cache.pickles import Pickles
 
-commands = [Cache.click, Pickles.click]
+commands = [Cache.click]
