@@ -102,6 +102,8 @@ class OrbitClosure(Goal, Command):
         self._expansions_performed = 0
         self._deformed = not deform
 
+        self._reported = False
+
         import pyflatsurf
 
         self._lower_bound = pyflatsurf.flatsurf.Bound(0)
@@ -345,8 +347,6 @@ class OrbitClosure(Goal, Command):
             return Goal.COMPLETED
 
         if self._cylinders_without_increase >= self._limit:
-            await self.report()
-
             if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
 
@@ -493,7 +493,7 @@ class OrbitClosure(Goal, Command):
         return True if any(result for result in results) else None
 
     async def report(self):
-        if self._resolved != Goal.COMPLETED:
+        if not self._reported:
             await self._report.result(
                 self,
                 self._surface.orbit_closure(),
@@ -502,3 +502,5 @@ class OrbitClosure(Goal, Command):
                 directions_with_cylinders=self._directions_with_cylinders,
                 dense=self.dense,
             )
+
+            self._reported = True
