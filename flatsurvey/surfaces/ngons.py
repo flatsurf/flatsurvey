@@ -464,10 +464,21 @@ class Ngon(Surface):
     @property
     def orbit_closure_dimension_upper_bound(self):
         if not hasattr(self, "_bound"):
+            angles = self.angles
+
+            if len(angles) == 3:
+                a, b, c = angles
+                if a == b:
+                    # An isosceles triangles is a double cover of its half.
+                    angles = (2*a, a + b + c, c)
+                elif b == c:
+                    # An isosceles triangles is a double cover of its half.
+                    angles = (a, 2*b, a + b + c)
+
             from flatsurf import EuclideanPolygonsWithAngles
 
             self._bound = EuclideanPolygonsWithAngles(
-                *self.angles
+                *angles
             ).billiard_unfolding_stratum_dimension(
                 "half-translation", marked_points=not self._eliminate_marked_points
             )
