@@ -175,7 +175,9 @@ class Yaml(Reporter, Command):
         """
         from datetime import datetime, timezone
 
-        result = self._simplify(result, **{"timestamp": str(datetime.now(timezone.utc)), **kwargs})
+        result = self._simplify(
+            result, **{"timestamp": str(datetime.now(timezone.utc)), **kwargs}
+        )
 
         self._data.setdefault(str(source), [])
         self._data[str(source)].append(result)

@@ -415,7 +415,9 @@ class BoshernitzanConjecture(Goal, Command):
 
         """
         if result is not None:
-            raise NotImplementedError("boshernitzan-conjecture has no default reporting yet")
+            raise NotImplementedError(
+                "boshernitzan-conjecture has no default reporting yet"
+            )
 
         for assertion in self._verdict:
             if (
