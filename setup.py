@@ -9,7 +9,6 @@ setup(
         "flatsurvey.cache",
         "flatsurvey.jobs",
         "flatsurvey.pipeline",
-        "flatsurvey.aws",
         "flatsurvey.surfaces",
         "flatsurvey.reporting",
         "flatsurvey.worker",
@@ -29,8 +28,5 @@ setup(
             "flatsurvey-worker=flatsurvey.worker.worker:worker",
             "flatsurvey-maintenance=flatsurvey.cache.maintenance:cli",
         ],
-    },
-    package_data={
-        "flatsurvey.aws": ["*.graphql"],
     },
 )
