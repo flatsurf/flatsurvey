@@ -59,9 +59,21 @@ class Join(Goal, Command):
         for json in self._jsons:
             with open(json) as input:
                 parsed = flatsurvey.cache.cache.Cache.load(input)
+
+                surface = None
+                if "surface" in parsed:
+                    surface = parsed.pop("surface")
+
                 for key in parsed:
-                    if not isinstance(parsed[key], list):
+                    items = parsed[key]
+
+                    if not isinstance(items, list):
                         raise NotImplementedError(f"cannot join entries for '{key}' because it's not list")
+
+                    for item in items:
+                        if "surface" not in items and surface is not None:
+                            item["surface"] = surface
+
                     aggregate[key].extend(parsed[key])
 
         for key in aggregate:

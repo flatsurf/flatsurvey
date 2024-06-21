@@ -113,14 +113,16 @@ class Log(Reporter, Command):
     @classmethod
     def bindings(cls, output, prefix=None):
         def logfile(surface):
-            if output is None:
-                path = f"{surface.basename()}.log"
-                if prefix:
-                    import os.path
+            if output is not None:
+                return output
 
-                    path = os.path.join(prefix, path)
-                return open(path, "w")
-            return output
+            if prefix is None:
+                import sys
+                return sys.stdout
+
+            import os.path
+            path = os.path.join(prefix, f"{surface.basename()}.log")
+            return open(path, "w")
 
         return [
             FactoryBindingSpec("log", lambda surface: Log(surface, logfile(surface)))

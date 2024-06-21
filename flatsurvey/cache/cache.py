@@ -127,7 +127,14 @@ class Cache(Command):
         type=str,
         help="JSON files to read cached data from or a directory to read recursively",
     )
-    def click(json):
+    @click.option(
+        "--pickles",
+        "-p",
+        metavar="DIR",
+        type=str,
+        help="directory of pickle files to resolve references in JSON files",
+    )
+    def click(json, pickles):
         jsons = []
 
         for j in json:
@@ -144,7 +151,7 @@ class Cache(Command):
             else:
                 jsons.append(open(j, "rb"))
 
-        return {"bindings": Cache.bindings(jsons)}
+        return {"bindings": Cache.bindings(jsons, pickles)}
 
     def command(self):
         r"""
@@ -158,10 +165,10 @@ class Cache(Command):
             ['local-cache']
 
         """
-        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons]
+        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons] + [f"--pickles={pickles.name}"]
 
     @classmethod
-    def bindings(cls, jsons):
+    def bindings(cls, jsons, pickles):
         r"""
         Return the dependency injection bindings provided by this class.
 
@@ -171,7 +178,7 @@ class Cache(Command):
             [cache binding to Cache]
 
         """
-        return [PartialBindingSpec(Cache, name="cache", scope="SHARED")(jsons=jsons)]
+        return [PartialBindingSpec(Cache, name="cache", scope="SHARED")(jsons=jsons, pickles=pickles)]
 
     def deform(self, deformation):
         r"""
