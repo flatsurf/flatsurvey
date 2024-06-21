@@ -129,8 +129,12 @@ class Json(Reporter, Command):
             >>> asyncio.run(json.result(source=None, result=True))
 
         """
+        from datetime import datetime, timezone
+
+        result = self._simplify(result, **{"timestamp": str(datetime.now(timezone.utc)), **kwargs})
+
         self._data.setdefault(str(source), [])
-        self._data[str(source)].append(self._simplify(result, **kwargs))
+        self._data[str(source)].append(result)
 
     def _serialize_to_pickle(self, obj):
         r"""
@@ -181,8 +185,8 @@ class Json(Reporter, Command):
             >>> import asyncio
             >>> asyncio.run(json.result("verdict", result=asyncio))
 
-            >>> json.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [{"type": "module", "pickle": "..."}]}
+            >>> json.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [{"timestamp": ..., "value": {"type": "module", "pickle": "..."}}]}
 
         """
         return value
@@ -203,8 +207,8 @@ class Json(Reporter, Command):
 
         Note that each result is reported individually, so the "verdict" is a list here::
 
-            >>> json.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [true]}
+            >>> json.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "verdict": [{"timestamp": ..., "value": true}]}
 
         """
         import json

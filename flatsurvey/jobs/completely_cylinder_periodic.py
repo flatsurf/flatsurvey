@@ -167,8 +167,8 @@ class CompletelyCylinderPeriodic(Goal, Command):
 
         The cached verdict can be reported back in JSON format::
 
-            >>> log.flush()
-            {"surface": {...}, "completely-cylinder-periodic": [{"cached": true, "value": false}]}
+            >>> log.flush()  # doctest: +ELLIPSIS
+            {"surface": {...}, "completely-cylinder-periodic": [{"timestamp": ..., "cached": true, "value": false}]}
 
         """
         results = self._cache.get(
@@ -270,8 +270,8 @@ class CompletelyCylinderPeriodic(Goal, Command):
             >>> import asyncio
             >>> asyncio.run(ccp.report(result=False))
 
-            >>> report.flush()
-            {"surface": {...}, "completely-cylinder-periodic": [{"cylinder_periodic_directions": 0, "undetermined_directions": 0, "value": false}]}
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {...}, "completely-cylinder-periodic": [{"timestamp": ..., "cylinder_periodic_directions": 0, "undetermined_directions": 0, "value": false}]}
 
         """
         if self._resolved != Goal.COMPLETED:

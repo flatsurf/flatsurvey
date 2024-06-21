@@ -43,7 +43,6 @@ TESTS::
       log       Writes progress and results as an unstructured log file.
       progress  Reports progress on the command line.
       report    Generic reporting of results.
-      yaml      Writes results to a YAML file.
     Surfaces:
       ngon            Unfolding of an n-gon with prescribed angles.
       pickle          A base64 encoded pickle.

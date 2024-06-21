@@ -135,10 +135,10 @@ class Reporter:
 
         EXAMPLES::
 
-            >>> from flatsurvey.reporting import Yaml
+            >>> from flatsurvey.reporting import Json
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
-            >>> log = Yaml(surface)
+            >>> log = Json(surface)
 
         Rewrites SageMath integers as Python integers::
 
@@ -172,10 +172,10 @@ class Reporter:
 
         EXAMPLES::
 
-            >>> from flatsurvey.reporting import Yaml
+            >>> from flatsurvey.reporting import Json
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
-            >>> log = Yaml(surface)
+            >>> log = Json(surface)
 
         Combines arguments and keyword arguments::
 

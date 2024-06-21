@@ -137,8 +137,8 @@ class CylinderPeriodicDirection(Goal, Command):
 
             >>> import asyncio
             >>> asyncio.run(goal.consume_cache())
-            >>> report.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"cached": true, "value": true}]}
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"timestamp": ..., "cached": true, "value": true}]}
 
         """
         results = self._cache.get(
@@ -245,7 +245,7 @@ class CylinderPeriodicDirection(Goal, Command):
 
             >>> asyncio.run(cpd.report())
             >>> report.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"directions": 1, "value": true}]}
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"timestamp": ..., "directions": 1, "value": true}]}
 
 
         """

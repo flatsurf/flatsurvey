@@ -145,8 +145,8 @@ class UndeterminedIntervalExchangeTransformation(Goal, Command):
 
             >>> import asyncio
             >>> asyncio.run(goal.consume_cache())
-            >>> report.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "undetermined-iet --cache-only": [{"iets": ["IET(\u2026)", "IET(\u2026)"], "cached": true, "value": null}]}
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "undetermined-iet --cache-only": [{"timestamp": ..., "iets": ["IET(\u2026)", "IET(\u2026)"], "cached": true, "value": null}]}
 
         """
         if not self._cache_only:

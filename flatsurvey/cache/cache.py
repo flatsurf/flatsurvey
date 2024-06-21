@@ -14,8 +14,11 @@ EXAMPLES::
     Usage: worker local-cache [OPTIONS]
       A cache of previous results stored in local JSON files.
     Options:
-      -j, --json PATH  JSON files to read cached data from or a directory to read recursively
-      --help           Show this message and exit.
+      -j, --json PATH    JSON files to read cached data from or a directory to read
+                         recursively
+      -p, --pickles DIR  directory of pickle files to resolve references in JSON
+                         files
+      --help             Show this message and exit.
 
 """
 # *********************************************************************
@@ -165,7 +168,7 @@ class Cache(Command):
             ['local-cache']
 
         """
-        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons] + [f"--pickles={pickles.name}"]
+        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons] + ([f"--pickles={self._pickles.name}"] if self._pickles is not None else [])
 
     @classmethod
     def bindings(cls, jsons, pickles):
@@ -174,7 +177,7 @@ class Cache(Command):
 
         EXAMPLES::
 
-            >>> Cache.bindings([])
+            >>> Cache.bindings([], None)
             [cache binding to Cache]
 
         """
@@ -207,7 +210,7 @@ class Cache(Command):
             {'bindings': [cache binding to Cache]}
 
         """
-        return {"bindings": Cache.bindings(jsons=self._jsons)}
+        return {"bindings": Cache.bindings(jsons=self._jsons, pickles=self._pickles)}
 
     def sources(self, *sources):
         r"""

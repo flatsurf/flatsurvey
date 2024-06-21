@@ -173,8 +173,12 @@ class Yaml(Reporter, Command):
             - orientation: ...
 
         """
+        from datetime import datetime, timezone
+
+        result = self._simplify(result, **{"timestamp": str(datetime.now(timezone.utc)), **kwargs})
+
         self._data.setdefault(str(source), [])
-        self._data[str(source)].append(self._simplify(result, **kwargs))
+        self._data[str(source)].append(result)
 
     def _simplify_unknown(self, value):
         r"""

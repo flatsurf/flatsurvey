@@ -53,7 +53,6 @@ TESTS::
       log       Writes progress and results as an unstructured log file.
       progress  Reports progress on the command line.
       report    Generic reporting of results.
-      yaml      Writes results to a YAML file.
     <BLANKLINE>
     Surfaces:
       ngons           The translation surfaces that come from unfolding n-gons.

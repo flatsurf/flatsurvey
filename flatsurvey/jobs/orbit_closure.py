@@ -169,8 +169,8 @@ class OrbitClosure(Goal, Command):
 
             >>> import asyncio
             >>> asyncio.run(goal.consume_cache())
-            >>> report.flush()
-            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"dense": true, "cached": true, "value": null}]}
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"timestamp": ..., "dense": true, "cached": true, "value": null}]}
 
         """
         with self._cache.defaults({"dense": None}):
@@ -301,8 +301,8 @@ class OrbitClosure(Goal, Command):
             True
 
             >>> asyncio.run(oc.report())
-            >>> report.flush()
-            {"surface": {"angles": [1, 3, 5], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"dimension": 6, "directions": 1, "directions_with_cylinders": 1, "dense": true, "value": {"type": "GL2ROrbitClosure", "pickle": "..."}}]}
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 3, 5], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"timestamp": ..., "dimension": 6, "directions": 1, "directions_with_cylinders": 1, "dense": true, "value": {"type": "GL2ROrbitClosure", "pickle": "..."}}]}
 
         """
         self._directions += 1
