@@ -48,18 +48,18 @@ class Processor(Producer, Consumer):
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
         >>> isinstance(connections, Processor)
         False
-        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
         >>> isinstance(orientations, Processor)
         True
 
     """
 
-    def __init__(self, producers):
-        Producer.__init__(self)
-        Consumer.__init__(self, producers=producers)
+    def __init__(self, producers, report=None):
+        Producer.__init__(self, report=report)
+        Consumer.__init__(self, producers=producers, report=report)
 
         self._produced = False
 
@@ -74,16 +74,16 @@ class Processor(Producer, Consumer):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> import asyncio
             >>> produce = orientations.produce()
             >>> asyncio.run(produce) != Producer.EXHAUSTED
             True
 
-            >>> orientations._current
-            (6, (-2*c ~ -3.4641016))
+            >>> orientations._current  # doctest: +ELLIPSIS
+            (0, ...)
 
         """
         self._current = None

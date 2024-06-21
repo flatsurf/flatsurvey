@@ -2,7 +2,7 @@ r"""
 The saddle connections on a translation surface.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "saddle-connections", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker saddle-connections [OPTIONS]
       Saddle connections on the surface.
@@ -36,12 +36,13 @@ The saddle connections on a translation surface.
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Producer
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class SaddleConnections(Producer):
+class SaddleConnections(Producer, Command):
     r"""
     Saddle connections on the surface.
     """
@@ -49,10 +50,20 @@ class SaddleConnections(Producer):
     DEFAULT_LIMIT = None
 
     @copy_args_to_internal_fields
-    def __init__(self, surface, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
-        super().__init__()
+    def __init__(self, surface, report, limit=DEFAULT_LIMIT, bound=DEFAULT_BOUND):
+        super().__init__(report=report)
 
         self._connections = None
+
+        from flatsurvey.reporting.report import ProgressReporting
+
+        self._progress = ProgressReporting(
+            self._report,
+            self,
+            defaults=dict(
+                count=0, what="connections", activity="enumerating saddle connections"
+            ),
+        )
 
     def _by_length(self):
         self.__connections = (
@@ -88,8 +99,11 @@ class SaddleConnections(Producer):
             self._by_length()
         try:
             self._current = next(self._connections)
+
+            self._progress.progress(advance=1)
             return not Producer.EXHAUSTED
         except StopIteration:
+            self._progress.hide()
             return Producer.EXHAUSTED
 
     @classmethod

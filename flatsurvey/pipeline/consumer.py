@@ -29,6 +29,8 @@ Any goal of a computation implements the Consumer interface::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
+
 
 class Consumer:
     r"""
@@ -43,10 +45,10 @@ class Consumer:
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
         >>> isinstance(connections, Consumer)
         False
-        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
         >>> isinstance(orientations, Consumer)
         True
 
@@ -60,7 +62,7 @@ class Consumer:
     """
     COMPLETED = False
 
-    def __init__(self, producers):
+    def __init__(self, producers, report=None):
         self._producers = producers
 
         # Some consumers can be resolved, e.g., when we are sure that we
@@ -72,6 +74,13 @@ class Consumer:
         # objects they generate.
         for producer in producers:
             producer.register_consumer(self)
+
+        if report is None:
+            from flatsurvey.reporting import Report
+
+            report = Report([])
+
+        self._report = report
 
     @property
     def resolved(self):
@@ -86,8 +95,8 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
             >>> orientations.resolved
             False
 
@@ -109,8 +118,8 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> import asyncio
             >>> consume = orientations.consume(next(iter(surface.flat_triangulation().connections())), cost=0)
@@ -131,6 +140,7 @@ class Consumer:
 
         return self._resolved
 
+    @abstractmethod
     async def _consume(self, product, cost):
         r"""
         Process the ``product`` by one of the producers we are attached to and
@@ -139,7 +149,6 @@ class Consumer:
 
         Actual consumers must implement this method.
         """
-        raise NotImplementedError
 
     async def resolve(self):
         r"""
@@ -151,11 +160,10 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
-            >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+            >>> connections = SaddleConnections(surface, report=None)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+            >>> oc = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
             >>> import asyncio
             >>> resolve = oc.resolve()
@@ -174,28 +182,6 @@ class Consumer:
 
         return Consumer.COMPLETED
 
-    def command(self):
-        r"""
-        Return the command line that can be used to create this consumer.
-
-        Actual consumers must implement this method.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
-            >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
-            >>> orientations.command()
-            ['saddle-connection-orientations']
-
-        """
-        raise NotImplementedError
-
-    def __repr__(self):
-        return " ".join(self.command())
-
     async def report(self):
         r"""
         Report the current state of this consumer to the reporter. Typically
@@ -207,12 +193,11 @@ class Consumer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
-            >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
+            >>> connections = SaddleConnections(surface, report=None)
             >>> log = Log(surface=surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
             >>> import asyncio
             >>> report = oc.report()

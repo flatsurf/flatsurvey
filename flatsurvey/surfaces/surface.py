@@ -27,6 +27,8 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from abc import abstractmethod
+
 from sage.misc.cachefunc import cached_method
 
 
@@ -37,10 +39,13 @@ class Surface:
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> isinstance(Ngon((1, 1, 1), 'exact-real'), Surface)
+        >>> isinstance(Ngon((1, 1, 1)), Surface)
         True
 
     """
+
+    def __init__(self, eliminate_marked_points=True):
+        self._eliminate_marked_points = eliminate_marked_points
 
     def reference(self):
         r"""
@@ -49,14 +54,16 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 3), 'exact-real').reference()
+            >>> Ngon((1, 1, 3)).reference()
             'Veech 1989 via Ngon([2, 3, 5])'
-            >>> Ngon((10, 11, 82), 'exact-real').reference() is None
+            >>> Ngon((10, 11, 82)).reference() is None
             True
 
         """
         return None
 
+    # This should probably live on the OrbitClosure job and not here so
+    # it is pickled correctly, see #44.
     @cached_method
     def orbit_closure(self):
         r"""
@@ -65,8 +72,8 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1), 'exact-real').orbit_closure()
-            GL(2,R)-orbit closure of dimension at least 2 in H_1(0^3) (ambient dimension 4)
+            >>> Ngon((1, 1, 1)).orbit_closure()
+            GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2)
 
         """
         from flatsurf import GL2ROrbitClosure
@@ -96,8 +103,8 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1)).flat_triangulation()
-            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (0, (-4*c ~ -6.9282032)), 2: (6, (2*c ~ 3.4641016)), 3: (-6, (2*c ~ 3.4641016))}
+            >>> Ngon((1, 1, 1)).flat_triangulation()  # doctest: +ELLIPSIS
+            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (0, ...), 2: (..., ...), 3: (..., ...)}
 
         """
         return self.orbit_closure()._surface
@@ -111,7 +118,7 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1)).surface()
-
+            Translation Surface in H_1(0) built from 2 equilateral triangles
 
         """
         S = self._surface()
@@ -119,6 +126,7 @@ class Surface:
             S = S.erase_marked_points()
         return S
 
+    @abstractmethod
     def _surface(self):
         r"""
         Return a sage-flatsurf translation surface.
@@ -129,10 +137,9 @@ class Surface:
 
             >>> from flatsurvey.surfaces import Ngon
             >>> Ngon((1, 1, 1))._surface()
-            TranslationSurface built from 6 polygons
+            Minimal Translation Cover of Genus 0 Rational Cone Surface built from 2 equilateral triangles
 
         """
-        raise NotImplementedError
 
     def command(self):
         r"""
@@ -141,7 +148,7 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1), 'exact-real').command()
+            >>> Ngon((1, 1, 1)).command()
             ['pickle', '--base64', '...']
 
         """
@@ -184,3 +191,11 @@ class Surface:
 
         """
         return {}
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.orbit_closure": Surface.orbit_closure.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Surface.surface": Surface.surface.__doc__,
+}

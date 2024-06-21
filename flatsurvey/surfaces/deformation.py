@@ -18,9 +18,7 @@
 # *********************************************************************
 
 import flatsurvey.worker.restart
-from flatsurvey.pipeline.util import FactoryBindingSpec, PartialBindingSpec
-
-from .surface import Surface
+from flatsurvey.surfaces.surface import Surface
 
 
 class Deformation(Surface):
@@ -55,11 +53,16 @@ class Deformation(Surface):
     def __ne__(self, other):
         return not (self == other)
 
+    def cache_predicate(self, exact, cache=None):
+        return lambda result: False
+
     class Restart(flatsurvey.worker.restart.Restart):
         def __init__(self, deformed, old):
             self._deformation = Deformation(deformed=deformed, old=old)
 
         def rewrite_bound(self, bound):
+            from flatsurvey.pipeline.util import FactoryBindingSpec
+
             if isinstance(bound, Surface):
                 return [
                     FactoryBindingSpec(
@@ -73,12 +76,12 @@ class Deformation(Surface):
             goal = objects.provide(goal)
             goals = goal.deform(deformation=self._deformation)["goals"]
             if len(goals) != 1:
-                raise NotImplementedError
+                raise NotImplementedError("cannot rewrite more than one goal yet")
             return goals[0]
 
         def rewrite_reporter(self, reporter, objects):
             reporter = objects.provide(reporter)
             reporters = reporter.deform(deformation=self._deformation)["reporters"]
             if len(reporters) != 1:
-                raise NotImplementedError
+                raise NotImplementedError("cannot rewrite more than one reporter yet")
             return reporters[0]

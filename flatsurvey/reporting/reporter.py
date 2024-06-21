@@ -82,7 +82,17 @@ class Reporter:
         """
         pass
 
-    def progress(self, source, unit, count, total=None):
+    def progress(
+        self,
+        source,
+        count=None,
+        advance=None,
+        what=None,
+        total=None,
+        message=None,
+        parent=None,
+        activity=None,
+    ):
         r"""
         Report that ``source`` has made some progress.
 
@@ -95,7 +105,7 @@ class Reporter:
 
             >>> from flatsurvey.reporting import Log
             >>> log = Log(surface)
-            >>> log.progress(source=surface, unit="progress", count=13, total=37)
+            >>> log.progress(source=surface, what="progress", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] progress: 13/37
 
         """
@@ -119,23 +129,90 @@ class Reporter:
         """
         pass
 
-    def command(self):
+    def _simplify_primitive(self, value):
         r"""
-        Return the command that can be used to configure this reporter with the
-        arguments that provide it in its current configuration.
+        Return the argument in a way that the report can render out.
 
         EXAMPLES::
 
+            >>> from flatsurvey.reporting import Json
             >>> from flatsurvey.surfaces import Ngon
             >>> surface = Ngon((1, 1, 1))
+            >>> log = Json(surface)
 
-            >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
-            >>> log.command()
-            ['log']
+        Rewrites SageMath integers as Python integers::
+
+            >>> from sage.all import ZZ
+
+            >>> log._simplify(ZZ(1))
+            1
 
         """
-        raise NotImplementedError
+        from sage.all import ZZ
 
-    def __repr__(self):
-        return " ".join(self.command())
+        if isinstance(value, type(ZZ())):
+            return int(value)
+
+        if isinstance(value, (str, int, float, type(None))):
+            return value
+
+        return self._simplify_unknown(value)
+
+    def _simplify_unknown(self, value):
+        r"""
+        Return the argument in a way that the report can render out.
+
+        Subclasses can overwrite this to provide a fallback.
+        """
+        raise NotImplementedError(f"cannot represent {type(value)} in this report yet")
+
+    def _simplify(self, *args, **kwargs):
+        r"""
+        Recursively rewrite the arguments and return the resulting object.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting import Json
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+            >>> log = Json(surface)
+
+        Combines arguments and keyword arguments::
+
+            >>> log._simplify(1, 2, 3, a=4, b=5)
+            {'a': 4, 'b': 5, 'value': (1, 2, 3)}
+
+        """
+        if not args and not kwargs:
+            raise ValueError("cannot simplify nothing")
+
+        if len(args) == 0:
+            return self._simplify(kwargs)
+
+        if len(args) > 1:
+            return self._simplify(args, **kwargs)
+
+        value = args[0]
+
+        if kwargs:
+            ret = self._simplify(kwargs)
+            value = self._simplify(value)
+            if isinstance(value, dict):
+                ret.update(value)
+            else:
+                ret["value"] = value
+
+            return ret
+
+        if isinstance(value, tuple):
+            return tuple(self._simplify(entry) for entry in value)
+
+        if isinstance(value, list):
+            return list(self._simplify(entry) for entry in value)
+
+        if isinstance(value, dict):
+            return {
+                self._simplify(key): self._simplify(v) for (key, v) in value.items()
+            }
+
+        return self._simplify_primitive(value)

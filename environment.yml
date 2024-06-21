@@ -3,26 +3,22 @@
 # conda env create -f environment.yml
 name: flatsurvey
 channels:
-  - flatsurf
   - conda-forge
-  - defaults
 dependencies:
   - black >=22,<23
-  - boto3
   - click
+  - humanfriendly
   - isort
-  - moto
   - pip
-  - plumbum
+  - psutil
   - pyflatsurf
   - pyintervalxt
   - pylint
   - pytest
   - pytest-xdist
   - python-dateutil
+  - rich
   - ruamel.yaml
-  - sage-flatsurf >=0.4.4
+  - sage-flatsurf >=0.5.2,<0.6
   - pip:
-    - aioresponses
-    - gql==3.0.0a6
     - pinject

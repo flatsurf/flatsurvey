@@ -6,7 +6,7 @@ is such a direction but we can never say "no" _all_ directions have a
 non-cylinder.
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "cylinder-periodic-direction", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker cylinder-periodic-direction [OPTIONS]
       Determines whether there is a direction for which the surface decomposes
@@ -40,12 +40,13 @@ non-cylinder.
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class CylinderPeriodicDirection(Goal):
+class CylinderPeriodicDirection(Goal, Command):
     r"""
     Determines whether there is a direction for which the surface decomposes
     into cylinders.
@@ -53,12 +54,10 @@ class CylinderPeriodicDirection(Goal):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
-        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
         >>> surface = Ngon((1, 1, 1))
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-        >>> CylinderPeriodicDirection(report=Report([]), flow_decompositions=flow_decompositions, cache=Cache())
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+        >>> CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=None)
         cylinder-periodic-direction
 
     """
@@ -74,7 +73,10 @@ class CylinderPeriodicDirection(Goal):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._directions = 0
@@ -86,17 +88,15 @@ class CylinderPeriodicDirection(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
             >>> surface = Ngon((1, 1, 1))
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> cache = Cache()
-            >>> goal = CylinderPeriodicDirection(report=Report([]), flow_decompositions=flow_decompositions, cache=cache)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
+            >>> goal = CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -105,24 +105,50 @@ class CylinderPeriodicDirection(Goal):
         We mock some artificial results from previous runs and consume that
         artificial cache::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"data": {"result": None}}
-            ...    yield {"data": {"result": True}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"cylinder-periodic-direction": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": null
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": true
+            ... }]}''')], pickles=None, report=None)
+            >>> goal = CylinderPeriodicDirection(report=None, flow_decompositions=flow_decompositions, cache=cache)
+            >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface)])
+            >>> goal = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=cache)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"timestamp": ..., "cached": true, "value": true}]}
+
         """
-        results = self._cache.results(
-            surface=self._flow_decompositions._surface, job=self
+        results = self._cache.get(
+            self,
+            self._flow_decompositions._surface.cache_predicate(
+                False, cache=self._cache
+            ),
         )
 
-        verdict = await results.reduce()
+        verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
             await self._report.result(self, verdict, cached=True)
@@ -135,12 +161,14 @@ class CylinderPeriodicDirection(Goal):
 
         EXAMPLES::
 
-            >>> CylinderPeriodicDirection.reduce([{"result": None}, {"result": None}])
-            >>> CylinderPeriodicDirection.reduce([{"result": True}, {"result": None}])
+            >>> from collections import namedtuple
+            >>> Result = namedtuple("Result", "result")
+            >>> CylinderPeriodicDirection.reduce([Result(None), Result(None)])
+            >>> CylinderPeriodicDirection.reduce([Result(True), Result(None)])
             True
 
         """
-        results = [result["result"] for result in results]
+        results = [result.result for result in results]
 
         assert not any([result is False for result in results])
         return True if any(result for result in results) else None
@@ -185,12 +213,11 @@ class CylinderPeriodicDirection(Goal):
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
-            >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnections, SaddleConnectionOrientations
             >>> surface = Ngon((1, 1, 1))
             >>> log = Log(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
-            >>> cpd = CylinderPeriodicDirection(report=Report([log]), flow_decompositions=flow_decompositions, cache=Cache())
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+            >>> cpd = CylinderPeriodicDirection(report=Report([log]), flow_decompositions=flow_decompositions, cache=None)
 
         Investigate in a single direction. We find that this direction is
         cylinder periodic::
@@ -200,6 +227,26 @@ class CylinderPeriodicDirection(Goal):
             >>> asyncio.run(produce)
             [Ngon([1, 1, 1])] [CylinderPeriodicDirection] True (directions: 1)
             True
+
+        TESTS:
+
+        Verify that the JSON output works::
+
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+            >>> report = Report([Json(surface)])
+            >>> cpd = CylinderPeriodicDirection(report=report, flow_decompositions=flow_decompositions, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(cpd.report())
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "cylinder-periodic-direction": [{"timestamp": ..., "directions": 1, "value": true}]}
+
 
         """
         self._directions += 1

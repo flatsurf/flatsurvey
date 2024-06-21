@@ -8,7 +8,7 @@ investigated that would lead us to the full space.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "orbit-closure", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker orbit-closure [OPTIONS]
       Determines the GL₂(R) orbit closure of ``surface``.
@@ -51,25 +51,24 @@ EXAMPLES::
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class OrbitClosure(Goal):
+class OrbitClosure(Goal, Command):
     r"""
     Determines the GL₂(R) orbit closure of ``surface``.
 
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-        >>> from flatsurvey.cache import Cache
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+        >>> connections = SaddleConnections(surface, report=None)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+        >>> OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
         orbit-closure
 
     """
@@ -91,7 +90,10 @@ class OrbitClosure(Goal):
         cache_only=Goal.DEFAULT_CACHE_ONLY,
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
         self._cylinders_without_increase = 0
@@ -100,10 +102,16 @@ class OrbitClosure(Goal):
         self._expansions_performed = 0
         self._deformed = not deform
 
+        self._reported = False
+
         import pyflatsurf
 
         self._lower_bound = pyflatsurf.flatsurf.Bound(0)
         self._upper_bound = pyflatsurf.flatsurf.Bound(0)
+
+        from flatsurvey.reporting.report import ProgressReporting
+
+        self._progress = ProgressReporting(self._report, self)
 
     async def consume_cache(self):
         r"""
@@ -112,18 +120,16 @@ class OrbitClosure(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> cache = Cache()
-            >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+            >>> connections = SaddleConnections(surface, report=None)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
 
         Try to resolve the goal from (no) cached results::
 
             >>> import asyncio
+            >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
             >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
@@ -132,22 +138,49 @@ class OrbitClosure(Goal):
         We mock some artificial results from previous runs and consume that
         artificial cache::
 
-            >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"data": {"dense": None}}
-            ...    yield {"data": {"dense": True}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"orbit-closure": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "dense": null
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "dense": true
+            ... }]}''')], pickles=None, report=None)
+
+            >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+            >>> asyncio.run(goal.consume_cache())
 
             >>> goal.resolved
             True
 
-        """
-        results = self._cache.results(surface=self._surface, job=self)
+        TESTS:
 
-        verdict = await results.reduce()
+        Check that JSON output for this goal works::
+
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface)])
+            >>> goal = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=cache)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"timestamp": ..., "dense": true, "cached": true, "value": null}]}
+
+        """
+        with self._cache.defaults({"dense": None}):
+            results = self._cache.get(
+                self, self._surface.cache_predicate(False, cache=self._cache)
+            )
+
+            verdict = self.reduce(results)
 
         if verdict is not None or self._cache_only:
             await self._report.result(self, result=None, dense=verdict, cached=True)
@@ -208,7 +241,7 @@ class OrbitClosure(Goal):
         }
 
     def command(self):
-        command = ["orbit-closure"]
+        command = [self.name()]
         if self._limit != self.DEFAULT_LIMIT:
             command.append(f"--limit={self._limit}")
         if self._expansions != self.DEFAULT_EXPANSIONS:
@@ -219,6 +252,17 @@ class OrbitClosure(Goal):
             command.append("--cache-only")
         return command
 
+    @property
+    def dimension(self):
+        return self._surface.orbit_closure().dimension()
+
+    @property
+    def dense(self):
+        if self.dimension == self._surface.orbit_closure_dimension_upper_bound:
+            return True
+
+        return None
+
     async def _consume(self, decomposition, cost):
         r"""
         Enlarge the orbit closure from the cylinders in ``decomposition``.
@@ -228,12 +272,11 @@ class OrbitClosure(Goal):
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-            >>> from flatsurvey.cache import Cache
             >>> surface = Ngon((1, 3, 5))
-            >>> connections = SaddleConnections(surface)
+            >>> connections = SaddleConnections(surface, report=None)
             >>> log = Log(surface=surface)
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+            >>> oc = OrbitClosure(surface=surface, report=Report([log]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
 
         Run until we find the orbit closure, i.e., investigate in two directions::
 
@@ -243,6 +286,25 @@ class OrbitClosure(Goal):
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 4/6
             [Ngon([1, 3, 5])] [OrbitClosure] dimension: 6/6
             [Ngon([1, 3, 5])] [OrbitClosure] GL(2,R)-orbit closure of dimension at least 6 in H_3(4) (ambient dimension 6) (dimension: 6) (directions: 2) (directions_with_cylinders: 2) (dense: True)
+
+        TESTS:
+
+        Check that the JSON output for this goal works::
+
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface)])
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+            >>> oc = OrbitClosure(surface=surface, report=report, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
+
+            >>> import asyncio
+            >>> produce = flow_decompositions.produce()
+            >>> asyncio.run(produce)
+            True
+
+            >>> asyncio.run(oc.report())
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 3, 5], "type": "Ngon", "pickle": "..."}, "orbit-closure": [{"timestamp": ..., "dimension": 6, "directions": 1, "directions_with_cylinders": 1, "dense": true, "value": {"type": "GL2ROrbitClosure", "pickle": "..."}}]}
 
         """
         self._directions += 1
@@ -259,38 +321,32 @@ class OrbitClosure(Goal):
             self._directions_with_cylinders += 1
 
         orbit_closure = self._surface.orbit_closure()
-        dimension = orbit_closure.dimension()
+        dimension = self.dimension
 
         orbit_closure.update_tangent_space_from_flow_decomposition(decomposition)
 
-        self._report.progress(
-            self,
-            "dimension",
-            orbit_closure.dimension(),
-            self._surface.orbit_closure_dimension_upper_bound,
+        self._progress.progress(
+            what="dimension",
+            count=self.dimension,
+            total=self._surface.orbit_closure_dimension_upper_bound,
+            activity="orbit closure",
         )
 
         assert (
-            orbit_closure.dimension()
-            <= self._surface.orbit_closure_dimension_upper_bound
+            self.dimension <= self._surface.orbit_closure_dimension_upper_bound
         ), "%s <= %s" % (
-            orbit_closure.dimension(),
+            self.dimension,
             self._surface.orbit_closure_dimension_upper_bound,
         )
 
-        if dimension != orbit_closure.dimension():
+        if dimension != self.dimension:
             self._cylinders_without_increase = 0
 
-        if (
-            orbit_closure.dimension()
-            == self._surface.orbit_closure_dimension_upper_bound
-        ):
+        if self.dimension == self._surface.orbit_closure_dimension_upper_bound:
             await self.report()
             return Goal.COMPLETED
 
         if self._cylinders_without_increase >= self._limit:
-            await self.report()
-
             if self._expansions_performed < self._expansions:
                 self._expansions_performed += 1
 
@@ -317,11 +373,9 @@ class OrbitClosure(Goal):
 
             return Goal.COMPLETED
 
-        if (
-            dimension != orbit_closure.dimension()
-            and not self._deformed
-            and orbit_closure.dimension() > 3
-        ):
+        if dimension != self.dimension and not self._deformed and self.dimension > 3:
+            self._progress.progress(message="deforming surface")
+
             tangents = [
                 orbit_closure.lift(v) for v in orbit_closure.tangent_space_basis()[2:]
             ]
@@ -344,11 +398,11 @@ class OrbitClosure(Goal):
                 for tangent in tangents:
                     import cppyy
 
-                    # TODO: What is a good vector to use to deform? See #3.
+                    # What is a good vector to use to deform? See #3.
                     # n = upper_bound(tangent) * scale
                     n = upper_bound(tangent) // 4
 
-                    # TODO: What is a good bound here? See #3.
+                    # What is a good bound here? See #3.
                     # if n > 1e20:
                     #     print("Cannot deform. Deformation would lead to too much coefficient blowup.")
                     #     continue
@@ -359,7 +413,7 @@ class OrbitClosure(Goal):
                         orbit_closure.V2(x / n, x / (2 * n)).vector for x in tangent
                     ]
                     try:
-                        # TODO: Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient. See #3.
+                        # Valid deformations that require lots of flips take forever. It's crucial to pick n such that no/very few flips are sufficient. See #3.
                         deformed = orbit_closure._surface + deformation
 
                         self._report.log(
@@ -384,14 +438,22 @@ class OrbitClosure(Goal):
                         from flatsurvey.surfaces import Deformation
 
                         raise Deformation.Restart(surface, old=self._surface)
-                    except cppyy.gbl.std.invalid_argument as e:
-                        print(e)
+                    except cppyy.gbl.std.invalid_argument:
+                        self._progress.progress(
+                            message="failed to deform surface, retrying"
+                        )
                         continue
 
                 scale *= 2
 
                 if not eligibles:
-                    print("Cannot deform. No tangent vector can be used to deform.")
+                    self._progress.progress(message="failed to deform surface")
+
+                    import logging
+
+                    logging.error(
+                        "Cannot deform. No tangent vector can be used to deform."
+                    )
                     break
 
         return not Goal.COMPLETED
@@ -403,26 +465,42 @@ class OrbitClosure(Goal):
 
         EXAMPLES::
 
-            >>> OrbitClosure.reduce([{}, {}]) is None
+            >>> from flatsurvey.cache import Cache
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"orbit-closure": [{
+            ...   "dense": null
+            ... }, {
+            ...   "dense": null
+            ... }]}''')], pickles=None, report=None)
+            >>> OrbitClosure.reduce(cache.get("orbit-closure")) is None
             True
-            >>> OrbitClosure.reduce([{}, {'dense': True}]) is True
+
+        ::
+
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"orbit-closure": [{
+            ...   "dense": null
+            ... }, {
+            ...   "dense": true
+            ... }]}''')], pickles=None, report=None)
+            >>> OrbitClosure.reduce(cache.get("orbit-closure")) is True
             True
 
         """
-        results = [result.get("dense", None) for result in results]
+        results = [result.dense for result in results]
         assert not any([result is False for result in results])
         return True if any(result for result in results) else None
 
     async def report(self):
-        if self._resolved != Goal.COMPLETED:
-            orbit_closure = self._surface.orbit_closure()
+        if not self._reported:
             await self._report.result(
                 self,
-                orbit_closure,
-                dimension=orbit_closure.dimension(),
+                self._surface.orbit_closure(),
+                dimension=self.dimension,
                 directions=self._directions,
                 directions_with_cylinders=self._directions_with_cylinders,
-                dense=orbit_closure.dimension()
-                == self._surface.orbit_closure_dimension_upper_bound
-                or None,
+                dense=self.dense,
             )
+
+            self._reported = True

@@ -4,7 +4,7 @@ Track Interval Exchange Transformations that cannot be decided.
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "undetermined-iet", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker undetermined-iet [OPTIONS]
       Tracks undetermined Interval Exchange Transformations.
@@ -39,26 +39,25 @@ import time
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
 
-class UndeterminedIntervalExchangeTransformation(Goal):
+class UndeterminedIntervalExchangeTransformation(Goal, Command):
     r"""
     Tracks undetermined Interval Exchange Transformations.
 
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, SaddleConnectionOrientations
-        >>> from flatsurvey.cache import Cache
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface)
-        >>> orientations = SaddleConnectionOrientations(connections)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=orientations)
-        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=Cache())
+        >>> connections = SaddleConnections(surface, report=None)
+        >>> orientations = SaddleConnectionOrientations(connections, report=None)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=orientations)
+        >>> UndeterminedIntervalExchangeTransformation(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connection_orientations=orientations, cache=None)
         undetermined-iet
 
     """
@@ -76,7 +75,10 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         limit=DEFAULT_LIMIT,
     ):
         super().__init__(
-            producers=[flow_decompositions], cache=cache, cache_only=cache_only
+            producers=[flow_decompositions],
+            report=report,
+            cache=cache,
+            cache_only=cache_only,
         )
 
     async def consume_cache(self):
@@ -89,29 +91,38 @@ class UndeterminedIntervalExchangeTransformation(Goal):
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.reporting.report import Report
             >>> from flatsurvey.cache import Cache
             >>> from flatsurvey.reporting.log import Log
+            >>> from flatsurvey.reporting import Report
             >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface))
-            >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=saddle_connection_orientations)
-            >>> cache = Cache()
+            >>> saddle_connection_orientations = SaddleConnectionOrientations(saddle_connections=SaddleConnections(surface=surface, report=None), report=None)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
             >>> log = Log(surface)
-            >>> goal = UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
 
         We mock some artificial results from previous runs and consume that
         artificial cache. Since we set ``--cache-only``, a result is reported
         immediately::
 
             >>> import asyncio
-            >>> from unittest.mock import patch
-            >>> from flatsurvey.cache.cache import Nothing
-            >>> async def results(self):
-            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
-            ...    yield {"surface": {"data": {}}, "timestamp": None, "data": {"result": "IET(…)"}}
-            >>> with patch.object(Nothing, '__aiter__', results):
-            ...    asyncio.run(goal.consume_cache())
+            >>> from io import StringIO
+            >>> cache = Cache(jsons=[StringIO(
+            ... '''{"undetermined-iet": [{
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": "IET(…)"
+            ... }, {
+            ...   "surface": {
+            ...     "type": "Ngon",
+            ...     "angles": [1, 1, 1]
+            ...   },
+            ...   "result": "IET(…)"
+            ... }]}''')], pickles=None, report=None)
+            >>> goal = UndeterminedIntervalExchangeTransformation(report=Report([log]), surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
+
+            >>> asyncio.run(goal.consume_cache())
             [Ngon([1, 1, 1])] [UndeterminedIntervalExchangeTransformation] ¯\_(ツ)_/¯ (cached) (iets: ['IET(…)', 'IET(…)'])
 
         The goal is marked as completed, since we had set ``cache_only`` above::
@@ -119,13 +130,33 @@ class UndeterminedIntervalExchangeTransformation(Goal):
             >>> goal.resolved
             True
 
+        TESTS:
+
+        Check that JSON output for this goal works; actually it does not do
+        anything useful yet. What should it do?
+
+        ::
+
+            >>> from flatsurvey.reporting import Json, Report
+
+            >>> report = Report([Json(surface)])
+            >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=saddle_connection_orientations)
+            >>> goal = UndeterminedIntervalExchangeTransformation(report=report, surface=surface, flow_decompositions=flow_decompositions, saddle_connection_orientations=saddle_connection_orientations, cache=cache, cache_only=True)
+
+            >>> import asyncio
+            >>> asyncio.run(goal.consume_cache())
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "undetermined-iet --cache-only": [{"timestamp": ..., "iets": ["IET(\u2026)", "IET(\u2026)"], "cached": true, "value": null}]}
+
         """
         if not self._cache_only:
             return
 
-        results = self._cache.results(surface=self._surface, job=self)
+        results = self._cache.get(
+            self, self._surface.cache_predicate(False, cache=self._cache)
+        )
 
-        iets = [node["result"] async for node in results.nodes()]
+        iets = [result.result for result in results]
 
         await self._report.result(self, None, iets=iets, cached=True)
         self._resolved = Goal.COMPLETED
@@ -172,12 +203,12 @@ class UndeterminedIntervalExchangeTransformation(Goal):
 
         cls._hacks_enabled = True
 
-        # TODO: Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
+        # Make this iet serializable in pyintervalxt by simply saying dumps(iet.forget())
         # i.e., when serializing an IET of unknown type (as is this one because
         # (a) it comes from C++ and was not constructed in Python and (b) it
         # has intervalxt::sample::Lengths and not intervalxt::cppyy::Lengths)
         # be smart about registering the right types in cppyy. (If possible.) See #10.
-        # TODO: Expose something like this construction() in intervalxt. See #10.
+        # Expose something like this construction() in intervalxt. See #10.
         import cppyy
         import pyeantic
         import pyexactreal
@@ -226,8 +257,13 @@ class UndeterminedIntervalExchangeTransformation(Goal):
             UndeterminedIntervalExchangeTransformation._enable_hacks()
 
             # Forget the surface structure of this IET
+            import cppyy
+
             construction = cppyy.gbl.construction(iet)
             degree = construction[0][0].parent().degree()
+
+            import pyintervalxt
+
             iet = pyintervalxt.IntervalExchangeTransformation(
                 list(construction[0]), list(construction[1])
             )
@@ -245,9 +281,10 @@ class UndeterminedIntervalExchangeTransformation(Goal):
                 list(construction[0]), list(construction[1])
             )
 
-            # TODO: pyintervalxt fails to serialize IETs. See #10.
+            # Once #18 has been fixed, we should properly test this.
             await self._report.result(
                 self,
+                # pyintervalxt fails to serialize IETs. See #10.
                 str(iet),
                 surface=self._surface,
                 degree=degree,
@@ -265,4 +302,6 @@ class UndeterminedIntervalExchangeTransformation(Goal):
 
         This goal does not support this operation.
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "undetermined-interval-exchange-transformation cannot summarize historic data yet"
+        )

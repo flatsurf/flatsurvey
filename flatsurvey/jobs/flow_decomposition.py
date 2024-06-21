@@ -10,7 +10,7 @@ However, you can still change some of the behaviour of this module through the
 number of Zorich induction steps:
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "flow-decompositions", "--help") # doctest: +NORMALIZE_WHITESPACE
     Usage: worker flow-decompositions [OPTIONS]
       Turns directions coming from saddle connections into flow decompositions.
@@ -43,23 +43,22 @@ import time
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
+from flatsurvey.pipeline import Processor
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
 
-from ..pipeline import Processor
 
-
-class FlowDecompositions(Processor):
+class FlowDecompositions(Processor, Command):
     r"""
     Turns directions coming from saddle connections into flow decompositions.
 
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+        >>> FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
         flow-decompositions
 
     """
@@ -67,9 +66,9 @@ class FlowDecompositions(Processor):
 
     @copy_args_to_internal_fields
     def __init__(
-        self, surface, report, saddle_connection_orientations, limit=DEFAULT_LIMIT
+        self, surface, saddle_connection_orientations, report=None, limit=DEFAULT_LIMIT
     ):
-        super().__init__(producers=[saddle_connection_orientations])
+        super().__init__(producers=[saddle_connection_orientations], report=report)
 
     @classmethod
     @click.command(
@@ -107,13 +106,28 @@ class FlowDecompositions(Processor):
             >>> from flatsurvey.reporting import Log, Report
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface)))
+            >>> decompositions = FlowDecompositions(surface=surface, report=Report([Log(surface)]), saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
             >>> produce = decompositions.produce() # indirect doctest
-            >>> asyncio.run(produce)
-            [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (6, (-2*c ~ -3.4641016))) (cylinders: 1) (minimal: 0) (undetermined: 0)
+            >>> asyncio.run(produce)  # doctest: +ELLIPSIS
+            [Ngon([1, 1, 1])] [FlowDecompositions] ¯\_(ツ)_/¯ (orientation: (0, ...)) (cylinders: 1) (minimal: 0) (undetermined: 0)
             True
             >>> decompositions._current
             FlowDecomposition with 1 cylinders, 0 minimal components and 0 undetermined components
+
+        TESTS:
+
+        Check that the JSON output works::
+
+            >>> from flatsurvey.reporting import Json
+
+            >>> report = Report([Json(surface)])
+            >>> decompositions = FlowDecompositions(surface=surface, report=report, saddle_connection_orientations=SaddleConnectionOrientations(SaddleConnections(surface, report=None), report=None))
+
+            >>> asyncio.run(decompositions.produce())
+            True
+
+            >>> report.flush()  # doctest: +ELLIPSIS
+            {"surface": {"angles": [1, 1, 1], "type": "Ngon", "pickle": "..."}, "flow-decompositions": [{"timestamp": ..., "orientation": {"type": "Vector<eantic::renf_elem_class>", "pickle": "..."}, "cylinders": 1, "minimal": 0, "undetermined": 0, "value": null}]}
 
         """
         start = time.perf_counter()

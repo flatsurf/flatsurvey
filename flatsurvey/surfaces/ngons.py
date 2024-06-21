@@ -4,7 +4,7 @@ Translation surfaces coming from unfoldings of n-gons
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.__main__ import worker
+    >>> from flatsurvey.worker.worker import worker
     >>> invoke(worker, "ngon", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: worker ngon [OPTIONS]
       Unfolding of an n-gon with prescribed angles.
@@ -16,7 +16,7 @@ EXAMPLES::
                                      for triangles, exact-real otherwise]
       --help                         Show this message and exit.
 
-    >>> from flatsurvey.__main__ import survey
+    >>> from flatsurvey.survey import survey
     >>> invoke(survey, "ngons", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: survey ngons [OPTIONS]
       The translation surfaces that come from unfolding n-gons.
@@ -65,9 +65,8 @@ import click
 from sage.misc.cachefunc import cached_method
 
 from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
-
-from .surface import Surface
 
 
 class Ngon(Surface):
@@ -81,11 +80,13 @@ class Ngon(Surface):
         >>> S = Ngon((1, 1, 1)); S
         Ngon([1, 1, 1])
         >>> S.surface()
-        TranslationSurface built from 2 polygons
+        Translation Surface in H_1(0) built from 2 equilateral triangles
 
     """
 
-    def __init__(self, angles, length=None, lengths=None):
+    def __init__(self, angles, length=None, polygon=None):
+        super().__init__()
+
         self.angles = list(angles)
 
         if length is None:
@@ -95,16 +96,29 @@ class Ngon(Surface):
                 length = "exact-real"
 
         self.length = length
-        if lengths is not None:
-            self._lengths.set_cache(tuple(lengths))
+
+        if polygon is not None:
+            if isinstance(polygon, tuple):
+                # At some point we pickled the lengths of the sides instead of
+                # the actual polygon. We are too lazy to make these pickles
+                # work (because there are also two different flavors of those…)
+                import warnings
+
+                warnings.warn(
+                    "ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths"
+                )
+                polygon = self.polygon()
+
+            self.polygon.set_cache(polygon)
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
-            print(
+            import logging
+
+            logging.warning(
                 "Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?"
             )
 
         self._name = "-".join([str(a) for a in angles])
-        self._eliminate_marked_points = True
 
     def equivalents(self):
         from sage.all import gcd
@@ -112,9 +126,9 @@ class Ngon(Surface):
         def ngon(angles):
             angles = tuple(sorted(angles))
             angles = tuple(a / gcd(angles) for a in angles)
-            if self._lengths.cache:
+            if self.polygon.cache:
                 raise NotImplementedError(
-                    f"Cannot translate explicit lengths from {self} when constructing equivalent surface."
+                    f"Cannot translate explicit polygon from {self} when constructing equivalent surface."
                 )
             return Ngon(angles, length=self.length)
 
@@ -245,20 +259,20 @@ class Ngon(Surface):
 
             >>> S = Ngon((1, 1, 2))
             >>> S.unfolding_symmetries
-            {[-1  0]
-            [ 0 -1], [1 0]
+            {[1 0]
             [0 1], [ 0  1]
             [-1  0], [ 0 -1]
-            [ 1  0]}
+            [ 1  0], [-1  0]
+            [ 0 -1]}
 
         """
         S = self._surface()
 
         symmetries = set()
 
-        assert (0, 1, 0) in S.label_iterator()
+        assert (0, 1, 0) in S.labels()
 
-        for (sign, x, y) in S.label_iterator():
+        for (sign, x, y) in S.labels():
             from sage.all import matrix
 
             symmetries.add(
@@ -335,8 +349,7 @@ class Ngon(Surface):
 
         Trivial simplifications::
 
-            >>> Ngon((1, 1, 1, 3)).reference()
-            Note: This ngon has a π angle. We can handle that but this is probably not what you wanted?
+            >>> Ngon((1, 1, 1, 3)).reference()  # Note that this will print a warning about the π angle to the console.
             Ngon([1, 1, 1])
 
             >>> Ngon((2, 1, 1)).reference()
@@ -453,10 +466,21 @@ class Ngon(Surface):
     @property
     def orbit_closure_dimension_upper_bound(self):
         if not hasattr(self, "_bound"):
-            from flatsurf import EquiangularPolygons
+            angles = self.angles
 
-            self._bound = EquiangularPolygons(
-                *self.angles
+            if len(angles) == 3:
+                a, b, c = angles
+                if a == b:
+                    # An isosceles triangles is a double cover of its half.
+                    angles = (2 * a, a + b + c, c)
+                elif b == c:
+                    # An isosceles triangles is a double cover of its half.
+                    angles = (a, 2 * b, a + b + c)
+
+            from flatsurf import EuclideanPolygonsWithAngles
+
+            self._bound = EuclideanPolygonsWithAngles(
+                *angles
             ).billiard_unfolding_stratum_dimension(
                 "half-translation", marked_points=not self._eliminate_marked_points
             )
@@ -469,65 +493,37 @@ class Ngon(Surface):
     def _flatsurvey_characteristics(self):
         return {"angles": [int(a) for a in self.angles]}
 
-    @cached_method
-    def _lengths(self):
-        r"""
-        Determine random lengths for the sides of the original n-gon.
+    def cache_predicate(self, exact, cache=None):
+        def surface_predicate(surface):
+            if surface.type != "Ngon":
+                return False
+            if surface.angles != self.angles:
+                return False
 
-        EXAMPLES::
+            if exact:
+                raise NotImplementedError("exact filtering is not supported yet")
 
-            >>> Ngon((1, 2, 3))._lengths()
+            return True
 
-        """
-        from flatsurf import EquiangularPolygons
+        if cache is not None:
+            surfaces = set(
+                [surface.pickle for surface in cache.get("surface", surface_predicate)]
+            )
 
-        E = EquiangularPolygons(*self.angles)
-        if self.length == "exact-real":
-            from pyexactreal import ExactReals
+            def predicate(result):
+                surface = result.surface
+                from flatsurvey.cache.node import ReferenceNode
 
-            R = ExactReals(E.base_ring())
-        elif self.length == "e-antic":
-            from pyeantic import RealEmbeddedNumberField
+                if isinstance(surface, ReferenceNode):
+                    return surface.pickle in surfaces
+                return surface_predicate(surface)
 
-            R = RealEmbeddedNumberField(E.base_ring())
         else:
-            raise NotImplementedError(self.length)
 
-        L = E.lengths_polytope()
+            def predicate(result):
+                return surface_predicate(result.surface)
 
-        def random_lengths():
-            # TODO: Do this properly in sage-flatsurf. See #11.
-            from random import shuffle
-
-            from sage.all import VectorSpace, free_module_element, span
-
-            U = L.ambient_space().subspace([])
-
-            lengths = free_module_element(R, len(self.angles))
-            rays = list(L.rays())
-            shuffle(rays)
-            for ray in rays:
-                ray = ray.vector()
-                if ray not in U:
-                    U += span([ray])
-                    length = R.zero()
-                    while length <= 0:
-                        length = R.random_element() if lengths else R.one()
-                    lengths += length * ray
-
-            return tuple(lengths)
-
-        for n in range(1024):
-            lengths = random_lengths()
-            try:
-                E(lengths)
-            except ValueError as e:
-                continue
-            while min(lengths) < 1:
-                lengths = tuple(l * 2 for l in lengths)
-            return lengths
-
-        raise Exception("giving up on", E)
+        return predicate
 
     @cached_method
     def polygon(self):
@@ -536,21 +532,28 @@ class Ngon(Surface):
 
         EXAMPLES::
 
-            TODO: Why does this doctest not run? See #12.
-            >>> Ngon(1, 1, 1).polygon()
+            >>> Ngon((1, 1, 1)).polygon()  # doctest: +ELLIPSIS
+            Polygon(vertices=[(0, 0), (..., 0), (..., ...)])
 
         """
-        from flatsurf import EquiangularPolygons
+        from flatsurf import EuclideanPolygonsWithAngles
 
-        E = EquiangularPolygons(*self.angles)
+        E = EuclideanPolygonsWithAngles(*self.angles)
+        if self.length == "exact-real":
+            # sage-flatsurf does not support random_element() with exact-real lengths
+            raise NotImplementedError("exact-real ngons are currently not supported")
+        elif self.length == "e-antic":
+            pass
+        else:
+            raise NotImplementedError(self.length)
 
-        return E(self._lengths())
+        return E.random_element()
 
     @cached_method
     def _surface(self):
         from flatsurf import similarity_surfaces
 
-        S = similarity_surfaces.billiard(self.polygon(), rational=True)
+        S = similarity_surfaces.billiard(self.polygon())
         S = S.minimal_cover(cover_type="translation")
         return S
 
@@ -572,16 +575,16 @@ class Ngon(Surface):
         )
 
     def __reduce__(self):
-        return (Ngon, (self.angles, self.length, self._lengths()))
+        return (Ngon, (self.angles, self.length, self.polygon()))
 
     def __hash__(self):
-        return hash((tuple(self.angles), self._lengths()))
+        return hash((tuple(self.angles), self.polygon()))
 
     def __eq__(self, other):
         return (
             isinstance(other, Ngon)
             and self.angles == other.angles
-            and self._lengths() == other._lengths()
+            and self.polygon() == other.polygon()
         )
 
     def __ne__(self, other):
@@ -799,3 +802,11 @@ def partitions(total, n):
             for partition in partitions(total - a, n - 1):
                 if a <= partition[0]:
                     yield [a] + partition
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Ngon._polygon": Ngon.polygon.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "Ngon._surface": Ngon._surface.__doc__,
+}

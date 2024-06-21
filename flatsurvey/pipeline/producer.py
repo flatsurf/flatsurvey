@@ -27,7 +27,7 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import time
+from abc import abstractmethod
 
 
 class Producer:
@@ -40,7 +40,7 @@ class Producer:
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface)
+        >>> connections = SaddleConnections(surface=surface, report=None)
 
         >>> isinstance(connections, Producer)
         True
@@ -48,10 +48,17 @@ class Producer:
     """
     EXHAUSTED = False
 
-    def __init__(self):
+    def __init__(self, report=None):
         self._consumers = set()
         self._current = None
         self._exhausted = False
+
+        if report is None:
+            from flatsurvey.reporting import Report
+
+            report = Report([])
+
+        self._report = report
 
     async def produce(self):
         r"""
@@ -64,7 +71,7 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
+            >>> connections = SaddleConnections(surface=surface, report=None)
 
             >>> import asyncio
             >>> produce = connections.produce()
@@ -72,9 +79,11 @@ class Producer:
             True
 
             >>> connections._current
-            -3
+            1
 
         """
+        import time
+
         start = time.perf_counter()
         if self._produce() == Producer.EXHAUSTED:
             self._exhausted = True
@@ -95,7 +104,7 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, limit=0)
+            >>> connections = SaddleConnections(surface=surface, limit=0, report=None)
 
         For a producer to be exhausted, it has to be asked to :meth:`produce`
         at least once unsuccesfully. This is a bit unfortunate, but due to the
@@ -131,11 +140,11 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
+            >>> connections = SaddleConnections(surface=surface, report=None)
 
         Creating a consumer calls this method implicitly::
 
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
 
             >>> connections._consumers
             {saddle-connection-orientations}
@@ -143,6 +152,7 @@ class Producer:
         """
         self._consumers.add(consumer)
 
+    @abstractmethod
     def _produce(self):
         r"""
         Produce something and return whether nothing new can be produced
@@ -151,25 +161,3 @@ class Producer:
         Actual producers must implement this method.
 
         """
-        raise NotImplementedError
-
-    def command(self):
-        r"""
-        Return the command line that can be used to create this producer.
-
-        Actual producers must implement this method.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
-            >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface)
-            >>> connections.command()
-            ['saddle-connections']
-
-        """
-        raise NotImplementedError
-
-    def __repr__(self):
-        return " ".join(self.command())

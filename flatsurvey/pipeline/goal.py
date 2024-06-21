@@ -47,14 +47,12 @@ class Goal(Consumer):
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.reporting import Report
         >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-        >>> from flatsurvey.cache import Cache
         >>> from flatsurvey.jobs.orbit_closure import OrbitClosure
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=Report([]), saddle_connection_orientations=SaddleConnectionOrientations(connections))
-        >>> goal = OrbitClosure(surface=surface, report=Report([]), flow_decompositions=flow_decompositions, saddle_connections=connections, cache=Cache())
+        >>> connections = SaddleConnections(surface, report=None)
+        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
+        >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
         >>> isinstance(goal, Goal)
         True
 
@@ -69,5 +67,13 @@ class Goal(Consumer):
     )
 
     @copy_args_to_internal_fields
-    def __init__(self, producers, cache, cache_only=DEFAULT_CACHE_ONLY):
-        super().__init__(producers=producers)
+    def __init__(self, producers, cache, cache_only=DEFAULT_CACHE_ONLY, report=None):
+        if self._cache is None:
+            from flatsurvey.cache import Cache
+
+            self._cache = Cache(pickles=None, report=None)
+
+        super().__init__(producers=producers, report=report)
+
+    async def consume_cache(self):
+        pass

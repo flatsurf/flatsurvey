@@ -5,7 +5,8 @@ EXAMPLES::
 
     >>> from flatsurvey.surfaces.thurston_veech import ThurstonVeech
     >>> ThurstonVeech((1,0,2), (0,2,1), [1,1], [1,1]).surface()
-    TranslationSurface built from 3 polygons
+    Translation Surface in H_2(2) built from a square and 2 rectangles
+
 """
 # *********************************************************************
 #  This file is part of flatsurvey.
@@ -49,12 +50,15 @@ class ThurstonVeech(Surface):
         ThurstonVeech((1, 0, 2), (0, 2, 1), (1, 1), (1, 1))
         >>> S = TV.surface()
         >>> S
-        TranslationSurface built from 3 polygons
+        Translation Surface in H_2(2) built from a square and 2 rectangles
         >>> S.base_ring()
         Number Field in a with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
+
     """
 
     def __init__(self, hp, vp, hm, vm):
+        super().__init__()
+
         if len(hp) != len(vp):
             raise ValueError(
                 "hp and vp must be zero based permutations of the same size"
@@ -65,9 +69,6 @@ class ThurstonVeech(Surface):
             raise ValueError("hm and vm must be positive vectors")
         self.hm = hm
         self.vm = vm
-
-        # TODO: Move this to the super() invocation instead.
-        self._eliminate_marked_points = True
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -103,14 +104,15 @@ class ThurstonVeech(Surface):
             'An origami'
             >>> ThurstonVeech(hp, vp, (1,2,1,2), (2,3,2,5)).reference() is None
             True
+
         """
         from sage.all import QQ
 
-        # TODO: known exotic loci. See #13.
+        # Add more known exotic loci. See #13.
         if self._surface().base_ring() is QQ:
             return "An origami"
 
-        # TODO: some of the quotient might come from something else than
+        # Some of the quotient might come from something else than
         # automorphisms... Something needs to be done for each block of
         # the monodromy. See #13.
         A = self.orientable_automorphisms()
@@ -122,7 +124,7 @@ class ThurstonVeech(Surface):
 
     @cached_method
     def origami(self):
-        return self._thurston_veech()._o
+        return self._thurston_veech()._origami
 
     @cached_method
     def _thurston_veech(self):
@@ -163,6 +165,7 @@ class ThurstonVeech(Surface):
             >>> TV = ThurstonVeech(hp, vp, (1,1), (1,1,2))
             >>> TV.orientable_automorphisms()
             Group(())
+
         """
         o = self.origami()
         n = o.nb_squares()
@@ -350,8 +353,8 @@ class ThurstonVeechs:
 
                         if o0 > o1 or o0 > o2 and o0 > o3:
                             continue
-                        # TODO: in case of equality above, we will generate the same
-                        # origami twice.
+                        # TODO: in case of equality above, we will generate the
+                        # same origami twice.
 
                         cd1 = o1.cylinder_decomposition()
                         if any(h != 1 for _, _, _, h, _, _ in cd1):
@@ -368,7 +371,7 @@ class ThurstonVeechs:
                                 tv = ThurstonVeech(o.r_tuple(), o.u_tuple(), mh, mv)
 
                                 if tv in seen:
-                                    print("Skipping duplicate")
+                                    # Skipping duplicate.
                                     continue
 
                                 if literature == "include":
@@ -390,3 +393,15 @@ class ThurstonVeechs:
 
                                 seen.add(tv)
                                 yield tv
+
+
+__test__ = {
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech.origami": ThurstonVeech.origami.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech._thurston_veech": ThurstonVeech._thurston_veech.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech._surface": ThurstonVeech._surface.__doc__,
+    # Work around https://trac.sagemath.org/ticket/33951
+    "ThurstonVeech.orientable_automorphisms": ThurstonVeech.orientable_automorphisms.__doc__,
+}
