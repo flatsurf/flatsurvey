@@ -35,10 +35,10 @@ EXAMPLES::
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.reporting.reporter import Reporter
-from flatsurvey.pipeline.util import FactoryBindingSpec
-from flatsurvey.ui.group import GroupedCommand
 from flatsurvey.command import Command
+from flatsurvey.pipeline.util import FactoryBindingSpec
+from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.ui.group import GroupedCommand
 
 
 class Yaml(Reporter, Command):

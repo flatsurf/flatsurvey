@@ -65,9 +65,8 @@ import click
 from sage.misc.cachefunc import cached_method
 
 from flatsurvey.pipeline.util import PartialBindingSpec
-from flatsurvey.ui.group import GroupedCommand
-
 from flatsurvey.surfaces.surface import Surface
+from flatsurvey.ui.group import GroupedCommand
 
 
 class Ngon(Surface):

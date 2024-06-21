@@ -33,9 +33,9 @@ The saddle connections on a translation surface.
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Processor
 from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.command import Command
 
 
 class SaddleConnectionOrientations(Processor, Command):

@@ -28,9 +28,9 @@ runs but unpickling them is not implemented in much generality, see #10.
 
 import click
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.command import Command
 
 
 class Pickles(Command):
@@ -90,12 +90,11 @@ class PickleProvider:
         # Work around some current problems in many of our pickles:
         # - Pickles import sage.rings.number_field but SageMath cannot handle
         #   this so we get a circular import. See #10.
-        import sage.all
+        from pickle import loads
 
         # - Pickles use cppyy.gbl.flatsurf but it's not available yet somehow. See #10.
         import pyflatsurf
-
-        from pickle import loads
+        import sage.all
 
         try:
             return loads(raw)

@@ -80,12 +80,12 @@ TESTS::
 # *********************************************************************
 
 import click
-from flatsurvey.ui.group import CommandWithGroups
 
 import flatsurvey.cache
 import flatsurvey.jobs
 import flatsurvey.reporting
 import flatsurvey.surfaces
+from flatsurvey.ui.group import CommandWithGroups
 
 
 @click.group(
@@ -187,8 +187,9 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
         if dry_run:
             load = 0
 
-        import sys
         import asyncio
+        import sys
+
         from flatsurvey.scheduler import Scheduler
 
         sys.exit(

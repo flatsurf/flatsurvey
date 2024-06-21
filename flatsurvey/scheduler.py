@@ -216,6 +216,7 @@ class Scheduler:
         shared.append(ListBindingSpec("reporters", reporters))
 
         import pinject
+
         import flatsurvey.reporting.report
 
         objects = pinject.new_object_graph(
@@ -354,7 +355,7 @@ class Scheduler:
                 logging.info(" ".join(command))
             return
 
-        from multiprocessing import Queue, Process
+        from multiprocessing import Process, Queue
 
         progress_queue = Queue()
 
@@ -362,8 +363,9 @@ class Scheduler:
 
             def work(command, progress_queue):
                 try:
-                    from flatsurvey.worker.worker import worker
                     from click.testing import CliRunner
+
+                    from flatsurvey.worker.worker import worker
 
                     runner = CliRunner()
 
@@ -380,8 +382,8 @@ class Scheduler:
 
                         warning("Task produced output on stdout:\n" + output)
                 except Exception as e:
-                    from logging import error
                     import traceback
+                    from logging import error
 
                     error(
                         "Process crashed: "

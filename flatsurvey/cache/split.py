@@ -23,8 +23,8 @@ Splits cache files into smaller files.
 import click
 from pinject import copy_args_to_internal_fields
 
-from flatsurvey.pipeline import Goal
 from flatsurvey.command import Command
+from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 
 

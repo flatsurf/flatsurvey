@@ -38,10 +38,10 @@ you should limit the length of saddle connections considered.
 import click
 from pinject import copy_args_to_internal_fields
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline import Goal
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.command import Command
 
 
 class CylinderPeriodicAsymptotics(Goal, Command):

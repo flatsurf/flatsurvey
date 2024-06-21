@@ -42,12 +42,12 @@ TESTS::
 import click
 import pinject
 
-from flatsurvey.ui.group import CommandWithGroups
-from flatsurvey.cache.split import Split
-from flatsurvey.cache.join import Join
-from flatsurvey.cache.externalize_pickles import ExternalizePickles
-from flatsurvey.pipeline.util import ListBindingSpec, FactoryBindingSpec
 import flatsurvey.reporting.log
+from flatsurvey.cache.externalize_pickles import ExternalizePickles
+from flatsurvey.cache.join import Join
+from flatsurvey.cache.split import Split
+from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
+from flatsurvey.ui.group import CommandWithGroups
 
 
 @click.group(

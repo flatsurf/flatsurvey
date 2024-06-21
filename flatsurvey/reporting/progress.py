@@ -98,8 +98,8 @@ class Progress(Reporter, Command):
             root = root._parent
 
         if cls._live is None:
-            from rich.live import Live
             from rich.console import Group
+            from rich.live import Live
 
             cls._live = Live(Group("…"), transient=True)
             cls._live.start()

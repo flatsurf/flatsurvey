@@ -18,6 +18,7 @@
 # *********************************************************************
 
 from abc import abstractmethod
+
 from flatsurvey.pipeline.util import provide
 
 

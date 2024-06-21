@@ -18,7 +18,6 @@
 # *********************************************************************
 
 import flatsurvey.worker.restart
-
 from flatsurvey.surfaces.surface import Surface
 
 

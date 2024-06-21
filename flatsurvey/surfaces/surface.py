@@ -28,6 +28,7 @@ EXAMPLES::
 # *********************************************************************
 
 from abc import abstractmethod
+
 from sage.misc.cachefunc import cached_method
 
 

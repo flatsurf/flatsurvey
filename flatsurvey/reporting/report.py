@@ -34,9 +34,9 @@ EXAMPLES::
 
 import click
 
+from flatsurvey.command import Command
 from flatsurvey.pipeline.util import PartialBindingSpec
 from flatsurvey.ui.group import GroupedCommand
-from flatsurvey.command import Command
 
 
 class Report(Command):

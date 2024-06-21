@@ -22,7 +22,7 @@ A package providing ways to report progress and result of a computation.
 
 from flatsurvey.reporting.json import Json
 from flatsurvey.reporting.log import Log
-from flatsurvey.reporting.report import Report
 from flatsurvey.reporting.progress import Progress
+from flatsurvey.reporting.report import Report
 
 commands = [Log.click, Json.click, Report.click, Progress.click]
