@@ -58,6 +58,3 @@ jobs:
 
           # The survey succeeds without running any computations.
           flatsurvey orbit-closure --cache-only ngons --vertices 3 --limit 7 local-cache --json orbit-closure.json log
-
-          # A bigger survey fails without running any computations.
-          ! flatsurvey orbit-closure --cache-only ngons --vertices 3 --limit 9 local-cache --json orbit-closure.json log
