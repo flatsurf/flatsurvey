@@ -82,8 +82,8 @@ class Processor(Producer, Consumer):
             >>> asyncio.run(produce) != Producer.EXHAUSTED
             True
 
-            >>> orientations._current
-            (0, (-c ~ -1.7320508))
+            >>> orientations._current  # doctest: +ELLIPSIS
+            (0, ...)
 
         """
         self._current = None

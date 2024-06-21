@@ -21,28 +21,17 @@ TESTS::
       pickles      Access a database of pickles storing parts of previous
                    computations.
     Goals:
-      boshernitzan-conjecture        Determines whether Conjecture 2.2 in
-                                     Boshernitzan's *Billiards and Rational Periodic
-                                     Directions in Polygons* holds for this surface.
-      completely-cylinder-periodic   Determines whether for all directions given by
-                                     saddle connections, the decomposition of the
-                                     surface is completely cylinder periodic, i.e.,
-                                     the decomposition consists only of cylinders.
-      cylinder-periodic-asymptotics  Determines the maximum circumference of all
-                                     cylinders in each cylinder periodic direction.
-      cylinder-periodic-direction    Determines whether there is a direction for
-                                     which the surface decomposes into cylinders.
-      orbit-closure                  Determines the GL₂(R) orbit closure of
-                                     ``surface``.
-      undetermined-iet               Tracks undetermined Interval Exchange
-                                     Transformations.
+      completely-cylinder-periodic  Determines whether for all directions given by
+                                    saddle connections, the decomposition of the
+                                    surface is completely cylinder periodic, i.e.,
+                                    the decomposition consists only of cylinders.
+      cylinder-periodic-direction   Determines whether there is a direction for
+                                    which the surface decomposes into cylinders.
+      orbit-closure                 Determines the GL₂(R) orbit closure of
+                                    ``surface``.
+      undetermined-iet              Tracks undetermined Interval Exchange
+                                    Transformations.
     Intermediates:
-      boshernitzan-conjecture-orientations
-                                      Produces directions in $S^1(2d')$, i.e.,
-                                      corresponding to certain roots of unity, as
-                                      used in Conjecture 2.2 of Boshernitzan's
-                                      *Billiards and Rational Periodic Directions in
-                                      Polygons*.
       flow-decompositions             Turns directions coming from saddle
                                       connections into flow decompositions.
       saddle-connection-orientations  Orientations of saddle connections on the
