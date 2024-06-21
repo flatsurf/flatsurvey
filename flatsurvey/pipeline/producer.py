@@ -79,7 +79,7 @@ class Producer:
             True
 
             >>> connections._current
-            -3
+            1
 
         """
         import time
