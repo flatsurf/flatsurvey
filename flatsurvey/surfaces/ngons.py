@@ -104,7 +104,10 @@ class Ngon(Surface):
                 # the actual polygon. We are too lazy to make these pickles
                 # work (because there are also two different flavors of those…)
                 import warnings
-                warnings.warn("ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths")
+
+                warnings.warn(
+                    "ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths"
+                )
                 polygon = self.polygon()
 
             self.polygon.set_cache(polygon)
@@ -470,10 +473,10 @@ class Ngon(Surface):
                 a, b, c = angles
                 if a == b:
                     # An isosceles triangles is a double cover of its half.
-                    angles = (2*a, a + b + c, c)
+                    angles = (2 * a, a + b + c, c)
                 elif b == c:
                     # An isosceles triangles is a double cover of its half.
-                    angles = (a, 2*b, a + b + c)
+                    angles = (a, 2 * b, a + b + c)
 
             from flatsurf import EuclideanPolygonsWithAngles
 

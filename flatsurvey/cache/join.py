@@ -34,28 +34,30 @@ class Join(Goal, Command):
 
     Writes out a .json file for each type of result in the inputs.
     """
+
     @copy_args_to_internal_fields
     def __init__(self, jsons, prefix, report):
         super().__init__(producers=[], report=report, cache=None)
 
     @classmethod
     @click.command(name="join")
-    @click.argument('jsons', nargs=-1, type=click.Path(exists=True))
-    @click.option("--prefix", type=str, help="a common prefix for the output files", default=None)
+    @click.argument("jsons", nargs=-1, type=click.Path(exists=True))
+    @click.option(
+        "--prefix", type=str, help="a common prefix for the output files", default=None
+    )
     def click(jsons, prefix):
         return {
             "goals": [Join],
-            "bindings":  [
-                PartialBindingSpec(Join)(
-                    jsons=jsons, prefix=prefix)
-            ]
+            "bindings": [PartialBindingSpec(Join)(jsons=jsons, prefix=prefix)],
         }
 
     async def resolve(self):
         from collections import defaultdict
+
         aggregate = defaultdict(lambda: [])
 
         import flatsurvey.cache.cache
+
         for json in self._jsons:
             with open(json) as input:
                 parsed = flatsurvey.cache.cache.Cache.load(input)
@@ -68,7 +70,9 @@ class Join(Goal, Command):
                     items = parsed[key]
 
                     if not isinstance(items, list):
-                        raise NotImplementedError(f"cannot join entries for '{key}' because it's not list")
+                        raise NotImplementedError(
+                            f"cannot join entries for '{key}' because it's not list"
+                        )
 
                     for item in items:
                         if "surface" not in items and surface is not None:
@@ -84,6 +88,5 @@ class Join(Goal, Command):
 
             with open(fname, "w") as output:
                 import json
-                json.dump({
-                    key: aggregate[key]
-                }, output, indent=2)
+
+                json.dump({key: aggregate[key]}, output, indent=2)

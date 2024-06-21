@@ -100,6 +100,7 @@ def process(commands, debug, verbose):
         objects = Maintenance.make_object_graph(commands)
 
         import asyncio
+
         asyncio.run(objects.provide(Maintenance).start())
     except Exception:
         if debug:
@@ -111,8 +112,10 @@ class Maintenance:
     """
     TODO: Document me. This is essentially a clone of Worker.
     """
+
     @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters): pass
+    def __init__(self, goals, reporters):
+        pass
 
     @classmethod
     def make_object_graph(cls, commands):
@@ -129,15 +132,10 @@ class Maintenance:
         bindings.append(
             ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log])
         )
-        bindings.append(
-            FactoryBindingSpec("surface", lambda: None)
-        )
+        bindings.append(FactoryBindingSpec("surface", lambda: None))
 
         return pinject.new_object_graph(
-            modules=[
-                flatsurvey.reporting,
-                flatsurvey.cache.maintenance
-            ],
+            modules=[flatsurvey.reporting, flatsurvey.cache.maintenance],
             binding_specs=bindings,
             allow_injecting_none=True,
         )

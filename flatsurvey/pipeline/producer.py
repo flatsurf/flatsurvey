@@ -83,6 +83,7 @@ class Producer:
 
         """
         import time
+
         start = time.perf_counter()
         if self._produce() == Producer.EXHAUSTED:
             self._exhausted = True

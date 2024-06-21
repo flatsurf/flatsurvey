@@ -32,13 +32,14 @@ class ExternalizePickles(Goal, Command):
     r"""
     Extract pickles from JSON files and write them compressed to a separate directory.
     """
+
     @copy_args_to_internal_fields
     def __init__(self, jsons, in_place, pickle_dir, report):
         super().__init__(producers=[], report=report, cache=None)
 
     @classmethod
     @click.command(name="externalize-pickles")
-    @click.argument('jsons', nargs=-1)
+    @click.argument("jsons", nargs=-1)
     @click.option("--inplace", default=False, is_flag=True)
     @click.option("--pickles", type=click.Path(exists=True), help="output directory")
     def click(jsons, inplace, pickles):
@@ -46,8 +47,9 @@ class ExternalizePickles(Goal, Command):
             "goals": [ExternalizePickles],
             "bindings": [
                 PartialBindingSpec(ExternalizePickles)(
-                    jsons=jsons, in_place=inplace, pickle_dir=pickles)
-            ]
+                    jsons=jsons, in_place=inplace, pickle_dir=pickles
+                )
+            ],
         }
 
     async def resolve(self):
@@ -58,14 +60,17 @@ class ExternalizePickles(Goal, Command):
 
                     if len(value) > 128:
                         import hashlib
-                        hash = hashlib.md5(value.encode('utf-8')).hexdigest()
+
+                        hash = hashlib.md5(value.encode("utf-8")).hexdigest()
 
                         import os.path
+
                         fname = os.path.join(self._pickle_dir, f"{hash}.pickle.gz")
 
                         import gzip
+
                         with gzip.open(fname, mode="w") as compressed:
-                            compressed.write(value.encode('ascii'))
+                            compressed.write(value.encode("ascii"))
 
                         json["pickle"] = hash
 
@@ -78,9 +83,11 @@ class ExternalizePickles(Goal, Command):
             return json
 
         from flatsurvey.cache.cache import Cache
+
         jsons = {fname: externalize(Cache.load(open(fname))) for fname in self._jsons}
 
         import json
+
         jsons = {fname: json.dumps(value, indent=2) for (fname, value) in jsons.items()}
 
         for fname, value in jsons.items():

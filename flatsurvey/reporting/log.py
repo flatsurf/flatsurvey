@@ -118,9 +118,11 @@ class Log(Reporter, Command):
 
             if prefix is None:
                 import sys
+
                 return sys.stdout
 
             import os.path
+
             path = os.path.join(prefix, f"{surface.basename()}.log")
             return open(path, "w")
 

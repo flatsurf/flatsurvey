@@ -150,6 +150,7 @@ class Cache(Command):
                             jsons.append(open(os.path.join(root, f), "rb"))
             if hasattr(j, "fileno"):
                 import os
+
                 jsons.append(os.fdopen(os.dup(j.fileno())))
             else:
                 jsons.append(open(j, "rb"))
@@ -168,7 +169,11 @@ class Cache(Command):
             ['local-cache']
 
         """
-        return ["local-cache"] + [f"--json={json.name}" for json in self._jsons] + ([f"--pickles={self._pickles.name}"] if self._pickles is not None else [])
+        return (
+            ["local-cache"]
+            + [f"--json={json.name}" for json in self._jsons]
+            + ([f"--pickles={self._pickles.name}"] if self._pickles is not None else [])
+        )
 
     @classmethod
     def bindings(cls, jsons, pickles):
@@ -181,7 +186,11 @@ class Cache(Command):
             [cache binding to Cache]
 
         """
-        return [PartialBindingSpec(Cache, name="cache", scope="SHARED")(jsons=jsons, pickles=pickles)]
+        return [
+            PartialBindingSpec(Cache, name="cache", scope="SHARED")(
+                jsons=jsons, pickles=pickles
+            )
+        ]
 
     def deform(self, deformation):
         r"""
