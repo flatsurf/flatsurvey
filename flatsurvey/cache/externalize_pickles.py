@@ -41,7 +41,7 @@ class ExternalizePickles(Goal, Command):
     @click.command(name="externalize-pickles")
     @click.argument("jsons", nargs=-1)
     @click.option("--inplace", default=False, is_flag=True)
-    @click.option("--pickles", type=click.Path(exists=True), help="output directory")
+    @click.option("--pickles", required=True, type=click.Path(exists=True), help="output directory")
     def click(jsons, inplace, pickles):
         return {
             "goals": [ExternalizePickles],
@@ -58,10 +58,15 @@ class ExternalizePickles(Goal, Command):
                 if "pickle" in json:
                     value = json["pickle"]
 
-                    if len(value) > 128:
-                        import hashlib
+                    import base64
+                    value = base64.decodebytes(value.encode('ascii'))
 
-                        hash = hashlib.md5(value.encode("utf-8")).hexdigest()
+                    if len(value) > 128:
+                        from hashlib import sha256
+
+                        sha = sha256()
+                        sha.update(value)
+                        hash = sha.hexdigest()
 
                         import os.path
 
@@ -70,7 +75,7 @@ class ExternalizePickles(Goal, Command):
                         import gzip
 
                         with gzip.open(fname, mode="w") as compressed:
-                            compressed.write(value.encode("ascii"))
+                            compressed.write(value)
 
                         json["pickle"] = hash
 

@@ -38,6 +38,9 @@ from flatsurvey.reporting.reporter import Reporter
 from flatsurvey.ui.group import GroupedCommand
 
 
+# TODO: This segfaults with recent versions of SageMath. PARI is not
+# thread or fork-safe in the way SageMath uses it, so threading out seems to
+# break things.
 class Progress(Reporter, Command):
     r"""
     Reports progress on the command line.
