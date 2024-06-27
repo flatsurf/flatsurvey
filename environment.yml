@@ -7,8 +7,10 @@ channels:
 dependencies:
   - black >=22,<23
   - click
+  - dask
   - humanfriendly
   - isort
+  - more-itertools
   - pip
   - psutil
   - pyflatsurf

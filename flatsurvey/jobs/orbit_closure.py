@@ -240,6 +240,7 @@ class OrbitClosure(Goal, Command):
             ),
         }
 
+    # TODO: Probably all command() implementations can be removed now.
     def command(self):
         command = [self.name()]
         if self._limit != self.DEFAULT_LIMIT:

@@ -98,17 +98,6 @@ class Ngon(Surface):
         self.length = length
 
         if polygon is not None:
-            if isinstance(polygon, tuple):
-                # At some point we pickled the lengths of the sides instead of
-                # the actual polygon. We are too lazy to make these pickles
-                # work (because there are also two different flavors of those…)
-                import warnings
-
-                warnings.warn(
-                    "ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths"
-                )
-                polygon = self.polygon()
-
             self.polygon.set_cache(polygon)
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
@@ -575,16 +564,19 @@ class Ngon(Surface):
         )
 
     def __reduce__(self):
-        return (Ngon, (self.angles, self.length, self.polygon()))
+        return (Ngon, (self.angles, self.length, self.polygon.cache))
 
     def __hash__(self):
+        if self.polygon.cache is None:
+            raise Exception("cannot hash Ngon whose polygon() has not been determined yet")
+
         return hash((tuple(self.angles), self.polygon()))
 
     def __eq__(self, other):
         return (
             isinstance(other, Ngon)
             and self.angles == other.angles
-            and self.polygon() == other.polygon()
+            and self.polygon.cache == other.polygon.cache
         )
 
     def __ne__(self, other):

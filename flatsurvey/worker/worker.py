@@ -140,21 +140,8 @@ def process(commands, debug, verbose):
         logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
     try:
-        while True:
-            objects = Worker.make_object_graph(commands)
-
-            try:
-                import asyncio
-
-                asyncio.run(objects.provide(Worker).start())
-            except Restart as restart:
-                commands = [
-                    restart.rewrite_command(command, objects=objects)
-                    for command in commands
-                ]
-                continue
-
-            break
+        import asyncio
+        asyncio.run(Worker.work(commands=commands))
     except Exception:
         if debug:
             pdb.post_mortem()
@@ -183,10 +170,22 @@ class Worker:
         pass
 
     @classmethod
-    def make_object_graph(cls, commands):
-        bindings = []
-        goals = []
-        reporters = []
+    async def work(cls, /, bindings=[], goals=[], reporters=[], commands=[]):
+        objects = Worker.make_object_graph(bindings=bindings, goals=goals, reporters=reporters, commands=commands)
+
+        try:
+            await objects.provide(Worker).start()
+        except Restart as restart:
+            await Worker.work(bindings=bindings, goals=goals, reporters=reporters, commands=[
+                restart.rewrite_command(command, objects=objects)
+                for command in commands
+            ])
+
+    @classmethod
+    def make_object_graph(cls, /, bindings=[], goals=[], reporters=[], commands=[]):
+        bindings = list(bindings)
+        goals = list(goals)
+        reporters = list(reporters)
 
         for command in commands:
             bindings.extend(command.get("bindings", []))
@@ -215,6 +214,7 @@ class Worker:
         r"""
         Run until all our goals are resolved.
         """
+        assert self._goals
         try:
             for goal in self._goals:
                 await goal.consume_cache()

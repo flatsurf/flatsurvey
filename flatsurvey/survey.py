@@ -19,7 +19,6 @@ TESTS::
       --debug
       --help               Show this message and exit.
       -N, --dry-run        Do not spawn any workers.
-      -l, --load L         Do not start workers until load is below L.
       -q, --queue INTEGER  Jobs to prepare in the background for scheduling.
       -v, --verbose        Enable verbose message, repeat for debug message.
     <BLANKLINE>
@@ -63,7 +62,7 @@ TESTS::
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2022 Julian Rüth
+#        Copyright (C) 2020-2024 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -96,14 +95,6 @@ from flatsurvey.ui.group import CommandWithGroups
 @click.option("--dry-run", "-N", is_flag=True, help="Do not spawn any workers.")
 @click.option("--debug", is_flag=True)
 @click.option(
-    "--load",
-    "-l",
-    metavar="L",
-    type=float,
-    default=None,
-    help="Do not start workers until load is below L.",
-)
-@click.option(
     "--queue",
     "-q",
     type=int,
@@ -116,15 +107,13 @@ from flatsurvey.ui.group import CommandWithGroups
     count=True,
     help="Enable verbose message, repeat for debug message.",
 )
-def survey(dry_run, load, debug, queue, verbose):
+def survey(dry_run, debug, queue, verbose):
     r"""
     Main command, runs a survey; specific survey objects and goals are
     registered automatically as subcommands.
     """
     # For technical reasons, dry_run needs to be a parameter here. It is consumed by process() below.
     _ = dry_run
-    # For technical reasons, load needs to be a parameter here. It is consumed by process() below.
-    _ = load
     # For technical reasons, debug needs to be a parameter here. It is consumed by process() below.
     _ = debug
     # For technical reasons, queue needs to be a parameter here. It is consumed by process() below.
@@ -145,17 +134,16 @@ for commands in [
 
 
 @survey.result_callback()
-def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbose=0):
+def process(subcommands, dry_run=False, debug=False, queue=128, verbose=0):
     r"""
     Run the specified subcommands of ``survey``.
 
     EXAMPLES:
 
-    We start an orbit-closure computation for a single triangle without waiting
-    for the system load to be low::
+    We start an orbit-closure computation for a single triangle::
 
         >>> from flatsurvey.test.cli import invoke
-        >>> invoke(survey, "--load=0", "ngons", "-n", "3", "--limit=3", "--literature=include", "orbit-closure")
+        >>> invoke(survey, "ngons", "-n", "3", "--limit=3", "--literature=include", "orbit-closure")
 
     """
     if debug:
@@ -184,9 +172,6 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
             else:
                 surface_generators.append(subcommand)
 
-        if dry_run:
-            load = 0
-
         import asyncio
         import sys
 
@@ -201,7 +186,6 @@ def process(subcommands, dry_run=False, load=None, debug=False, queue=128, verbo
                     reporters=reporters,
                     queue=queue,
                     dry_run=dry_run,
-                    load=load,
                     debug=debug,
                 ).start()
             )
