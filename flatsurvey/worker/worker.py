@@ -214,7 +214,6 @@ class Worker:
         r"""
         Run until all our goals are resolved.
         """
-        assert self._goals
         try:
             for goal in self._goals:
                 await goal.consume_cache()
@@ -223,5 +222,6 @@ class Worker:
         finally:
             for goal in self._goals:
                 await goal.report()
+
         for reporter in self._reporters:
             reporter.flush()
