@@ -93,6 +93,3 @@ class SaddleConnectionOrientations(Processor, Command):
     )
     def click():
         return {"bindings": SaddleConnectionOrientations}
-
-    def command(self):
-        return ["saddle-connection-orientations"]

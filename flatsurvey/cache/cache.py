@@ -157,24 +157,6 @@ class Cache(Command):
 
         return {"bindings": Cache.bindings(jsons, pickles)}
 
-    def command(self):
-        r"""
-        Return command that can be used to create this cache from the command
-        line.
-
-        EXAMPLES::
-
-            >>> cache = Cache(pickles=None, jsons=(), report=None)
-            >>> cache.command()
-            ['local-cache']
-
-        """
-        return (
-            ["local-cache"]
-            + [f"--json={json.name}" for json in self._jsons]
-            + ([f"--pickles={self._pickles.name}"] if self._pickles is not None else [])
-        )
-
     @classmethod
     def bindings(cls, jsons, pickles):
         r"""

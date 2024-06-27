@@ -1,24 +1,24 @@
 import multiprocessing
-
 forkserver = multiprocessing.get_context("forkserver")
 multiprocessing.set_forkserver_preload(["sage.all"])
 
 
 class DaskTask:
-    def __init__(self, callable, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         from pickle import dumps
-        self._dump = dumps((callable, args, kwargs))
+        self._dump = dumps((args, kwargs))
 
     def __call__(self):
         DaskWorker.process(self)
 
     def run(self):
         from pickle import loads
-        callable, args, kwargs =loads(self._dump)
+        args, kwargs =loads(self._dump)
+
+        from flatsurvey.worker.worker import Worker
 
         import asyncio
-        result = asyncio.run(callable(*args, **kwargs))
-        print(result)
+        result = asyncio.run(Worker.work(*args, **kwargs))
         return result
 
 
@@ -35,12 +35,14 @@ class DaskWorker:
 
     @staticmethod
     def _ensure_started():
+        if DaskWorker._singleton is not None:
+            return
+
         import sys
         if 'sage' in sys.modules:
             raise Exception("sage must not be loaded in dask worker")
 
-        if DaskWorker._singleton is None:
-            DaskWorker._singleton = DaskWorker()
+        DaskWorker._singleton = DaskWorker()
 
     @staticmethod
     def _process(self):
@@ -49,10 +51,8 @@ class DaskWorker:
                 task = self._work_queue.get()
             except ValueError:
                 break
-            print(task)
 
             self._result_queue.put(task.run())
-            print("done.")
 
     @staticmethod
     def process(task):

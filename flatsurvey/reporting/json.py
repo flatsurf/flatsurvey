@@ -92,28 +92,6 @@ class Json(Reporter, Command):
             "reporters": [Json],
         }
 
-    def command(self):
-        r"""
-        Return the command line command used to create this reporter.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.reporting.json import Json
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-            >>> json = Json(surface)
-
-            >>> json.command()
-            ['json']
-
-        """
-        import sys
-
-        command = ["json"]
-        if self._stream is not sys.stdout:
-            command.append(f"--output={self._stream.name}")
-        return command
-
     async def result(self, source, result, **kwargs):
         r"""
         Report a ``result`` for ``source``.

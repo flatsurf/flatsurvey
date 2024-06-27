@@ -385,6 +385,3 @@ class BoshernitzanConjectureOrientations(Producer, Command):
                 )()
             ]
         }
-
-    def command(self):
-        return ["boshernitzan-conjecture-orientations"]

@@ -141,23 +141,6 @@ class Surface:
 
         """
 
-    def command(self):
-        r"""
-        Return command line arguments that can be used to recreate this surface.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1)).command()
-            ['pickle', '--base64', '...']
-
-        """
-        from base64 import b64encode
-
-        from sage.all import dumps
-
-        return ["pickle", "--base64", b64encode(dumps(self)).decode("ASCII").strip()]
-
     def basename(self):
         r"""
         Return a prefix for files such as logfiles.

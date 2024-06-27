@@ -240,19 +240,6 @@ class OrbitClosure(Goal, Command):
             ),
         }
 
-    # TODO: Probably all command() implementations can be removed now.
-    def command(self):
-        command = [self.name()]
-        if self._limit != self.DEFAULT_LIMIT:
-            command.append(f"--limit={self._limit}")
-        if self._expansions != self.DEFAULT_EXPANSIONS:
-            command.append(f"--expansions={self._expansions}")
-        if self._deform != self.DEFAULT_DEFORM:
-            command.append("--deform")
-        if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append("--cache-only")
-        return command
-
     @property
     def dimension(self):
         return self._surface.orbit_closure().dimension()

@@ -206,13 +206,9 @@ class Scheduler:
             if surface is None:
                 return False
 
-            print(surface)
-
             if await self._resolve_goals_from_cache(surface, self._goals):
                 # Everything could be answered from cached data. Proceed to next surface.
                 continue
-
-            from flatsurvey.worker.worker import Worker
 
             from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
 
@@ -220,7 +216,7 @@ class Scheduler:
             bindings.append(SurfaceBindingSpec(surface))
 
             from flatsurvey.worker.dask import DaskTask
-            task = DaskTask(Worker.work, bindings=bindings, goals=self._goals, reporters=self._reporters)
+            task = DaskTask(bindings=bindings, goals=self._goals, reporters=self._reporters)
 
             pending.append(pool.submit(task))
             return True
@@ -237,7 +233,7 @@ class Scheduler:
             return False
 
         for job in completed:
-            print(await job)
+            await job
 
         return True
 

@@ -200,11 +200,3 @@ class Log(Reporter, Command):
         if kwargs.pop("cached", False):
             result = f"{result} (cached)"
         self.log(source, result, **kwargs)
-
-    def command(self):
-        command = [self.name()]
-        import sys
-
-        if self._stream is not sys.stdout:
-            command.append(f"--output={self._stream.name}")
-        return command
