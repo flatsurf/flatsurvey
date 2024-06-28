@@ -127,6 +127,7 @@ class Scheduler:
                                 if not await schedule_one():
                                     break
                         except KeyboardInterrupt:
+                            # TODO: This does not work. The exception is not thrown here.
                             print("keyboard interrupt")
                             scheduling_progress(
                                 message="stopped scheduling of new jobs as requested",
