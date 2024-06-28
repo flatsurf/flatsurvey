@@ -9,7 +9,7 @@ EXAMPLES::
     Usage: worker json [OPTIONS]
       Writes results in JSON format.
     Options:
-      --output FILENAME   [default: derived from surface name]
+      --output FILE       [default: derived from surface name]
       --prefix DIRECTORY
       --help              Show this message and exit.
 
