@@ -175,11 +175,6 @@ def FactoryBindingSpec(name, prototype, scope=None):
     return binding
 
 
-# TODO: This is not possible.
-# def FactoryBindingSpec_unpickle(args):
-#     return FactoryBidingSpec(*args)
-
-
 def provide(name, objects):
     src = compile(
         f"""

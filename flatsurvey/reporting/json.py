@@ -34,7 +34,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from pinject import copy_args_to_internal_fields
+from pinject import copy_args_to_internal_fields, BindingSpec
 
 from flatsurvey.command import Command
 from flatsurvey.pipeline.util import FactoryBindingSpec
@@ -75,7 +75,7 @@ class Json(Reporter, Command):
     )
     @click.option(
         "--output",
-        type=click.File("w"),
+        type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
         default=None,
         help="[default: derived from surface name]",
     )
@@ -92,22 +92,8 @@ class Json(Reporter, Command):
 
     @classmethod
     def bindings(cls, output, prefix=None):
-        def outfile(surface):
-            if output is not None:
-                return output
-
-            if prefix is None:
-                import sys
-
-                return sys.stdout
-
-            import os.path
-
-            path = os.path.join(prefix, f"{surface.basename()}.json")
-            return open(path, "w")
-            
         return [
-            FactoryBindingSpec("json", lambda surface: Json(surface, outfile(surface)))
+            JsonBindingSpec(output=output, prefix=prefix)
         ]
 
     async def result(self, source, result, **kwargs):
@@ -213,3 +199,29 @@ class Json(Reporter, Command):
 
         self._stream.write(json.dumps(self._data, default=self._serialize_to_pickle))
         self._stream.flush()
+
+
+class JsonBindingSpec(BindingSpec):
+    r"""
+    A picklable version of a FactoryBindingSpec().
+
+    ...
+    """
+    scope = "DEFAULT"
+    name = "json"
+
+    def __init__(self, output, prefix):
+        self._output = output
+        self._prefix = prefix
+
+    def provide_json(self, surface):
+        if self._output is not None:
+            output = self._output
+        else:
+            prefix = self._prefix or "."
+
+            import os.path
+
+            output = os.path.join(prefix, f"{surface.basename()}.json")
+
+        return Json(surface, open(output, "w"))
