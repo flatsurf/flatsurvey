@@ -2,13 +2,33 @@ Automation scripts for the [flatsurf](https://github.com/flatsurf) stack to surv
 
 To perform a full survey, use [`flatsurvey`](./flatsurvey/survey.py). To investigate a single object, run [`flatsurvey-worker`](./flatsurvey/worker/worker.py).
 
-For example, here is a typical survey that collects data about triangles, quadrilaterals, and pentagons:
+Here, we check that the (1, 1, 1, 6) quadrilateral has dense orbit closure::
 
 ```
-nice flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure log graphql
+flatsurvey-worker ngon -a 1 -a 1 -a 1 -a 6 orbit-closure --deform log
 ```
+
+Here is a typical survey that collects data about triangles, quadrilaterals, and pentagons:
+
+```
+mkdir -p surveyname
+nice flatsurvey ngons --vertices 3 ngons --vertices 4 ngons --vertices 5 orbit-closure --deform json --prefix=./surveyname
+```
+
+# Run Surveys in a Cluster
+
+...
 
 # Troubleshooting
 
-* For large surveys, RAM might become the limiting factor. It appears that we are not actually leaking memory but are hit by memory fragmentation during the Boshernitzan criterion. The issue can be fully mitigated by replacing malloc with [Mesh](https://github.com/plasma-umass/Mesh), i.e., setting `LD_PRELOAD=/path/to/libmesh.so`.
-* SageMath (or one of its dependencies) might decide that it's beneficial to parallelize things further. However, this can easily overload a system. Typically, some linear algebra might spawn a process for each CPU on the system which could then easily lead to CPU² many processes if you run a lengthy survey. To disable this behaviour, set `MKL_NUM_THREADS=1 OMP_NUM_THREADS=1 SAGE_NUM_THREADS=1`.
+* For large surveys, RAM might become the limiting factor. It appears that we
+  are not actually leaking memory but are hit by memory fragmentation during
+  the Boshernitzan criterion. The issue can be fully mitigated by replacing
+  malloc with [Mesh](https://github.com/plasma-umass/Mesh), i.e., setting
+  `LD_PRELOAD=/path/to/libmesh.so`.
+* SageMath (or one of its dependencies) might decide that it's beneficial to
+  parallelize things further. However, this can easily overload a system.
+  Typically, some linear algebra might spawn a process for each CPU on the
+  system which could then easily lead to CPU² many processes if you run a
+  lengthy survey. To disable this behaviour, set `MKL_NUM_THREADS=1
+  OMP_NUM_THREADS=1 SAGE_NUM_THREADS=1`.
