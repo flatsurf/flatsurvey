@@ -34,7 +34,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from pinject import copy_args_to_internal_fields
+from pinject import copy_args_to_internal_fields, BindingSpec
 
 from flatsurvey.command import Command
 from flatsurvey.pipeline.util import FactoryBindingSpec
@@ -112,22 +112,8 @@ class Log(Reporter, Command):
 
     @classmethod
     def bindings(cls, output, prefix=None):
-        def logfile(surface):
-            if output is not None:
-                return output
-
-            if prefix is None:
-                import sys
-
-                return sys.stdout
-
-            import os.path
-
-            path = os.path.join(prefix, f"{surface.basename()}.log")
-            return open(path, "w")
-
         return [
-            FactoryBindingSpec("log", lambda surface: Log(surface, logfile(surface)))
+            LogBindingSpec(output=output, prefix=prefix)
         ]
 
     def deform(self, deformation):
@@ -200,3 +186,30 @@ class Log(Reporter, Command):
         if kwargs.pop("cached", False):
             result = f"{result} (cached)"
         self.log(source, result, **kwargs)
+
+
+class LogBindingSpec(BindingSpec):
+    r"""
+    A picklable version of a FactoryBindingSpec().
+
+    ...
+    """
+    scope = "DEFAULT"
+    name = "log"
+
+    def __init__(self, output, prefix):
+        self._output = output
+        self._prefix = prefix
+
+    def provide_log(self, surface):
+        if self._output is not None:
+            output = open(self._output, "w")
+        elif self._prefix is not None:
+            import os.path
+
+            output = open(os.path.join(self._prefix, f"{surface.basename()}.log"), "w")
+        else:
+            import sys
+            output = sys.stdout
+
+        return Log(surface, output)
