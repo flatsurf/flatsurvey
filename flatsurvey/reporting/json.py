@@ -9,8 +9,9 @@ EXAMPLES::
     Usage: worker json [OPTIONS]
       Writes results in JSON format.
     Options:
-      --output FILENAME  [default: derived from surface name]
-      --help             Show this message and exit.
+      --output FILENAME   [default: derived from surface name]
+      --prefix DIRECTORY
+      --help              Show this message and exit.
 
 """
 # *********************************************************************
@@ -78,19 +79,36 @@ class Json(Reporter, Command):
         default=None,
         help="[default: derived from surface name]",
     )
-    def click(output):
+    @click.option(
+        "--prefix",
+        type=click.Path(exists=True, file_okay=False, dir_okay=True, allow_dash=False),
+        default=None,
+    )
+    def click(output, prefix):
         return {
-            "bindings": [
-                FactoryBindingSpec(
-                    "json",
-                    lambda surface: Json(
-                        surface,
-                        stream=output or open(f"{surface.basename()}.json", "w"),
-                    ),
-                )
-            ],
+            "bindings": Json.bindings(output=output, prefix=prefix),
             "reporters": [Json],
         }
+
+    @classmethod
+    def bindings(cls, output, prefix=None):
+        def outfile(surface):
+            if output is not None:
+                return output
+
+            if prefix is None:
+                import sys
+
+                return sys.stdout
+
+            import os.path
+
+            path = os.path.join(prefix, f"{surface.basename()}.json")
+            return open(path, "w")
+            
+        return [
+            FactoryBindingSpec("json", lambda surface: Json(surface, outfile(surface)))
+        ]
 
     async def result(self, source, result, **kwargs):
         r"""
