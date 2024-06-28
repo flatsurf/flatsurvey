@@ -191,9 +191,6 @@ class Report(Command):
 
         return False
 
-    def command(self):
-        return ["report"] + [f"--ignore={i}" for i in self._ignore]
-
     def deform(self, deformation):
         return {"bindings": Report.bindings(ignore=self._ignore)}
 

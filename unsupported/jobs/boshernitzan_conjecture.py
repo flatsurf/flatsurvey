@@ -198,12 +198,6 @@ class BoshernitzanConjecture(Goal, Command):
             "goals": [BoshernitzanConjecture],
         }
 
-    def command(self):
-        command = ["boshernitzan-conjecture"]
-        if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append("--cache-only")
-        return command
-
     @classmethod
     def reduce(self, results):
         r"""

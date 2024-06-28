@@ -9,8 +9,9 @@ EXAMPLES::
     Usage: worker json [OPTIONS]
       Writes results in JSON format.
     Options:
-      --output FILENAME  [default: derived from surface name]
-      --help             Show this message and exit.
+      --output FILE       [default: derived from surface name]
+      --prefix DIRECTORY
+      --help              Show this message and exit.
 
 """
 # *********************************************************************
@@ -33,7 +34,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from pinject import copy_args_to_internal_fields
+from pinject import copy_args_to_internal_fields, BindingSpec
 
 from flatsurvey.command import Command
 from flatsurvey.pipeline.util import FactoryBindingSpec
@@ -74,45 +75,26 @@ class Json(Reporter, Command):
     )
     @click.option(
         "--output",
-        type=click.File("w"),
+        type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
         default=None,
         help="[default: derived from surface name]",
     )
-    def click(output):
+    @click.option(
+        "--prefix",
+        type=click.Path(exists=True, file_okay=False, dir_okay=True, allow_dash=False),
+        default=None,
+    )
+    def click(output, prefix):
         return {
-            "bindings": [
-                FactoryBindingSpec(
-                    "json",
-                    lambda surface: Json(
-                        surface,
-                        stream=output or open(f"{surface.basename()}.json", "w"),
-                    ),
-                )
-            ],
+            "bindings": Json.bindings(output=output, prefix=prefix),
             "reporters": [Json],
         }
 
-    def command(self):
-        r"""
-        Return the command line command used to create this reporter.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.reporting.json import Json
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-            >>> json = Json(surface)
-
-            >>> json.command()
-            ['json']
-
-        """
-        import sys
-
-        command = ["json"]
-        if self._stream is not sys.stdout:
-            command.append(f"--output={self._stream.name}")
-        return command
+    @classmethod
+    def bindings(cls, output, prefix=None):
+        return [
+            JsonBindingSpec(output=output, prefix=prefix)
+        ]
 
     async def result(self, source, result, **kwargs):
         r"""
@@ -217,3 +199,29 @@ class Json(Reporter, Command):
 
         self._stream.write(json.dumps(self._data, default=self._serialize_to_pickle))
         self._stream.flush()
+
+
+class JsonBindingSpec(BindingSpec):
+    r"""
+    A picklable version of a FactoryBindingSpec().
+
+    ...
+    """
+    scope = "DEFAULT"
+    name = "json"
+
+    def __init__(self, output, prefix):
+        self._output = output
+        self._prefix = prefix
+
+    def provide_json(self, surface):
+        if self._output is not None:
+            output = self._output
+        else:
+            prefix = self._prefix or "."
+
+            import os.path
+
+            output = os.path.join(prefix, f"{surface.basename()}.json")
+
+        return Json(surface, open(output, "w"))

@@ -148,9 +148,6 @@ class Progress(Reporter, Command):
         else:
             return [PartialBindingSpec(Progress, scope="SHARED")()]
 
-    def command(self):
-        return ["progress"]
-
     def deform(self, deformation):
         return {
             "bindings": Progress.bindings(),

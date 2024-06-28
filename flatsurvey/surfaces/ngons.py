@@ -12,8 +12,7 @@ EXAMPLES::
       -a, --angle INTEGER            inner angles of the polygon in multiples of (N
                                      - 2)π/A where N is the number of vertices and A
                                      the sum of all provided angles
-      --length [exact-real|e-antic]  how side lengths are chosen [default: e-antic
-                                     for triangles, exact-real otherwise]
+      --length [exact-real|e-antic]  how side lengths are chosen [default: e-antic]
       --help                         Show this message and exit.
 
     >>> from flatsurvey.survey import survey
@@ -22,8 +21,7 @@ EXAMPLES::
       The translation surfaces that come from unfolding n-gons.
     Options:
       -n, --vertices INTEGER          number of vertices  [required]
-      --length [exact-real|e-antic]   how side lengths are chosen  [default: e-antic
-                                      for triangles, exact-real otherwise]
+      --length [exact-real|e-antic]   how side lengths are chosen  [default: e-antic]
       --min INTEGER                   minimum sum of angles  [default: 0]
       --limit INTEGER                 maximum sum of angles  [default: unlimited]
       --count INTEGER                 number of n-gons to produce  [default:
@@ -37,8 +35,8 @@ EXAMPLES::
                                       '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2,
                                       14), …
       --filter TEXT                   only produce the n-gons which satisfy this
-                                      lambda expression, e.g., 'lambda a, b, c:
-                                      (a + b + c) % 2 == 0'
+                                      lambda expression, e.g., 'lambda a, b, c: (a +
+                                      b + c) % 2 == 0'
       --help                          Show this message and exit.
 
 """
@@ -90,25 +88,11 @@ class Ngon(Surface):
         self.angles = list(angles)
 
         if length is None:
-            if len(self.angles) == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
+            length = "e-antic"
 
         self.length = length
 
         if polygon is not None:
-            if isinstance(polygon, tuple):
-                # At some point we pickled the lengths of the sides instead of
-                # the actual polygon. We are too lazy to make these pickles
-                # work (because there are also two different flavors of those…)
-                import warnings
-
-                warnings.warn(
-                    "ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths"
-                )
-                polygon = self.polygon()
-
             self.polygon.set_cache(polygon)
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
@@ -575,16 +559,19 @@ class Ngon(Surface):
         )
 
     def __reduce__(self):
-        return (Ngon, (self.angles, self.length, self.polygon()))
+        return (Ngon, (self.angles, self.length, self.polygon.cache))
 
     def __hash__(self):
+        if self.polygon.cache is None:
+            raise Exception("cannot hash Ngon whose polygon() has not been determined yet")
+
         return hash((tuple(self.angles), self.polygon()))
 
     def __eq__(self, other):
         return (
             isinstance(other, Ngon)
             and self.angles == other.angles
-            and self.polygon() == other.polygon()
+            and self.polygon.cache == other.polygon.cache
         )
 
     def __ne__(self, other):
@@ -608,14 +595,11 @@ class Ngon(Surface):
         "--length",
         type=click.Choice(["exact-real", "e-antic"]),
         required=False,
-        help="how side lengths are chosen [default: e-antic for triangles, exact-real otherwise]",
+        help="how side lengths are chosen [default: e-antic]",
     )
     def click(angle, length):
         if length is None:
-            if len(angle) == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
+            length = "e-antic"
 
         return {
             "bindings": [
@@ -661,7 +645,7 @@ class Ngons:
         "--length",
         type=click.Choice(["exact-real", "e-antic"]),
         required=False,
-        help="how side lengths are chosen  [default: e-antic for triangles, exact-real otherwise]",
+        help="how side lengths are chosen  [default: e-antic]",
     )
     @click.option(
         "--min", type=int, default=0, help="minimum sum of angles  [default: 0]"
@@ -699,10 +683,7 @@ class Ngons:
     )
     def click(vertices, length, min, limit, count, literature, family, filter):
         if length is None:
-            if vertices == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
+            length = "e-antic"
 
         if filter is not None:
             if not callable(filter):

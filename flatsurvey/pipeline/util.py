@@ -110,14 +110,18 @@ def PartialBindingSpec(prototype, name=None, scope=None):
             f"provide_{name}",
         )
         provider.__module__ = "__main__"
-        binding = type(
+
+        binding_type = type(
             f"Partial{prototype.__name__}Binding",
             (pinject.BindingSpec,),
             {
                 f"provide_{name}": provider,
                 "__repr__": lambda self: f"{name} binding to {prototype.__name__}",
+                "__reduce__": lambda self: (PartialBindingSpec_unpickle, ((prototype, name, scope), kwargs))
             },
-        )()
+        )
+
+        binding = binding_type()
         binding.name = name
         binding.scope = scope or "DEFAULT"
         return binding
@@ -125,6 +129,11 @@ def PartialBindingSpec(prototype, name=None, scope=None):
     return wrap
 
 
+def PartialBindingSpec_unpickle(outer_arguments, inner_arguments):
+    return PartialBindingSpec(*outer_arguments)(**inner_arguments)
+
+
+# TODO: Why are the args different between these functions?
 def FactoryBindingSpec(name, prototype, scope=None):
     r"""
     Return a BindingSpec that calls ``prototype`` as a provider for ``name``.
@@ -148,11 +157,18 @@ def FactoryBindingSpec(name, prototype, scope=None):
         f"provide_{name}",
     )
     provider.__module__ = "__main__"
-    binding = type(
+    binding_type = type(
         f"{name}FactoryBinding",
         (pinject.BindingSpec,),
-        {f"provide_{name}": provider, "__repr__": lambda self: f"{name}->{prototype}"},
-    )()
+        {
+            f"provide_{name}": provider,
+            "__repr__": lambda self: f"{name}->{prototype}",
+            # TODO: This is not possible.
+            # "__reduce__": lambda self: (FactoryBindingSpec_unpickle, (name, prototype, scope))
+        },
+    )
+
+    binding = binding_type()
     binding.name = name
     binding.scope = scope or "DEFAULT"
 

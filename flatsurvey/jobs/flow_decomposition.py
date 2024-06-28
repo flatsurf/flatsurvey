@@ -89,12 +89,6 @@ class FlowDecompositions(Processor, Command):
             "bindings": [PartialBindingSpec(FlowDecompositions)(limit=limit)],
         }
 
-    def command(self):
-        command = ["flow-decompositions"]
-        if self._limit != self.DEFAULT_LIMIT:
-            command.append(f"--limit={self._limit}")
-        return command
-
     async def _consume(self, orientation, cost):
         r"""
         Produce the flow decomposition corresponding to ``orientation``.

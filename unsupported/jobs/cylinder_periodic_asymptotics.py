@@ -171,12 +171,6 @@ class CylinderPeriodicAsymptotics(Goal, Command):
             "goals": [CylinderPeriodicAsymptotics],
         }
 
-    def command(self):
-        command = ["cylinder-periodic-asymptotics"]
-        if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append("--cache-only")
-        return command
-
     @classmethod
     def reduce(self, results):
         r"""

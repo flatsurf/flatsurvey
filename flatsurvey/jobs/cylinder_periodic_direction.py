@@ -197,14 +197,6 @@ class CylinderPeriodicDirection(Goal, Command):
             "goals": [CylinderPeriodicDirection],
         }
 
-    def command(self):
-        command = ["cylinder-periodic-direction"]
-        if self._limit != self.DEFAULT_LIMIT:
-            command.append(f"--limit={self._limit}")
-        if self._cache_only != self.DEFAULT_CACHE_ONLY:
-            command.append("--cache-only")
-        return command
-
     async def _consume(self, decomposition, cost):
         r"""
         Determine wheter ``decomposition`` is cylinder periodic.

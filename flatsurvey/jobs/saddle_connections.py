@@ -131,11 +131,3 @@ class SaddleConnections(Producer, Command):
                 PartialBindingSpec(SaddleConnections)(bound=bound, limit=limit)
             ]
         }
-
-    def command(self):
-        command = ["saddle-connections"]
-        if self._bound != self.DEFAULT_BOUND:
-            command.append(f"--bound={self._bound}")
-        if self._limit != self.DEFAULT_LIMIT:
-            command.append(f"--limit={self._limit}")
-        return command

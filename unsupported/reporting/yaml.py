@@ -253,14 +253,6 @@ class Yaml(Reporter, Command):
             "reporters": [Yaml],
         }
 
-    def command(self):
-        import sys
-
-        command = ["yaml"]
-        if self._stream is not sys.stdout:
-            command.append(f"--output={self._stream.name}")
-        return command
-
     class Pickle:
         r"""
         Wrapper for objects that should be stored as their pickles in the YAML output.

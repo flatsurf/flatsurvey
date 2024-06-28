@@ -59,24 +59,6 @@ class Command:
         """
         return cls.click.name
 
-    @abstractmethod
-    def command(self):
-        r"""
-        Return the command that can be invoked to get this object in its
-        current configuration.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-
-            >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
-            >>> log.command()
-            ['log']
-
-        """
-
     def __repr__(self):
         r"""
         Return a printable representation of this command.
@@ -92,4 +74,4 @@ class Command:
             log
 
         """
-        return " ".join(self.command())
+        return self.name()

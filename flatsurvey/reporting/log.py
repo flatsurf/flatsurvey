@@ -9,7 +9,7 @@ EXAMPLES::
     Usage: worker log [OPTIONS]
       Writes progress and results as an unstructured log file.
     Options:
-      --output FILENAME  [default: stdout]
+      --output FILE      [default: stdout]
       --prefix DIRECTORY
       --help             Show this message and exit.
 
@@ -34,7 +34,7 @@ EXAMPLES::
 # *********************************************************************
 
 import click
-from pinject import copy_args_to_internal_fields
+from pinject import copy_args_to_internal_fields, BindingSpec
 
 from flatsurvey.command import Command
 from flatsurvey.pipeline.util import FactoryBindingSpec
@@ -97,7 +97,10 @@ class Log(Reporter, Command):
         help=__doc__.split("EXAMPLES")[0],
     )
     @click.option(
-        "--output", type=click.File("w"), default=None, help="[default: stdout]"
+        "--output",
+        type=click.Path(file_okay=True, dir_okay=False, allow_dash=True),
+        default=None,
+        help="[default: stdout]",
     )
     @click.option(
         "--prefix",
@@ -112,22 +115,8 @@ class Log(Reporter, Command):
 
     @classmethod
     def bindings(cls, output, prefix=None):
-        def logfile(surface):
-            if output is not None:
-                return output
-
-            if prefix is None:
-                import sys
-
-                return sys.stdout
-
-            import os.path
-
-            path = os.path.join(prefix, f"{surface.basename()}.log")
-            return open(path, "w")
-
         return [
-            FactoryBindingSpec("log", lambda surface: Log(surface, logfile(surface)))
+            LogBindingSpec(output=output, prefix=prefix)
         ]
 
     def deform(self, deformation):
@@ -201,10 +190,29 @@ class Log(Reporter, Command):
             result = f"{result} (cached)"
         self.log(source, result, **kwargs)
 
-    def command(self):
-        command = [self.name()]
-        import sys
 
-        if self._stream is not sys.stdout:
-            command.append(f"--output={self._stream.name}")
-        return command
+class LogBindingSpec(BindingSpec):
+    r"""
+    A picklable version of a FactoryBindingSpec().
+
+    ...
+    """
+    scope = "DEFAULT"
+    name = "log"
+
+    def __init__(self, output, prefix):
+        self._output = output
+        self._prefix = prefix
+
+    def provide_log(self, surface):
+        if self._output == "-" or (self._output is None and self._prefix is None):
+            import sys
+            output = sys.stdout
+        elif self._output is not None:
+            output = open(self._output, "w")
+        elif self._prefix is not None:
+            import os.path
+
+            output = open(os.path.join(self._prefix, f"{surface.basename()}.log"), "w")
+
+        return Log(surface, output)

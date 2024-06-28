@@ -59,9 +59,6 @@ class Pickles(Command):
             "bindings": Pickles.bindings(providers=providers),
         }
 
-    def command(self):
-        return ["pickles"] + [provider.command() for provider in self._providers]
-
     @classmethod
     def bindings(cls, providers):
         return [PartialBindingSpec(Pickles, scope="SHARED")(providers=providers)]
