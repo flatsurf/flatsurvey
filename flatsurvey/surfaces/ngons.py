@@ -4,7 +4,7 @@ Translation surfaces coming from unfoldings of n-gons
 EXAMPLES::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> from flatsurvey.worker.worker import worker
+    >>> from flatsurvey.worker import worker
     >>> invoke(worker, "ngon", "--help")  # doctest: +NORMALIZE_WHITESPACE
     Usage: worker ngon [OPTIONS]
       Unfolding of an n-gon with prescribed angles.
@@ -12,8 +12,6 @@ EXAMPLES::
       -a, --angle INTEGER            inner angles of the polygon in multiples of (N
                                      - 2)π/A where N is the number of vertices and A
                                      the sum of all provided angles
-      --length [exact-real|e-antic]  how side lengths are chosen [default: e-antic
-                                     for triangles, exact-real otherwise]
       --help                         Show this message and exit.
 
     >>> from flatsurvey.survey import survey
@@ -22,8 +20,6 @@ EXAMPLES::
       The translation surfaces that come from unfolding n-gons.
     Options:
       -n, --vertices INTEGER          number of vertices  [required]
-      --length [exact-real|e-antic]   how side lengths are chosen  [default: e-antic
-                                      for triangles, exact-real otherwise]
       --min INTEGER                   minimum sum of angles  [default: 0]
       --limit INTEGER                 maximum sum of angles  [default: unlimited]
       --count INTEGER                 number of n-gons to produce  [default:
@@ -37,15 +33,16 @@ EXAMPLES::
                                       '(1, 2, 7*n)' for the family (1, 2, 7), (1, 2,
                                       14), …
       --filter TEXT                   only produce the n-gons which satisfy this
-                                      lambda expression, e.g., 'lambda a, b, c:
-                                      (a + b + c) % 2 == 0'
+                                      lambda expression, e.g., 'lambda a, b, c: (a +
+                                      b + c) % 2 == 0'
       --help                          Show this message and exit.
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -61,10 +58,12 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from typing import List
+
 import click
 from sage.misc.cachefunc import cached_method
 
-from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.pipeline import Bindings
 from flatsurvey.surfaces.surface import Surface
 from flatsurvey.ui.group import GroupedCommand
 
@@ -84,32 +83,16 @@ class Ngon(Surface):
 
     """
 
-    def __init__(self, angles, length=None, polygon=None):
+    def __init__(self, angles, polygon=None):
         super().__init__()
+
+        if len(angles) < 3:
+            raise ValueError("n-gon must be at least a triangle")
 
         self.angles = list(angles)
 
-        if length is None:
-            if len(self.angles) == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
-
-        self.length = length
-
         if polygon is not None:
-            if isinstance(polygon, tuple):
-                # At some point we pickled the lengths of the sides instead of
-                # the actual polygon. We are too lazy to make these pickles
-                # work (because there are also two different flavors of those…)
-                import warnings
-
-                warnings.warn(
-                    "ignoring legacy pickle of ngon; reported Ngon will have incorrect edge lengths"
-                )
-                polygon = self.polygon()
-
-            self.polygon.set_cache(polygon)
+            self.polygon.set_cache(polygon)  # type: ignore
 
         if any(a == sum(angles) / (len(angles) - 2) for a in angles):
             import logging
@@ -120,17 +103,28 @@ class Ngon(Surface):
 
         self._name = "-".join([str(a) for a in angles])
 
-    def equivalents(self):
+    def equivalents(self) -> List["Ngon"]:
+        r"""
+        Return a list of simpler ngons that are (for the purpose of orbit
+        closure computations) essentially equivalent to this one.
+
+        EXAMPLES::
+
+            >>> S = Ngon((2, 5, 5))
+            >>> S.equivalents()
+            [Ngon([1, 5, 6])]
+
+        """
         from sage.all import gcd
 
         def ngon(angles):
             angles = tuple(sorted(angles))
             angles = tuple(a / gcd(angles) for a in angles)
-            if self.polygon.cache:
+            if self.polygon.cache:  # type: ignore
                 raise NotImplementedError(
                     f"Cannot translate explicit polygon from {self} when constructing equivalent surface."
                 )
-            return Ngon(angles, length=self.length)
+            return Ngon(angles)
 
         if any(a == sum(self.angles) / (len(self.angles) - 2) for a in self.angles):
             return [
@@ -239,7 +233,7 @@ class Ngon(Surface):
         return equivalents
 
     @property
-    def unfolding_symmetries(self):
+    def symmetries(self):
         r"""
         Return the symmetries of this polygon that are present in the unfolding
         as orthogonal matrices.
@@ -249,7 +243,7 @@ class Ngon(Surface):
         EXAMPLES::
 
             >>> S = Ngon((1, 1, 1))
-            >>> S.unfolding_symmetries
+            >>> S.symmetries
             {[  -1/2  1/2*c]
             [-1/2*c   -1/2], [1 0]
             [0 1], [  -1/2 -1/2*c]
@@ -258,7 +252,7 @@ class Ngon(Surface):
         ::
 
             >>> S = Ngon((1, 1, 2))
-            >>> S.unfolding_symmetries
+            >>> S.symmetries
             {[1 0]
             [0 1], [ 0  1]
             [-1  0], [ 0 -1]
@@ -272,7 +266,7 @@ class Ngon(Surface):
 
         assert (0, 1, 0) in S.labels()
 
-        for (sign, x, y) in S.labels():
+        for _, x, y in S.labels():
             from sage.all import matrix
 
             symmetries.add(
@@ -288,6 +282,16 @@ class Ngon(Surface):
         return symmetries
 
     def _reference(self):
+        r"""
+        Return a literature reference where exactly this ngon has been studied already.
+
+        EXAMPLES::
+
+            >>> S = Ngon((1, 2, 3))
+            >>> S._reference()
+            'Ward 1998'
+
+        """
         if len(self.angles) == 3:
             a, b, c = self.angles
             assert a <= b <= c
@@ -343,7 +347,8 @@ class Ngon(Surface):
 
     def reference(self, algorithm="sum"):
         r"""
-        Return information about this surface if it has already been studied.
+        Return a literature reference where this surface has been studied, a
+        practically identical (but simpler) surface, or ``None``.
 
         EXAMPLES:
 
@@ -444,7 +449,7 @@ class Ngon(Surface):
                 return self._reference()
 
             seen = set()
-            queue = [self]
+            queue: List[Ngon] = [self]
 
             while queue:
                 top = queue.pop()
@@ -465,6 +470,16 @@ class Ngon(Surface):
 
     @property
     def orbit_closure_dimension_upper_bound(self):
+        r"""
+        Return an upper bound of the dimension of the orbit closure of this
+        ngon.
+
+        EXAMPLES::
+
+            >>> Ngon((1, 1, 1)).orbit_closure_dimension_upper_bound
+            2
+
+        """
         if not hasattr(self, "_bound"):
             angles = self.angles
 
@@ -491,37 +506,87 @@ class Ngon(Surface):
         return f"Ngon({self.angles})"
 
     def _flatsurvey_characteristics(self):
-        return {"angles": [int(a) for a in self.angles]}
+        r"""
+        Return compact properties of this surface that should be stored
+        efficiently when storing this surface for caching.
+
+        The :meth:`cache_predicate` is going to rely on these characteristics
+        for its cache lookup.
+
+        EXAMPLES::
+
+            >>> Ngon((1, 1, 1))._flatsurvey_characteristics()
+            {'angles': [1, 1, 1], 'genus': 1}
+
+        """
+        return {
+            "angles": [int(a) for a in self.angles],
+            "genus": int(self._surface().genus()),
+        }
 
     def cache_predicate(self, exact, cache=None):
-        def surface_predicate(surface):
+        r"""
+        Return a predicate that can be used to filter cache rows for this surface.
+
+        Each result stored in the cache is going to be filtered through this
+        predicate to determine whether the result actually applies to this
+        surface.
+
+        INPUT:
+
+        - ``exact`` -- whether to only match results that have been obtained
+          for the exact same surface, e.g., when given two polygon unfolding,
+          whether the exact side lengths must match (or just the angles
+          involved.)
+
+        - ``cache`` -- the cache for which this predicate is going to be used
+          (or ``None`` to obtain a generic predicate.)
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1))
+
+            >>> class CacheSurface:
+            ...     def __init__(self, surface):
+            ...         self.type = type(surface).__name__
+            ...         self.angles = surface.angles
+
+            >>> class CacheRow:
+            ...     def __init__(self, surface):
+            ...         self.surface = CacheSurface(surface)
+
+            >>> predicate = surface.cache_predicate(exact=True)
+            >>> predicate(CacheRow(surface))
+            True
+
+            >>> predicate = surface.cache_predicate(exact=False)
+            >>> predicate(CacheRow(surface))
+            True
+
+        """
+        del cache
+
+        def predicate(result):
+            surface = result.surface
             if surface.type != "Ngon":
                 return False
             if surface.angles != self.angles:
                 return False
 
             if exact:
-                raise NotImplementedError("exact filtering is not supported yet")
+                if len(surface.angles) == 3:
+                    # The underlying polygon() is deterministic. Therefore, we
+                    # do not need any special checks for triangles.
+                    pass
+                else:
+                    # For higher ngons, we cannot decide yet whether they are
+                    # the same without actually instantiating them which is
+                    # extremely costly and also tends to lead to memory leaks
+                    # in the scheduler.
+                    raise NotImplementedError("exact filtering is not supported yet")
 
             return True
-
-        if cache is not None:
-            surfaces = set(
-                [surface.pickle for surface in cache.get("surface", surface_predicate)]
-            )
-
-            def predicate(result):
-                surface = result.surface
-                from flatsurvey.cache.node import ReferenceNode
-
-                if isinstance(surface, ReferenceNode):
-                    return surface.pickle in surfaces
-                return surface_predicate(surface)
-
-        else:
-
-            def predicate(result):
-                return surface_predicate(result.surface)
 
         return predicate
 
@@ -532,70 +597,96 @@ class Ngon(Surface):
 
         EXAMPLES::
 
-            >>> Ngon((1, 1, 1)).polygon()  # doctest: +ELLIPSIS
-            Polygon(vertices=[(0, 0), (..., 0), (..., ...)])
+            >>> Ngon((1, 1, 1)).polygon()
+            Polygon(vertices=[(0, 0), (2, 0), (1, c)])
 
         """
         from flatsurf import EuclideanPolygonsWithAngles
 
         E = EuclideanPolygonsWithAngles(*self.angles)
-        if self.length == "exact-real":
-            # sage-flatsurf does not support random_element() with exact-real lengths
-            raise NotImplementedError("exact-real ngons are currently not supported")
-        elif self.length == "e-antic":
-            pass
-        else:
-            raise NotImplementedError(self.length)
 
-        return E.random_element()
+        P = E.random_element()
+
+        # A random element can be very small or very big. This tricks some of
+        # the heuristics here (ideally it shouldn't matter and all heuristics
+        # should just scale with the polygon area.)
+        # Anyway, we rescale the polygon; in particular this takes the
+        # randomness out of triangles which helps with making doctests fully
+        # reproducible in this project.
+
+        assert P.vertex(0)[0] == 0 and P.vertex(0)[1] == 0 and P.vertex(1)[1] == 0
+
+        P = ~P.vertex(1)[0] * P
+
+        while P.area() > 2:
+            from sage.all import QQ
+
+            P = ~QQ(2) * P
+        while 2 * P.area() < 1:
+            P = 2 * P
+
+        return P
 
     @cached_method
     def _surface(self):
+        r"""
+        Return a sage-flatsurf surface that realizes the unfolding of this
+        n-gon.
+
+        EXAMPLES::
+
+            >>> Ngon((1, 1, 1)).surface()
+            Translation Surface in H_1(0) built from 2 equilateral triangles
+
+        """
         from flatsurf import similarity_surfaces
+
+        from flatsurvey.survey import IS_SURVEY_ORCHESTRATOR
+
+        assert (
+            not IS_SURVEY_ORCHESTRATOR
+        ), "sage-flatsurf surfaces should not be instantiated in the survey scheduler since they and their attached SageMath and C++ objects tend to cause memory leaks"
 
         S = similarity_surfaces.billiard(self.polygon())
         S = S.minimal_cover(cover_type="translation")
         return S
 
-    @classmethod
-    def to_yaml(cls, representer, self):
-        from flatsurf.geometry.pyflatsurf_conversion import to_pyflatsurf
-
-        surface = to_pyflatsurf(self.surface())
-        representer.add_representer(type(surface), type(surface).to_yaml)
-
-        return representer.represent_data(
-            {
-                "angles": self.angles,
-                "length": self.length,
-                "polygon": self.polygon(),
-                "translation_cover": self.surface(),
-                "surface": surface,
-            }
-        )
-
     def __reduce__(self):
-        return (Ngon, (self.angles, self.length, self.polygon()))
+        r"""
+        Rewrite this surface in a form that can be easily turned into a compact
+        pickle.
+
+        EXAMPLES::
+
+            >>> from pickle import dumps, loads
+            >>> surface = Ngon((1, 1, 1))
+            >>> loads(dumps(surface)) == surface
+            True
+
+        """
+        return (Ngon, (self.angles, self.polygon.cache))  # type: ignore
 
     def __hash__(self):
+        if self.polygon.cache is None:  # type: ignore
+            raise Exception(
+                "cannot hash Ngon whose polygon() has not been determined yet"
+            )
+
         return hash((tuple(self.angles), self.polygon()))
 
     def __eq__(self, other):
         return (
             isinstance(other, Ngon)
             and self.angles == other.angles
-            and self.polygon() == other.polygon()
+            and self.polygon.cache == other.polygon.cache  # type: ignore
         )
 
-    def __ne__(self, other):
-        return not (self == other)
-
-    @classmethod
+    @staticmethod
     @click.command(
         name="ngon",
         cls=GroupedCommand,
         group="Surfaces",
-        help=__doc__.split("EXAMPLES")[0],
+        help=__doc__.split("EXAMPLES")[0],  # type: ignore
     )
     @click.option(
         "--angle",
@@ -604,24 +695,39 @@ class Ngon(Surface):
         type=int,
         help="inner angles of the polygon in multiples of (N - 2)π/A where N is the number of vertices and A the sum of all provided angles",
     )
-    @click.option(
-        "--length",
-        type=click.Choice(["exact-real", "e-antic"]),
-        required=False,
-        help="how side lengths are chosen [default: e-antic for triangles, exact-real otherwise]",
-    )
-    def click(angle, length):
-        if length is None:
-            if len(angle) == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
+    @Bindings.click
+    def click(bindings: Bindings, angle):
+        r"""
+        Parse command line options to configure an n-gon into the ``bindings``.
 
-        return {
-            "bindings": [
-                PartialBindingSpec(Ngon, name="surface")(angles=angle, length=length)
-            ]
-        }
+        EXAMPLES::
+
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> invoke_subcommand(Ngon.click, "--angle", "1", "--angle", "2", "--angle", "3")
+
+        """
+        bindings.define(Surface, Ngon)
+        with bindings.scope(Ngon) as scoped:
+            scoped.define(angles=angle)
+
+    @staticmethod
+    def create(bindings: Bindings) -> "Ngon":
+        r"""
+        Return an ``Ngon`` instance from the configuration registered in
+        ``bindings``.
+
+        TESTS::
+
+            >>> from flatsurvey.pipeline import Bindings
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> bindings = Bindings()
+            >>> invoke_subcommand(Ngon.click, "-a", "1", "-a", "1", "-a", "1", bindings=bindings)
+            >>> Ngon.create(bindings)
+            Ngon([1, 1, 1])
+
+        """
+        with bindings.scope(Ngon) as scoped:
+            return Ngon(angles=scoped.get("angles"))
 
 
 class Ngons:
@@ -630,38 +736,126 @@ class Ngons:
 
     EXAMPLES::
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None, filter=None))
+        >>> from flatsurvey.pipeline.bindings import Bindings
+        >>> ngons = Ngons(vertices=3, min=0, limit=None, count=6, literature="include", family=None, filter=None)
+        >>> list(ngons)
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=6, literature='include', family=None, filter=None))
+        >>> bindings = Bindings()
+        >>> ngons = Ngons(vertices=3, min=0, limit=None, count=6, literature='include', family=None, filter=None)
+        >>> list(ngons)
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family=None, filter='lambda a, b, c: (a + b + c) % 2 == 0'))
+        >>> ngons = Ngons(vertices=3, min=0, limit=None, count=3, literature='include', family=None, filter='lambda a, b, c: (a + b + c) % 2 == 0')
+        >>> list(ngons)
         [Ngon([1, 1, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='(1, 1, n)', filter=None))
+        >>> ngons = Ngons(vertices=3, min=0, limit=None, count=3, literature='include', family='(1, 1, n)', filter=None)
+        >>> list(ngons)
         [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3])]
 
-        >>> list(Ngons.click.callback(3, 'e-antic', min=0, limit=None, count=3, literature='include', family='[(1, 1, n), (1, 2, 12*n)]', filter=None))
+        >>> ngons = Ngons(vertices=3, min=0, limit=None, count=3, literature='include', family='[(1, 1, n), (1, 2, 12*n)]', filter=None)
+        >>> list(ngons)
         [Ngon([1, 1, 1]), Ngon([1, 2, 12]), Ngon([1, 1, 2])]
 
     """
 
-    @classmethod
+    def __init__(self, vertices, min, limit, count, literature, family, filter):
+        self._vertices = vertices
+        self._min = min
+        self._limit = limit
+        self._count = count
+        self._literature = literature
+        self._family = family
+        self._filter = filter
+
+    def __iter__(self):
+        r"""
+        Return an iterator over this family of n-gons.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.pipeline.bindings import Bindings
+            >>> ngons = Ngons(vertices=3, min=0, limit=None, count=6, literature="include", family=None, filter=None)
+            >>> list(ngons)
+            [Ngon([1, 1, 1]), Ngon([1, 1, 2]), Ngon([1, 1, 3]), Ngon([1, 2, 2]), Ngon([1, 1, 4]), Ngon([1, 2, 3])]
+
+        """
+        count = self._count
+
+        filter = self._filter
+        if filter is not None:
+            if not callable(filter):
+                filter = eval(filter, {})
+
+        import itertools
+
+        for n in itertools.count(start=self._min):
+            if self._limit is not None and n > self._limit:
+                break
+
+            if self._family:
+                pool = eval(self._family, {"n": n})
+                if not isinstance(pool, list):
+                    pool = [pool]
+            else:
+                total_angle = n
+                pool = partitions(total_angle, self._vertices)
+
+            for angles in pool:
+                if any(a <= 0 for a in angles):
+                    continue
+
+                if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
+                    # angles contains an angle of 2π (or more.)
+                    continue
+
+                if any(a == sum(angles) / (len(angles) - 2) for a in angles):
+                    # an angle is π
+                    continue
+
+                from sage.all import gcd
+
+                if gcd(angles) != 1:
+                    continue
+
+                if filter is not None:
+                    if not filter(*angles):
+                        continue
+
+                ngon = Ngon(angles)
+
+                if self._literature == "include":
+                    pass
+                elif self._literature == "exclude":
+                    if ngon.reference():
+                        continue
+                elif self._literature == "only":
+                    reference = ngon.reference()
+                    if reference is None or reference in [
+                        "not admissible",
+                        "reducible",
+                    ]:
+                        continue
+                else:
+                    raise NotImplementedError("Unsupported literature value")
+
+                if count is not None:
+                    if count <= 0:
+                        return
+                    count -= 1
+
+                yield ngon
+
+    @staticmethod
     @click.command(
         name="ngons",
         cls=GroupedCommand,
         group="Surfaces",
-        help=__doc__.split("EXAMPLES")[0],
+        help=__doc__.split("EXAMPLES")[0],  # type: ignore
     )
     @click.option(
         "--vertices", "-n", type=int, required=True, help="number of vertices"
-    )
-    @click.option(
-        "--length",
-        type=click.Choice(["exact-real", "e-antic"]),
-        required=False,
-        help="how side lengths are chosen  [default: e-antic for triangles, exact-real otherwise]",
     )
     @click.option(
         "--min", type=int, default=0, help="minimum sum of angles  [default: 0]"
@@ -697,75 +891,31 @@ class Ngons:
         default=None,
         help="only produce the n-gons which satisfy this lambda expression, e.g., 'lambda a, b, c: (a + b + c) % 2 == 0'",
     )
-    def click(vertices, length, min, limit, count, literature, family, filter):
-        if length is None:
-            if vertices == 3:
-                length = "e-antic"
-            else:
-                length = "exact-real"
+    @Bindings.click
+    def click(
+        bindings: Bindings, vertices, min, limit, count, literature, family, filter
+    ):
+        r"""
+        Parse command line options to configure a family of n-gons into the ``bindings``.
 
-        if filter is not None:
-            if not callable(filter):
-                filter = eval(filter, {})
+        EXAMPLES::
 
-        import itertools
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> invoke_subcommand(Ngons.click, "--vertices", "3")
 
-        for n in itertools.count(start=min):
-            if limit is not None and n > limit:
-                break
-
-            if family:
-                pool = eval(family, {"n": n})
-                if not isinstance(pool, list):
-                    pool = [pool]
-            else:
-                total_angle = n
-                pool = partitions(total_angle, vertices)
-
-            for angles in pool:
-                if any(a <= 0 for a in angles):
-                    continue
-
-                if any(a >= 2 * sum(angles) / (len(angles) - 2) for a in angles):
-                    # angles contains an angle of 2π (or more.)
-                    continue
-
-                if any(a == sum(angles) / (len(angles) - 2) for a in angles):
-                    # an angle is π
-                    continue
-
-                from sage.all import gcd
-
-                if gcd(angles) != 1:
-                    continue
-
-                if filter is not None:
-                    if not filter(*angles):
-                        continue
-
-                ngon = Ngon(angles, length=length)
-
-                if literature == "include":
-                    pass
-                elif literature == "exclude":
-                    if ngon.reference():
-                        continue
-                elif literature == "only":
-                    reference = ngon.reference()
-                    if reference is None or reference in [
-                        "not admissible",
-                        "reducible",
-                    ]:
-                        continue
-                else:
-                    raise NotImplementedError("Unsupported literature value")
-
-                if count is not None:
-                    if count <= 0:
-                        return
-                    count -= 1
-
-                yield ngon
+        """
+        bindings.survey(
+            Surface,
+            Ngons(
+                vertices=vertices,
+                min=min,
+                limit=limit,
+                count=count,
+                literature=literature,
+                family=family,
+                filter=filter,
+            ),
+        )
 
 
 def rotations(partition):
@@ -809,4 +959,8 @@ __test__ = {
     "Ngon._polygon": Ngon.polygon.__doc__,
     # Work around https://trac.sagemath.org/ticket/33951
     "Ngon._surface": Ngon._surface.__doc__,
+    # doctests of Ngon.click do not run unless explicitly mentioned here due to the click decorator.
+    "Ngon.click": Ngon.click.__doc__,
+    # doctests of Ngons.click do not run unless explicitly mentioned here due to the click decorator.
+    "Ngons.click": Ngons.click.__doc__,
 }

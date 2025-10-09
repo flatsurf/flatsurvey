@@ -8,10 +8,11 @@ EXAMPLES::
     True
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -27,12 +28,15 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from typing import Any, Callable
 
 from sage.misc.cachefunc import cached_method
 
+from flatsurvey.cache import Cache
 
-class Surface:
+
+class Surface(ABC):
     r"""
     Abstract base class for translation surfaces.
 
@@ -47,9 +51,10 @@ class Surface:
     def __init__(self, eliminate_marked_points=True):
         self._eliminate_marked_points = eliminate_marked_points
 
-    def reference(self):
+    def reference(self) -> "Surface | str | None":
         r"""
-        Return a literature reference where this surface has been studied, a practically identical (but simpler) surface, or ``None``.
+        Return a literature reference where this surface has been studied, a
+        practically identical (but simpler) surface, or ``None``.
 
         EXAMPLES::
 
@@ -61,24 +66,6 @@ class Surface:
 
         """
         return None
-
-    # This should probably live on the OrbitClosure job and not here so
-    # it is pickled correctly, see #44.
-    @cached_method
-    def orbit_closure(self):
-        r"""
-        Return the orbit closure of this surface (as has been determined so far.)
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1)).orbit_closure()
-            GL(2,R)-orbit closure of dimension at least 2 in H_1(0) (ambient dimension 2)
-
-        """
-        from flatsurf import GL2ROrbitClosure
-
-        return GL2ROrbitClosure(self.surface())
 
     @property
     def orbit_closure_dimension_upper_bound(self):
@@ -95,19 +82,6 @@ class Surface:
         raise NotImplementedError(
             "to be able to compute the orbit closure we need an upper bound on the dimensions"
         )
-
-    def flat_triangulation(self):
-        r"""
-        Return the underlying translation surface as a libflatsurf object.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1)).flat_triangulation()  # doctest: +ELLIPSIS
-            FlatTriangulationCombinatorial(vertices = (1, -3, 2, -1, 3, -2), faces = (1, 2, 3)(-1, -2, -3)) with vectors {1: (0, ...), 2: (..., ...), 3: (..., ...)}
-
-        """
-        return self.orbit_closure()._surface
 
     @cached_method
     def surface(self):
@@ -140,23 +114,7 @@ class Surface:
             Minimal Translation Cover of Genus 0 Rational Cone Surface built from 2 equilateral triangles
 
         """
-
-    def command(self):
-        r"""
-        Return command line arguments that can be used to recreate this surface.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> Ngon((1, 1, 1)).command()
-            ['pickle', '--base64', '...']
-
-        """
-        from base64 import b64encode
-
-        from sage.all import dumps
-
-        return ["pickle", "--base64", b64encode(dumps(self)).decode("ASCII").strip()]
+        raise NotImplementedError
 
     def basename(self):
         r"""
@@ -173,6 +131,111 @@ class Surface:
 
         return re.sub("[^\\w]+", "-", repr(self)).strip("-").lower()
 
+    @abstractmethod
+    def cache_predicate(
+        self, exact: bool, cache: Cache | None = None
+    ) -> Callable[[Any], bool]:
+        r"""
+        Return a predicate that can be used to filter cache rows for this surface.
+
+        Each result stored in the cache is going to be filtered through this
+        predicate to determine whether the result actually applies to this
+        surface.
+
+        INPUT:
+
+        - ``exact`` -- whether to only match results that have been obtained
+          for the exact same surface, e.g., when given two polygon unfolding,
+          whether the exact side lengths must match (or just the angles
+          involved.)
+
+        - ``cache`` -- the cache for which this predicate is going to be used
+          (or ``None`` to obtain a generic predicate.)
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> surface = Ngon((1, 1, 1, 1))
+
+            >>> class CacheSurface:
+            ...     def __init__(self, surface):
+            ...         self.type = type(surface).__name__
+            ...         self.angles = surface.angles
+
+            >>> class CacheRow:
+            ...     def __init__(self, surface):
+            ...         self.surface = CacheSurface(surface)
+
+            >>> predicate = surface.cache_predicate(exact=True)
+            >>> predicate(CacheRow(surface))
+            Traceback (most recent call last):
+            ...
+            NotImplementedError: exact filtering is not supported yet
+
+            >>> predicate = surface.cache_predicate(exact=False)
+            >>> predicate(CacheRow(surface))
+            True
+
+        """
+
+    @property
+    def symmetries(self):
+        r"""
+        Return rotational symmetries of this surface as orthogonal
+        matrices.
+
+        The symmetries returned should be such that it is usually enough to
+        explore the surface in one surface and one does not gain much
+        information by exploring into the directions related by symmetry.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+
+            >>> S = Ngon((1, 1, 1))
+            >>> S.symmetries
+            {[  -1/2  1/2*c]
+            [-1/2*c   -1/2], [1 0]
+            [0 1], [  -1/2 -1/2*c]
+            [ 1/2*c   -1/2]}
+
+        """
+        from sage.all import matrix
+
+        return {matrix([[1, 0], [0, 1]], immutable=True)}
+
+    @property
+    def fundamental_sector(self):
+        r"""
+        Return a fundamental sector of the plane module the :meth:`symmetries`.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+
+            >>> S = Ngon((1, 1, 1))
+            >>> S.fundamental_sector
+            ((1, 0), (-1/2, 1/2*c))
+
+        ::
+
+            >>> S = Ngon((1, 1, 2))
+            >>> S.fundamental_sector
+            ((1, 0), (0, 1))
+
+        """
+        positive_rotations = [Q for Q in self.symmetries if Q[1][0] > 0]
+        if not positive_rotations:
+            from sage.all import vector
+
+            return vector((1, 0)), vector((1, 0))
+
+        minimal_rotation = max(positive_rotations, key=lambda Q: Q[0])
+
+        end = minimal_rotation.column(0)
+        begin = end.parent()((1, 0))
+        return begin, end
+
     def __repr__(self):
         raise NotImplementedError(
             "to be able to log results for surfaces we need a printable representation"
@@ -186,16 +249,15 @@ class Surface:
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
+
             >>> Ngon((1, 2, 3))._flatsurvey_characteristics()
-            {'angles': [1, 2, 3]}
+            {'angles': [1, 2, 3], 'genus': 1}
 
         """
         return {}
 
 
 __test__ = {
-    # Work around https://trac.sagemath.org/ticket/33951
-    "Surface.orbit_closure": Surface.orbit_closure.__doc__,
     # Work around https://trac.sagemath.org/ticket/33951
     "Surface.surface": Surface.surface.__doc__,
 }

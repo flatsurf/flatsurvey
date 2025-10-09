@@ -8,10 +8,11 @@ EXAMPLES::
     True
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,6 +27,9 @@ EXAMPLES::
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
+from typing import TypeVar, overload
+
+T = TypeVar("T")
 
 
 class Reporter:
@@ -34,11 +38,8 @@ class Reporter:
 
     EXAMPLES::
 
-        >>> from flatsurvey.surfaces import Ngon
-        >>> surface = Ngon((1, 1, 1))
-
         >>> from flatsurvey.reporting import Log
-        >>> log = Log(surface)
+        >>> log = Log(output="-")
         >>> isinstance(log, Reporter)
         True
 
@@ -52,46 +53,49 @@ class Reporter:
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
 
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> log.log(source=surface, message="Hello World", additional_data=1337)
             [Ngon([1, 1, 1])] [Ngon] Hello World (additional_data: 1337)
 
         """
-        pass
+        del source
+        del message
+        del kwargs
 
     async def result(self, source, result, **kwargs):
         r"""
         Report a computation's ``result`` from ``source``.
 
+        Implementations should override this message to actually do something with the result.
+
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
 
             >>> import asyncio
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> report = log.result(source=surface, result="result", additional_data=1337)
             >>> asyncio.run(report)
             [Ngon([1, 1, 1])] [Ngon] result (additional_data: 1337)
 
         """
-        pass
+        del source
+        del result
+        del kwargs
 
     def progress(
         self,
         source,
         count=None,
-        advance=None,
         what=None,
         total=None,
         message=None,
-        parent=None,
-        activity=None,
     ):
         r"""
         Report that ``source`` has made some progress.
@@ -100,16 +104,20 @@ class Reporter:
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
 
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> log.progress(source=surface, what="progress", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] progress: 13/37
 
         """
-        pass
+        del source
+        del count
+        del what
+        del total
+        del message
 
     def flush(self):
         r"""
@@ -119,39 +127,83 @@ class Reporter:
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log(output="-")
             >>> log.flush()
 
         """
-        pass
 
-    def _simplify_primitive(self, value):
+    def _simplify_object(self, value):
         r"""
         Return the argument in a way that the report can render out.
 
         EXAMPLES::
 
             >>> from flatsurvey.reporting import Json
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
-            >>> log = Json(surface)
+            >>> log = Json({Surface: surface})
 
         Rewrites SageMath integers as Python integers::
 
             >>> from sage.all import ZZ
 
-            >>> log._simplify(ZZ(1))
+            >>> simplified = log._simplify(ZZ(1))
+            >>> simplified
             1
+            >>> type(simplified)
+            <class 'int'>
+
+        Rewrites SageMath rationals as Python fractions::
+
+            >>> from sage.all import QQ
+
+            >>> simplified = log._simplify(QQ(1/2))
+            >>> simplified
+            Fraction(1, 2)
+
+        Rewrites GMP integers as Python integers::
+
+            >>> from gmpxxyy import mpz
+
+            >>> simplified = log._simplify(mpz(1))
+            >>> simplified
+            1
+            >>> type(simplified)
+            <class 'int'>
+
+        Rewrites GMP rationals as Python fractions::
+
+            >>> from gmpxxyy import mpq
+
+            >>> simplified = log._simplify(mpq(1, 2))
+            >>> simplified
+            Fraction(1, 2)
+
+        This method can be further customized by implementing
+        :meth:`_simplify_unknown`.
 
         """
-        from sage.all import ZZ
+        import gmpxxyy
+        from sage.all import QQ, ZZ
 
         if isinstance(value, type(ZZ())):
             return int(value)
+
+        if isinstance(value, gmpxxyy.mpz):
+            return int(str(value))
+
+        if isinstance(value, type(QQ())):
+            import fractions
+
+            return fractions.Fraction(int(value.numerator()), int(value.denominator()))
+
+        if isinstance(value, gmpxxyy.mpq):
+            import fractions
+
+            return fractions.Fraction(
+                int(str(value.get_num())), int(str(value.get_den()))
+            )
 
         if isinstance(value, (str, int, float, type(None))):
             return value
@@ -162,9 +214,19 @@ class Reporter:
         r"""
         Return the argument in a way that the report can render out.
 
-        Subclasses can overwrite this to provide a fallback.
+        Subclasses can overwrite this to provide a fallback when the other
+        ``_simplify`` methods do not know what to do about this value.
         """
         raise NotImplementedError(f"cannot represent {type(value)} in this report yet")
+
+    @overload
+    def _simplify(self, value: T) -> T: ...
+
+    @overload
+    def _simplify(self, value: dict, **kwargs) -> dict: ...
+
+    @overload
+    def _simplify(self, value: list, **kwargs) -> dict: ...
 
     def _simplify(self, *args, **kwargs):
         r"""
@@ -173,9 +235,9 @@ class Reporter:
         EXAMPLES::
 
             >>> from flatsurvey.reporting import Json
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
-            >>> log = Json(surface)
+            >>> log = Json({Surface: surface})
 
         Combines arguments and keyword arguments::
 
@@ -215,4 +277,4 @@ class Reporter:
                 self._simplify(key): self._simplify(v) for (key, v) in value.items()
             }
 
-        return self._simplify_primitive(value)
+        return self._simplify_object(value)

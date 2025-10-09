@@ -8,53 +8,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-flatsurvey:
-    runs-on: ${{ matrix.on }}
-    strategy:
-      matrix:
-        include:
-          - on: ubuntu-20.04
-            python: "3.9"
+  pytest:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
-        with: { submodules: recursive }
-      - uses: conda-incubator/setup-miniconda@v2
-        with: { miniforge-variant: "Mambaforge", miniforge-version: "latest", python-version: "${{ matrix.python }}" }
-      - name: install dependencies
-        shell: bash -el {0}
-        run: |
-          mamba env update --quiet -n test -f environment.yml
-          conda list
-      - name: install flatsurvey
-        shell: bash -el {0}
-        run: |
-          pip install -e .
-      - name: doctest
-        shell: bash -el {0}
-        run: |
-          # Make sure that initialization message does not show up in doctest output.
-          python -c 'import cppyy'
-          pytest -n auto -x --doctest-modules flatsurvey
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          pixi-version: v0.55.0
+      - name: pytest
+        shell: pixi run bash -e {0}
+        run: pixi run test
+  survey:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: prefix-dev/setup-pixi@v0.9.1
+        with:
+          pixi-version: v0.55.0
       - name: run survey
-        shell: bash -el {0}
+        shell: pixi run bash -e {0}
         run: |
-          flatsurvey orbit-closure ngons --vertices 3 --limit 7 json
+          flatsurvey orbit-closure ngons --vertices 3 --limit 7 json --prefix survey
       - name: build cache database from previous run
-        shell: bash -el {0}
+        shell: pixi run bash -e {0}
         run: |
-          # Shrink cache files by externalizing the referenced surfaces.
-          mkdir -p pickles
-          flatsurvey-maintenance externalize-pickles --inplace --pickles pickles/ *.json
+          shopt -s globstar
 
           # Creata single cache file from the runs.
-          flatsurvey-maintenance join *.json
+          flatsurvey-maintenance join --outdir survey-results survey/**/*.json
 
-          cat orbit-closure.json
+          cat survey-results/orbit-closure.json
       - name: run survey from cache
-        shell: bash -el {0}
+        shell: pixi run bash -e {0}
         run: |
           # The survey succeeds with the cache enabled.
-          flatsurvey orbit-closure ngons --vertices 3 --limit 7 local-cache --json orbit-closure.json log
+          flatsurvey orbit-closure ngons --vertices 3 --limit 7 local-cache --json survey-results/orbit-closure.json log --output -
 
           # The survey succeeds without running any computations.
-          flatsurvey orbit-closure --cache-only ngons --vertices 3 --limit 7 local-cache --json orbit-closure.json log
+          flatsurvey orbit-closure --cache-only ngons --vertices 3 --limit 7 local-cache --json survey-results/orbit-closure.json log --output -

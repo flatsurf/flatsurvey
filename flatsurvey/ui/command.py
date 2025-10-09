@@ -1,10 +1,11 @@
 r"""
 Utilities for subcommands that can be invoked from the command line.
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2022 Julian Rüth
+#        Copyright (C) 2022-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,14 +21,13 @@ Utilities for subcommands that can be invoked from the command line.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-from abc import abstractmethod
-
 
 class Command:
     r"""
     A subcommand that can be invoked from the command line.
 
-    Commands should inherit from this class.
+    Commands should inherit from this class and implement a static ``click``
+    method that uses ``click.command``.
 
     EXAMPLES::
 
@@ -42,7 +42,7 @@ class Command:
     """
 
     @classmethod
-    def name(cls):
+    def name(cls) -> str:
         r"""
         Return the name of this command for the command line.
 
@@ -57,25 +57,7 @@ class Command:
             'log'
 
         """
-        return cls.click.name
-
-    @abstractmethod
-    def command(self):
-        r"""
-        Return the command that can be invoked to get this object in its
-        current configuration.
-
-        EXAMPLES::
-
-            >>> from flatsurvey.surfaces import Ngon
-            >>> surface = Ngon((1, 1, 1))
-
-            >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
-            >>> log.command()
-            ['log']
-
-        """
+        return cls.click.name  # pyright: ignore
 
     def __repr__(self):
         r"""
@@ -92,4 +74,4 @@ class Command:
             log
 
         """
-        return " ".join(self.command())
+        return self.name()

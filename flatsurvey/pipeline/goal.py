@@ -1,9 +1,7 @@
 r"""
-The goal of a survey.
+A generic goal of a program run.
 
-A goal is a specialized :class:`Consumer` that is typically not a
-:class:`Producer` at the same time and form its verdict from cached previous
-runs.
+Invocations of flatsurvey run until all registered goals have been resolved.
 
 EXAMPLES:
 
@@ -12,10 +10,11 @@ EXAMPLES:
     True
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2022 Julian Rüth
+#        Copyright (C) 2022-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -31,49 +30,58 @@ EXAMPLES:
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
-from pinject import copy_args_to_internal_fields
-
-from flatsurvey.pipeline.consumer import Consumer
+from abc import ABC, abstractmethod
 
 
-class Goal(Consumer):
-    r"""
-    In the pipeline graph of jobs, a Goal is just a :class:`Consumer` with some
-    added facilities that are shared by all actual goals. In practice this
-    means that all consumers that are not a :class:`Producer` at the same time
-    should most likely inherit from Goal.
+class Goal(ABC):
+    def __init__(self):
+        self._resolved = False
 
-    EXAMPLES::
+    @property
+    def resolved(self):
+        r"""
+        Return whether this goal should be considered resolved, i.e., whether
+        it has already reached a final verdict.
 
-        >>> from flatsurvey.surfaces import Ngon
-        >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections
-        >>> from flatsurvey.jobs.orbit_closure import OrbitClosure
-        >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface, report=None)
-        >>> flow_decompositions = FlowDecompositions(surface=surface, report=None, saddle_connection_orientations=SaddleConnectionOrientations(connections, report=None))
-        >>> goal = OrbitClosure(surface=surface, report=None, flow_decompositions=flow_decompositions, saddle_connections=connections, cache=None)
-        >>> isinstance(goal, Goal)
-        True
+        EXAMPLES:
 
-    """
-    DEFAULT_CACHE_ONLY = False
+        Typically, a :class:`Transformation` does never reach the resolved
+        status::
 
-    _cache_only_option = click.option(
-        "--cache-only",
-        default=DEFAULT_CACHE_ONLY,
-        is_flag=True,
-        help="Do not perform any computation. Only query the cache.",
-    )
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
+            >>> surface = Ngon((1, 1, 1))
+            >>> connections = SaddleConnections(surface=surface)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
+            >>> orientations.resolved
+            False
 
-    @copy_args_to_internal_fields
-    def __init__(self, producers, cache, cache_only=DEFAULT_CACHE_ONLY, report=None):
-        if self._cache is None:
-            from flatsurvey.cache import Cache
+        """
+        return self._resolved
 
-            self._cache = Cache(pickles=None, report=None)
+    @abstractmethod
+    async def resolve(self) -> bool:
+        r"""
+        Perform the steps necessary to satisfy this goal.
 
-        super().__init__(producers=producers, report=report)
+        Return whether the goal is actually resolved or it remained inconclusive.
 
-    async def consume_cache(self):
-        pass
+        Concrete subclasses must implement this method.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.reporting import Log, Report
+            >>> from flatsurvey.jobs import FlowDecompositions, SaddleConnectionOrientations, SaddleConnections, OrbitClosure
+            >>> surface = Ngon((1, 3, 5))
+            >>> connections = SaddleConnections(surface)
+            >>> orientations = SaddleConnectionOrientations(connections)
+            >>> flow_decompositions = FlowDecompositions(surface=surface, saddle_connection_orientations=orientations)
+            >>> oc = OrbitClosure(surface=surface, flow_decompositions=flow_decompositions, saddle_connections=connections, saddle_connection_orientations=orientations, cache=None)
+
+            >>> import asyncio
+            >>> resolve = oc.resolve()
+            >>> asyncio.run(resolve)
+            True
+
+        """

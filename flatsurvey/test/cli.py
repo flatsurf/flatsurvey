@@ -5,10 +5,11 @@ Click's own CliRunner is quite cumbersome to work with in some simple test
 scenarios so we wrap it in more convenient ways here.
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  Flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -24,28 +25,74 @@ scenarios so we wrap it in more convenient ways here.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+import click
+from click.testing import CliRunner
+
+from flatsurvey.pipeline import Bindings
+
 
 def invoke(command, *args):
     r"""
     Invoke the click ``command`` with the given list of string arguments.
 
-    >>> import click
-    >>> @click.command()
-    ... def hello(): print("Hello World")
-    >>> invoke(hello)
-    Hello World
+    EXAMPLES::
 
-    >>> @click.command()
-    ... def fails(): raise Exception("expected error")
-    >>> invoke(fails)
-    Traceback (most recent call last):
-    ...
-    Exception: expected error
+        >>> import click
+        >>> @click.command()
+        ... def hello(): print("Hello World")
+        >>> invoke(hello)
+        Hello World
+
+        >>> @click.command()
+        ... def fails(): raise Exception("expected error")
+        >>> invoke(fails)
+        Traceback (most recent call last):
+        ...
+        Exception: expected error
 
     """
-    from click.testing import CliRunner
-
     invocation = CliRunner().invoke(command, args, catch_exceptions=False)
+    output = invocation.output.strip()
+    if output:
+        print(output)
+
+
+def invoke_subcommand(subcommand, *args, bindings: Bindings | None = None):
+    r"""
+    Invoke a :meth:`Bindings.click` subcommand of a click command with the
+    given list of ``arguments``.
+
+    EXAMPLES::
+
+        >>> import click
+        >>> @click.command("subcommand")
+        ... @Bindings.click
+        ... def subcommand(bindings: Bindings): bindings.define(hello="world")
+
+        >>> bindings = Bindings()
+        >>> invoke_subcommand(subcommand, bindings=bindings)
+
+        >>> bindings.get("hello")
+        'world'
+
+    """
+    if bindings is None:
+        bindings = Bindings()
+
+    @click.group(chain=True)
+    def doctest():
+        pass
+
+    doctest.add_command(subcommand)
+
+    @doctest.result_callback()
+    def _(commands):
+        for command in commands:
+            command(bindings)
+
+    invocation = CliRunner().invoke(
+        doctest, (subcommand.name,) + args, catch_exceptions=False
+    )
     output = invocation.output.strip()
     if output:
         print(output)

@@ -1,7 +1,33 @@
+r"""
+Deformations of surfaces
+
+During an orbit closure search, it might be necessary to replace a given
+surface with a deformation in the orbit closure to be able to determine the
+full dimension of the orbit closure of the original surface.
+
+EXAMPLES::
+
+    >>> from flatsurvey.surfaces import Ngon, Deformation
+    >>> from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
+    >>> from flatsurf import GL2ROrbitClosure
+
+    >>> S = Ngon((1, 1, 1))
+
+    >>> O = GL2ROrbitClosure(S.surface())
+
+    >>> delta = [O.V2(v, 0).vector for v in O.lift(O.tangent_space_basis()[0])]
+    >>> deformation = from_pyflatsurf((O._surface + delta).surface())
+
+    >>> T = Deformation(deformation, S)
+    >>> T
+    Deformation of Ngon([1, 1, 1])
+
+"""
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,27 +43,68 @@
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import flatsurvey.worker.restart
+from flatsurvey.cache import Cache
 from flatsurvey.surfaces.surface import Surface
 
 
 class Deformation(Surface):
-    def __init__(self, deformed, old):
+    r"""
+    A surface that is considered a "deformed" version of an ``old`` original
+    surface.
+
+    Currently, we use this to move away from pathological surfaces in the orbit
+    closure where our approach would never be able to determine the full
+    dimension of the orbit closure.
+
+    EXAMPLES::
+
+        >>> from flatsurvey.surfaces import Ngon, Deformation
+        >>> from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
+        >>> from flatsurf import GL2ROrbitClosure
+
+        >>> S = Ngon((1, 1, 1))
+
+        >>> O = GL2ROrbitClosure(S.surface())
+
+        >>> delta = [O.V2(v, 0).vector for v in O.lift(O.tangent_space_basis()[0])]
+        >>> deformation = from_pyflatsurf((O._surface + delta).surface())
+
+        >>> T = Deformation(deformation, S)
+        >>> T
+        Deformation of Ngon([1, 1, 1])
+
+    """
+
+    def __init__(self, deformed: Surface, old: Surface):
+        super().__init__(eliminate_marked_points=old._eliminate_marked_points)
         self._deformed = deformed
         self._old = old
 
     def __repr__(self):
         return f"Deformation of {self._old}"
 
-    @property
-    def _eliminate_marked_points(self):
-        return self._old._eliminate_marked_points
-
-    @property
-    def orbit_closure_dimension_upper_bound(self):
-        return self._old.orbit_closure_dimension_upper_bound
-
     def _surface(self):
+        r"""
+        Return the underlying sage-flatsurf surface.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.surfaces import Ngon, Deformation
+            >>> from flatsurf.geometry.pyflatsurf_conversion import from_pyflatsurf
+            >>> from flatsurf import GL2ROrbitClosure
+
+            >>> S = Ngon((1, 1, 1))
+
+            >>> O = GL2ROrbitClosure(S.surface())
+
+            >>> delta = [O.V2(v, 0).vector for v in O.lift(O.tangent_space_basis()[0])]
+            >>> deformation = from_pyflatsurf((O._surface + delta).surface())
+
+            >>> T = Deformation(deformation, S)
+            >>> T.surface()
+            Translation Surface in H_1(0) built from 2 isosceles triangles
+
+        """
         return self._deformed
 
     def __hash__(self):
@@ -50,38 +117,14 @@ class Deformation(Surface):
             and self._old == other._old
         )
 
-    def __ne__(self, other):
-        return not (self == other)
+    def cache_predicate(self, exact: bool, cache: Cache | None = None):
+        r"""
+        Return a predicate that can be used to filter cache rows for this surface.
 
-    def cache_predicate(self, exact, cache=None):
-        return lambda result: False
-
-    class Restart(flatsurvey.worker.restart.Restart):
-        def __init__(self, deformed, old):
-            self._deformation = Deformation(deformed=deformed, old=old)
-
-        def rewrite_bound(self, bound):
-            from flatsurvey.pipeline.util import FactoryBindingSpec
-
-            if isinstance(bound, Surface):
-                return [
-                    FactoryBindingSpec(
-                        name="surface", prototype=lambda: self._deformation
-                    )
-                ]
-
-            return bound.deform(deformation=self._deformation)["bindings"]
-
-        def rewrite_goal(self, goal, objects):
-            goal = objects.provide(goal)
-            goals = goal.deform(deformation=self._deformation)["goals"]
-            if len(goals) != 1:
-                raise NotImplementedError("cannot rewrite more than one goal yet")
-            return goals[0]
-
-        def rewrite_reporter(self, reporter, objects):
-            reporter = objects.provide(reporter)
-            reporters = reporter.deform(deformation=self._deformation)["reporters"]
-            if len(reporters) != 1:
-                raise NotImplementedError("cannot rewrite more than one reporter yet")
-            return reporters[0]
+        Currently, we do not want a deformation to use caches at all, so this
+        is just the constant ``False``. We assume that this is a fairly random
+        deformation that is not going to be present in the cache anyway.
+        """
+        del exact
+        del cache
+        return lambda _: False

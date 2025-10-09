@@ -1,29 +1,27 @@
 r"""
-Entrypoint to organize .JSON files written by surveys.
+Entrypoint to organize .json files written by surveys.
 
 TESTS::
 
     >>> from flatsurvey.test.cli import invoke
-    >>> invoke(cli) # doctest: +NORMALIZE_WHITESPACE
+    >>> invoke(cli)  # doctest: +NORMALIZE_WHITESPACE
     Usage: cli [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
-    <BLANKLINE>
       Mangle cache files.
-    <BLANKLINE>
     Options:
       --debug
-      --help         Show this message and exit.
       -v, --verbose  Enable verbose message, repeat for debug message.
-    <BLANKLINE>
+      --help         Show this message and exit.
     Commands:
-      externalize-pickles
-      join
-      split
+      join  Aggregates JSON files into one file for each type of result.
+    Reports:
+      log  Writes progress and results as an unstructured log file.
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2022 Julian Rüth
+#        Copyright (C) 2022-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -40,14 +38,9 @@ TESTS::
 # *********************************************************************
 
 import click
-import pinject
 
-import flatsurvey.reporting.log
-from flatsurvey.cache.externalize_pickles import ExternalizePickles
-from flatsurvey.cache.join import Join
-from flatsurvey.cache.split import Split
-from flatsurvey.pipeline.util import FactoryBindingSpec, ListBindingSpec
-from flatsurvey.ui.group import CommandWithGroups
+import flatsurvey.cache
+from flatsurvey.ui import CommandWithGroups
 
 
 @click.group(
@@ -68,11 +61,12 @@ def cli(debug, verbose):
 
     Specific tasks are registered as subcommands.
     """
+    del debug  # handled by process()
+    del verbose  # handled by process()
 
 
-cli.add_command(Split.click)
-cli.add_command(Join.click)
-cli.add_command(ExternalizePickles.click)
+for command in flatsurvey.cache.maintenance_commands:
+    cli.add_command(command)
 
 
 @cli.result_callback()
@@ -82,13 +76,20 @@ def process(commands, debug, verbose):
 
     EXAMPLES:
 
-    TODO
+        >>> from flatsurvey.test.cli import invoke
+        >>> invoke(cli, "join", "--help")  # doctest: +NORMALIZE_WHITESPACE
+        Usage: cli join [OPTIONS] [JSONS]...
+          Aggregates JSON files into one file for each type of result.
+        Options:
+          --outdir PATH  a directory to write the output files to  [required]
+          --help         Show this message and exit.
+
     """
     if debug:
         import pdb
         import signal
 
-        signal.signal(signal.SIGUSR1, lambda sig, frame: pdb.Pdb().set_trace(frame))
+        signal.signal(signal.SIGUSR1, lambda _, frame: pdb.Pdb().set_trace(frame))
 
     if verbose:
         import logging
@@ -96,61 +97,22 @@ def process(commands, debug, verbose):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if verbose > 1 else logging.INFO)
 
-    try:
-        objects = Maintenance.make_object_graph(commands)
+    from flatsurvey.pipeline import Bindings
 
+    bindings = Bindings()
+
+    for command in commands:
+        command(bindings)
+
+    try:
         import asyncio
 
-        asyncio.run(objects.provide(Maintenance).start())
+        from flatsurvey.worker import Worker
+
+        asyncio.run(Worker.work(bindings=bindings, limits=[]))
     except Exception:
         if debug:
+            import pdb
+
             pdb.post_mortem()
         raise
-
-
-class Maintenance:
-    """
-    TODO: Document me. This is essentially a clone of Worker.
-    """
-
-    @pinject.copy_args_to_internal_fields
-    def __init__(self, goals, reporters):
-        pass
-
-    @classmethod
-    def make_object_graph(cls, commands):
-        bindings = []
-        goals = []
-        reporters = []
-
-        for command in commands:
-            bindings.extend(command.get("bindings", []))
-            goals.extend(command.get("goals", []))
-            reporters.extend(command.get("reporters", []))
-
-        bindings.append(ListBindingSpec("goals", goals))
-        bindings.append(
-            ListBindingSpec("reporters", reporters or [flatsurvey.reporting.Log])
-        )
-        bindings.append(FactoryBindingSpec("surface", lambda: None))
-
-        return pinject.new_object_graph(
-            modules=[flatsurvey.reporting, flatsurvey.cache.maintenance],
-            binding_specs=bindings,
-            allow_injecting_none=True,
-        )
-
-    async def start(self):
-        r"""
-        Run until all our goals are resolved.
-        """
-        try:
-            for goal in self._goals:
-                await goal.consume_cache()
-            for goal in self._goals:
-                await goal.resolve()
-        finally:
-            for goal in self._goals:
-                await goal.report()
-        for reporter in self._reporters:
-            reporter.flush()

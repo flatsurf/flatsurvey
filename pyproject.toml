@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flatsurvey"
+version = "0.1.0"
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = ["datasize", "click", "dask", "more-itertools", "orjson", "sage-flatsurf", "pandas"]
+
+[project.scripts]
+flatsurvey = "flatsurvey.survey:survey"
+flatsurvey-worker = "flatsurvey.worker:worker"
+flatsurvey-maintenance = "flatsurvey.cache.maintenance:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flatsurvey", "flatsurvey.*"]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.dependencies]
+black = "*"
+click = "*"
+codespell = "*"
+dask = "*"
+isort = "*"
+more-itertools = "*"
+orjson = "*"
+pip = "*"
+psutil = "*"
+pyflatsurf = "*"
+pyintervalxt = "*"
+pytest = "*"
+pytest-xdist = "*"
+pytest-forked = "*"
+sage-flatsurf = ">=0.6.0"
+alive-progress = "*"
+sympy = ">=1.14.0,<2"
+pandas = ">=2.3.3,<3"
+fpylll = ">=0.6.4,<0.7"
+
+[tool.pixi.pypi-dependencies]
+flatsurvey = { path = ".", editable = true }
+
+[tool.pixi.tasks.test]
+cmd = "pytest --forked -n $(nproc) --doctest-modules flatsurvey"
+
+[tool.pixi.tasks.black]
+cmd = "black flatsurvey/**/*.py"
+
+[tool.pixi.tasks.codespell]
+cmd = "codespell flatsurvey"
+
+[tool.pixi.tasks.isort]
+cmd = "isort --profile black flatsurvey"

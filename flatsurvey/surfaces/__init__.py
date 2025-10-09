@@ -1,17 +1,15 @@
 r"""
 Translation Surfaces and Related Structures of Interest
 
-There are two kinds of closely related structures in the ``sources`` module,
-individual sources, such as a particular unfolding of a polygon, and generators
-of families of such structures such as unfoldings of all triangles.
-
-This module does not expose the actual structures but the ``click`` command
-line interface that is used to generate them.
+There are two kinds of closely related structures in this module, individual
+surfaces, such as a particular unfolding of a polygon, and generators of
+families of such surfaces such as unfoldings of all triangles.
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,10 +27,8 @@ line interface that is used to generate them.
 
 from flatsurvey.surfaces.deformation import Deformation
 from flatsurvey.surfaces.ngons import Ngon, Ngons
-from flatsurvey.surfaces.pickle import pickle
 from flatsurvey.surfaces.surface import Surface
-from flatsurvey.surfaces.thurston_veech import ThurstonVeech, ThurstonVeechs
 
-generators = [Ngons.click, ThurstonVeechs.click]
+generators = [Ngons.click]
 
-commands = [Ngon.click, ThurstonVeech.click, pickle]
+commands = [Ngon.click]

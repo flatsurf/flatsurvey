@@ -3,20 +3,34 @@ Wraps several reporters to report on progress and results.
 
 EXAMPLES::
 
-    >>> from flatsurvey.surfaces import Ngon
+    >>> from flatsurvey.test.cli import invoke
+    >>> from flatsurvey.worker import worker
+    >>> invoke(worker, "report", "--help") # doctest: +NORMALIZE_WHITESPACE
+    Usage: worker report [OPTIONS]
+      Generic reporting of results.
+      A simple wrapper of several ``reporters`` that dispatches reporting.
+    Options:
+      --ignore TEXT  [default: flow-decompositions, saddle-connections, saddle-
+                     connection-orientations]
+      --help         Show this message and exit.
+
+::
+
+    >>> from flatsurvey.surfaces import Ngon, Surface
     >>> surface = Ngon((1, 1, 1))
 
     >>> from flatsurvey.reporting import Log
-    >>> log = Log(surface)
+    >>> log = Log({Surface: surface}, output="-")
     >>> report = Report([log])
     >>> report.log(surface, "Hello World")
     [Ngon([1, 1, 1])] [Ngon] Hello World
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -32,10 +46,13 @@ EXAMPLES::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from typing import List
+
 import click
 
-from flatsurvey.command import Command
-from flatsurvey.pipeline.util import PartialBindingSpec
+from flatsurvey.pipeline import Bindings
+from flatsurvey.reporting.reporter import Reporter
+from flatsurvey.ui import Command
 from flatsurvey.ui.group import GroupedCommand
 
 
@@ -52,32 +69,95 @@ class Report(Command):
 
     """
 
-    def __init__(self, reporters, ignore=None):
-        self._reporters = reporters
-        self._ignore = ignore or []
+    DEFAULT_IGNORE = [
+        "flow-decompositions",
+        "saddle-connections",
+        "saddle-connection-orientations",
+    ]
 
-    @classmethod
+    def __init__(
+        self, reporters: List[Reporter] | None = None, ignore: list[str] | None = None
+    ):
+        if reporters is None:
+            reporters = []
+        if ignore is None:
+            ignore = Report.DEFAULT_IGNORE
+
+        self._reporters = reporters
+        self._ignore = ignore
+
+        # Keep track which goals have already reported their result (this is a
+        # bit of a hack…)
+        from flatsurvey.pipeline import Consumer
+
+        self._reported: set[Consumer] = set()
+
+    @staticmethod
     @click.command(
         name="report",
         cls=GroupedCommand,
         group="Reports",
-        help=__doc__.split("EXAMPLES:")[0],
+        help=__doc__.split("EXAMPLES:")[0],  # type: ignore
     )
-    @click.option("--ignore", type=str, multiple=True)
-    def click(ignore):
-        return {"bindings": Report.bindings(ignore)}
+    @click.option(
+        "--ignore", type=str, multiple=True, default=DEFAULT_IGNORE, show_default=True
+    )
+    @Bindings.click
+    def click(bindings: Bindings, ignore):
+        r"""
+        Parse command line options into ``bindings``.
+
+        TESTS::
+
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> invoke_subcommand(Report.click)
+
+        """
+        with bindings.scope(Report) as scoped:
+            scoped.define(ignore=ignore)
+
+    @staticmethod
+    def create(bindings):
+        r"""
+        Create a report from the configuration in the ``bindings``.
+
+        TESTS::
+
+            >>> from flatsurvey.pipeline import Bindings
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> from flatsurvey.surfaces import Ngon, Surface
+            >>> bindings = Bindings()
+            >>> invoke_subcommand(Report.click, bindings=bindings)
+            >>> bindings.define(Surface, Ngon((1, 1, 1)))
+            >>> report = Report.create(bindings)
+
+            >>> report._ignore
+            ('flow-decompositions', 'saddle-connections', 'saddle-connection-orientations')
+
+        Note that we do not set a default reporter to stdout. If no reporter is
+        specified, then no reporting at all is going to happen::
+
+            >>> report._reporters
+            []
+
+        """
+        with bindings.scope(Report) as scoped:
+            reporters = bindings.get(list[Reporter], default=lambda: [])
+            ignore = scoped.get("ignore", default=Report.DEFAULT_IGNORE)
+
+            return Report(reporters=reporters, ignore=ignore)
 
     def log(self, source, message, **kwargs):
         r"""
-        Write an informational message to the log.
+        Write an informational message to the report.
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
 
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> report = Report([log, log])
             >>> report.log(surface, "Hello World printed by two identical reporters")
             [Ngon([1, 1, 1])] [Ngon] Hello World printed by two identical reporters
@@ -86,6 +166,7 @@ class Report(Command):
         """
         if self.ignore(source):
             return
+
         for reporter in self._reporters:
             reporter.log(source, message, **kwargs)
 
@@ -95,12 +176,13 @@ class Report(Command):
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
+            >>> _ = surface.polygon()  # called to make hashing work below
 
             >>> import asyncio
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> report = Report([log, log])
             >>> result = report.result(surface, "Computation completed.")
             >>> asyncio.run(result)
@@ -110,19 +192,19 @@ class Report(Command):
         """
         if self.ignore(source):
             return
+
         for reporter in self._reporters:
             await reporter.result(source, result, **kwargs)
+
+        self._reported.add(source)
 
     def progress(
         self,
         source,
         count=None,
-        advance=None,
         what=None,
         total=None,
         message=None,
-        parent=None,
-        activity=None,
     ):
         r"""
         Report that some progress has been made in the resolution of the
@@ -131,59 +213,57 @@ class Report(Command):
 
         EXAMPLES::
 
-            >>> from flatsurvey.surfaces import Ngon
+            >>> from flatsurvey.surfaces import Ngon, Surface
             >>> surface = Ngon((1, 1, 1))
 
             >>> from flatsurvey.reporting import Log
-            >>> log = Log(surface)
+            >>> log = Log({Surface: surface}, output="-")
             >>> report = Report([log, log])
             >>> context = report.progress(surface, what="dimension", count=13, total=37)
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
             [Ngon([1, 1, 1])] [Ngon] dimension: 13/37
 
         """
-        contexts = [
+        if self.ignore(source):
+            return
+
+        for reporter in self._reporters:
             reporter.progress(
                 source=source,
                 what=what,
                 count=count,
-                advance=advance,
                 total=total,
-                parent=parent,
-                activity=activity,
                 message=message,
             )
-            for reporter in self._reporters
-        ]
-        contexts = [context for context in contexts if context is not None]
 
-        from contextlib import contextmanager
+    def ignore(self, source) -> bool:
+        r"""
+        Return whether data from ``source`` should be ignored by this report.
 
-        def report(source=None, **kwargs):
-            if source is not None:
-                return self.progress(source=source, parent=outer, **kwargs)
-            return self.progress(source=outer, parent=parent, **kwargs)
+        EXAMPLES::
 
-        @contextmanager
-        def progress(contexts):
-            if contexts:
-                with contexts[0]:
-                    with progress(contexts[1:]):
-                        yield report
-            else:
-                yield report
+            >>> from flatsurvey.pipeline import Bindings
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> from flatsurvey.surfaces import Ngon, Surface
+            >>> from flatsurvey.jobs import FlowDecompositions, OrbitClosure
+            >>> bindings = Bindings()
+            >>> surface = Ngon((1, 1, 1))
+            >>> invoke_subcommand(Report.click, bindings=bindings)
+            >>> bindings.define(Surface, surface)
+            >>> report = Report.create(bindings)
 
-        token = progress(contexts)
+            >>> report.ignore(surface)
+            False
 
-        outer = source
+            >>> flow_decompositions = bindings.get(FlowDecompositions)
+            >>> report.ignore(flow_decompositions)
+            True
 
-        return token
+            >>> orbit_closure = bindings.get(OrbitClosure)
+            >>> report.ignore(orbit_closure)
+            False
 
-    @classmethod
-    def bindings(cls, ignore):
-        return [PartialBindingSpec(Report, scope="SHARED")(ignore=ignore)]
-
-    def ignore(self, source):
+        """
         if type(source).__name__ in self._ignore:
             return True
         if isinstance(source, Command) and source.name() in self._ignore:
@@ -191,49 +271,27 @@ class Report(Command):
 
         return False
 
-    def command(self):
-        return ["report"] + [f"--ignore={i}" for i in self._ignore]
-
-    def deform(self, deformation):
-        return {"bindings": Report.bindings(ignore=self._ignore)}
-
     def flush(self):
+        r"""
+        Ensure that all reported data has been written out.
+
+        EXAMPLES::
+
+            >>> from flatsurvey.reporting import Json, Report
+            >>> from flatsurvey.surfaces import Ngon, Surface
+            >>> surface = Ngon((1, 1, 1))
+            >>> json = Json({Surface: surface}, output="-")
+            >>> report = Report([json])
+
+            >>> report.flush()
+            {"surface": {"angles": [1, 1, 1], "genus": 1, "type": "Ngon", "repr": "Ngon([1, 1, 1])"}}
+
+        """
         for reporter in self._reporters:
             reporter.flush()
 
 
-class ProgressReporting:
-    r"""
-    A helper that displays progress in a reporter from a single source.
-    """
-
-    def __init__(self, report, source, defaults=None):
-        self._report = report
-        self._source = source
-        self._progress = None
-        self._defaults = defaults
-
-    def advance(self, **kwargs):
-        r"""
-        Update the progress display from the arguments.
-        """
-        if self._progress is None:
-            return
-
-        self.progress(**kwargs)
-
-    def progress(self, **kwargs):
-        r"""
-        Make sure that progress is shown and update it from the arguments.
-        """
-        if self._progress is None:
-            kwargs = dict(kwargs, **self._defaults or {})
-            self._token = self._report.progress(self._source, **kwargs)
-            self._progress = self._token.__enter__()
-        else:
-            self._progress(**kwargs)
-
-    def hide(self):
-        if self._progress is not None:
-            self._token.__exit__(None, None, None)
-            self._progress = None
+__test__ = {
+    # doctests of .click do not run unless explicitly mentioned here due to the click decorator.
+    "Report.click": Report.click.__doc__,
+}

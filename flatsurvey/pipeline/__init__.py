@@ -9,10 +9,11 @@ computation in a pipeline, i.e., a graph where the vertices are called
 Producers if they are at the source of an edge and Consumers if they are
 targeted by an edge. (And Processors when they are both.)
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2022 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@ targeted by an edge. (And Processors when they are both.)
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from flatsurvey.pipeline.bindings import BindingException, Bindings
 from flatsurvey.pipeline.consumer import Consumer
 from flatsurvey.pipeline.goal import Goal
 from flatsurvey.pipeline.processor import Processor

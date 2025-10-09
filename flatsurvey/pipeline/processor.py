@@ -13,10 +13,11 @@ decompositions::
     True
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -32,6 +33,8 @@ decompositions::
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
+from typing import Literal
+
 from flatsurvey.pipeline.consumer import Consumer
 from flatsurvey.pipeline.producer import Producer
 
@@ -41,17 +44,17 @@ class Processor(Producer, Consumer):
     A processor is simply a producer and a consumer at the same time.
 
     Implementing classes only have to implement ``_consume`` which must set
-    `_current` to the newly produced object.
+    `_current` to the newly produced object and call ``_notify_consumers`.
 
     EXAMPLES::
 
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface, report=None)
+        >>> connections = SaddleConnections(surface=surface)
         >>> isinstance(connections, Processor)
         False
-        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
+        >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
         >>> isinstance(orientations, Processor)
         True
 
@@ -59,28 +62,27 @@ class Processor(Producer, Consumer):
 
     def __init__(self, producers, report=None):
         Producer.__init__(self, report=report)
-        Consumer.__init__(self, producers=producers, report=report)
+        Consumer.__init__(self, producers=producers, report=self._report)
 
-        self._produced = False
-
-    async def produce(self):
+    async def produce(self) -> Literal["EXHAUSTED"] | Literal["NOT_EXHAUSTED"]:
         r"""
         Ask our producers to produce until our own ``consume`` gets called so
-        we actually produce. Return whether all our producers have been
-        exhausted in the process.
+        we actually produce.
+
+        Returns whether all our producers have been exhausted in the process.
 
         EXAMPLES::
 
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, report=None)
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
+            >>> connections = SaddleConnections(surface=surface)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
 
             >>> import asyncio
             >>> produce = orientations.produce()
-            >>> asyncio.run(produce) != Producer.EXHAUSTED
-            True
+            >>> asyncio.run(produce)
+            'NOT_EXHAUSTED'
 
             >>> orientations._current  # doctest: +ELLIPSIS
             (0, ...)
@@ -92,9 +94,14 @@ class Processor(Producer, Consumer):
         # have, we might need a better strategy here.
         while self._current is None:
             for source in self._producers:
-                if await source.produce() != Producer.EXHAUSTED:
+                if await source.produce() != "EXHAUSTED":
                     break
             else:
-                return Producer.EXHAUSTED
+                return "EXHAUSTED"
 
-        return not Producer.EXHAUSTED
+        return "NOT_EXHAUSTED"
+
+    def _produce(self) -> Literal["EXHAUSTED"] | Literal["NOT_EXHAUSTED"]:
+        raise NotImplementedError(
+            "a Processor's _produce() should never be called only it's _consume()"
+        )

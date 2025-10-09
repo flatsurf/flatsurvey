@@ -1,10 +1,14 @@
 r"""
 A package providing ways to report progress and result of a computation.
+
+Note that simple visual progress tracking is available in
+:mod:`flatsurvey.ui.progress`.
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,7 +26,7 @@ A package providing ways to report progress and result of a computation.
 
 from flatsurvey.reporting.json import Json
 from flatsurvey.reporting.log import Log
-from flatsurvey.reporting.progress import Progress
 from flatsurvey.reporting.report import Report
+from flatsurvey.reporting.reporter import Reporter
 
-commands = [Log.click, Json.click, Report.click, Progress.click]
+commands = [Log.click, Json.click, Report.click]

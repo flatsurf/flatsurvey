@@ -1,10 +1,27 @@
 r"""
 Aggregate cache files.
+
+Combines JSON files that are produced by the
+:class:`flatsurvey.reporting.json.Json` reporter into files grouped by subject,
+i.e., type of result.
+
+EXAMPLES::
+
+    >>> from flatsurvey.test.cli import invoke
+    >>> from flatsurvey.cache.maintenance import cli
+    >>> invoke(cli, "join", "--help")  # doctest: +NORMALIZE_WHITESPACE
+    Usage: cli join [OPTIONS] [JSONS]...
+      Aggregates JSON files into one file for each type of result.
+    Options:
+      --outdir PATH  a directory to write the output files to  [required]
+      --help         Show this message and exit.
+
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2022 Julian Rüth
+#        Copyright (C) 2022-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,73 +37,130 @@ Aggregate cache files.
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
 
-import click
-from pinject import copy_args_to_internal_fields
+from pathlib import Path
 
-from flatsurvey.command import Command
-from flatsurvey.pipeline import Goal
-from flatsurvey.pipeline.util import PartialBindingSpec
+import click
+
+from flatsurvey.pipeline import Bindings, Goal
+from flatsurvey.ui import Command
 
 
 class Join(Goal, Command):
     r"""
-    Aggregate ``jsons`` into a single JSON file.
+    Aggregates JSON files into one file for each type of result.
 
-    Writes out a .json file for each type of result in the inputs.
+    INPUT:
+
+    - ``jsons`` -- a list of paths of existing JSON files.
+
+    - ``outdir`` -- the output directory to write the JSON files to.
+
+    EXAMPLES::
+
+        >>> Join(jsons=[], outdir=Path("/tmp/"))
+        join
+
     """
 
-    @copy_args_to_internal_fields
-    def __init__(self, jsons, prefix, report):
-        super().__init__(producers=[], report=report, cache=None)
+    def __init__(self, jsons: list[Path], outdir: Path):
+        super().__init__()
 
-    @classmethod
-    @click.command(name="join")
-    @click.argument("jsons", nargs=-1, type=click.Path(exists=True))
+        self._jsons = jsons
+        self._outdir = outdir
+
+    @staticmethod
+    @click.command(name="join", help=__doc__.split("INPUT")[0])  # type: ignore
+    @click.argument("jsons", nargs=-1, type=click.Path(exists=True, path_type=Path))
     @click.option(
-        "--prefix", type=str, help="a common prefix for the output files", default=None
+        "--outdir",
+        type=click.Path(path_type=Path),
+        required=True,
+        help="a directory to write the output files to",
     )
-    def click(jsons, prefix):
-        return {
-            "goals": [Join],
-            "bindings": [PartialBindingSpec(Join)(jsons=jsons, prefix=prefix)],
-        }
+    @Bindings.click
+    def click(bindings: Bindings, jsons, outdir):
+        r"""
+        Parse command line options into ``bindings``.
+
+        TESTS::
+
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> invoke_subcommand(Join.click, "--outdir=/tmp")
+
+        """
+        bindings.append(list[Goal], Join)
+        with bindings.scope(Join) as scoped:
+            scoped.define(jsons=jsons, outdir=outdir)
+
+    @staticmethod
+    def create(bindings: Bindings):
+        r"""
+        Return a ``Join`` instance from the configuration registered in
+        ``bindings``.
+
+        TESTS::
+
+            >>> from flatsurvey.pipeline import Bindings
+            >>> from flatsurvey.test.cli import invoke_subcommand
+            >>> bindings = Bindings()
+            >>> invoke_subcommand(Join.click, "--outdir=/tmp", bindings=bindings)
+            >>> Join.create(bindings)
+            join
+
+        """
+        with bindings.scope(Join) as scoped:
+            return Join(jsons=scoped.get("jsons"), outdir=scoped.get("outdir"))
 
     async def resolve(self):
-        from collections import defaultdict
+        r"""
+        Perform this maintenance task, i.e., read the JSON files and repackage
+        them into subject specific JSON files.
 
-        aggregate = defaultdict(lambda: [])
+        EXAMPLES::
 
-        import flatsurvey.cache.cache
+            >>> from pathlib import Path
+            >>> from tempfile import TemporaryDirectory
+            >>> import asyncio
 
-        for json in self._jsons:
-            with open(json) as input:
-                parsed = flatsurvey.cache.cache.Cache.load(input)
+            >>> with TemporaryDirectory() as tmpdir:
+            ...     tmpdir = Path(tmpdir)
+            ...     with open(tmpdir / "a.json", "w") as json: _ = json.write('{"subject": [{"result": true}]}')
+            ...     with open(tmpdir / "b.json", "w") as json: _ = json.write('{"subject": [{"result": false}]}')
+            ...     join = Join(jsons=[tmpdir / "a.json", tmpdir / "b.json"], outdir=tmpdir)
+            ...     asyncio.run(join.resolve())
+            ...     with open(tmpdir / "subject.json") as json: print(json.read())
+            True
+            {
+              "subject": [
+                {
+                  "result": true
+                },
+                {
+                  "result": false
+                }
+              ]
+            }
 
-                surface = None
-                if "surface" in parsed:
-                    surface = parsed.pop("surface")
+        Note that this is idempotent. Processing the output through the join
+        again leaves the files unmodified.
 
-                for key in parsed:
-                    items = parsed[key]
+        """
+        from flatsurvey.cache import Cache
 
-                    if not isinstance(items, list):
-                        raise NotImplementedError(
-                            f"cannot join entries for '{key}' because it's not list"
-                        )
+        subjects = Cache.load(self._jsons)
 
-                    for item in items:
-                        if "surface" not in items and surface is not None:
-                            item["surface"] = surface
+        self._outdir.mkdir(parents=True, exist_ok=True)
 
-                    aggregate[key].extend(parsed[key])
-
-        for key in aggregate:
-            fname = f"{key}.json"
-
-            if self._prefix:
-                fname = f"{self._prefix}.{fname}"
-
-            with open(fname, "w") as output:
+        for subject, values in subjects.items():
+            with open(self._outdir / f"{subject}.json", "w") as output:
                 import json
 
-                json.dump({key: aggregate[key]}, output, indent=2)
+                json.dump({subject: values}, output, indent=2)
+
+        return True
+
+
+__test__ = {
+    # doctests of click do not run unless explicitly mentioned here due to the click decorator.
+    "Join.click": Join.click.__doc__,
+}

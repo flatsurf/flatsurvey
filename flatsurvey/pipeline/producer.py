@@ -8,10 +8,11 @@ EXAMPLES::
     True
 
 """
+
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@ EXAMPLES::
 # *********************************************************************
 
 from abc import abstractmethod
+from typing import Literal
 
 
 class Producer:
@@ -40,19 +42,14 @@ class Producer:
         >>> from flatsurvey.surfaces import Ngon
         >>> from flatsurvey.jobs import SaddleConnections
         >>> surface = Ngon((1, 1, 1))
-        >>> connections = SaddleConnections(surface=surface, report=None)
+        >>> connections = SaddleConnections(surface=surface)
 
         >>> isinstance(connections, Producer)
         True
 
     """
-    EXHAUSTED = False
 
     def __init__(self, report=None):
-        self._consumers = set()
-        self._current = None
-        self._exhausted = False
-
         if report is None:
             from flatsurvey.reporting import Report
 
@@ -60,7 +57,11 @@ class Producer:
 
         self._report = report
 
-    async def produce(self):
+        self._consumers = set()
+        self._current = None
+        self._exhausted = False
+
+    async def produce(self) -> Literal["EXHAUSTED"] | Literal["NOT_EXHAUSTED"]:
         r"""
         Produce new data and notify all attached consumers of it. Return
         whether nothing more can be produced because this producer is
@@ -71,28 +72,28 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> connections = SaddleConnections(surface=surface)
 
             >>> import asyncio
             >>> produce = connections.produce()
-            >>> asyncio.run(produce) != Producer.EXHAUSTED
-            True
+            >>> asyncio.run(produce)
+            'NOT_EXHAUSTED'
 
             >>> connections._current
-            1
+            -1
 
         """
         import time
 
         start = time.perf_counter()
-        if self._produce() == Producer.EXHAUSTED:
+        if self._produce() == "EXHAUSTED":
             self._exhausted = True
-            return Producer.EXHAUSTED
+            return "EXHAUSTED"
         cost = time.perf_counter() - start
 
         await self._notify_consumers(cost)
 
-        return not Producer.EXHAUSTED
+        return "NOT_EXHAUSTED"
 
     @property
     def exhausted(self):
@@ -104,15 +105,15 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, limit=0, report=None)
+            >>> connections = SaddleConnections(surface=surface, limit=0)
 
         For a producer to be exhausted, it has to be asked to :meth:`produce`
-        at least once unsuccesfully. This is a bit unfortunate, but due to the
+        at least once unsuccessfully. This is a bit unfortunate, but due to the
         lazy implementation, there is currently no other way::
 
             >>> import asyncio
             >>> asyncio.run(connections.produce())
-            False
+            'EXHAUSTED'
 
             >>> connections.exhausted
             True
@@ -125,9 +126,7 @@ class Producer:
         Notify all attached consumers that something new has been produced.
         """
         for consumer in list(self._consumers):
-            from flatsurvey.pipeline.consumer import Consumer
-
-            if await consumer.consume(self._current, cost) == Consumer.COMPLETED:
+            if await consumer.consume(self._current, cost) == "COMPLETED":
                 self._consumers.remove(consumer)
 
     def register_consumer(self, consumer):
@@ -140,11 +139,11 @@ class Producer:
             >>> from flatsurvey.surfaces import Ngon
             >>> from flatsurvey.jobs import SaddleConnectionOrientations, SaddleConnections
             >>> surface = Ngon((1, 1, 1))
-            >>> connections = SaddleConnections(surface=surface, report=None)
+            >>> connections = SaddleConnections(surface=surface)
 
         Creating a consumer calls this method implicitly::
 
-            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections, report=None)
+            >>> orientations = SaddleConnectionOrientations(saddle_connections=connections)
 
             >>> connections._consumers
             {saddle-connection-orientations}
@@ -153,11 +152,10 @@ class Producer:
         self._consumers.add(consumer)
 
     @abstractmethod
-    def _produce(self):
+    def _produce(self) -> Literal["EXHAUSTED"] | Literal["NOT_EXHAUSTED"]:
         r"""
         Produce something and return whether nothing new can be produced
         because we have been exhausted.
 
         Actual producers must implement this method.
-
         """

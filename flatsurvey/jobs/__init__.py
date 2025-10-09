@@ -4,14 +4,11 @@ Steps along the pipeline to resolve the targets of a survey.
 These steps are automatically registered as commands to the survey and worker
 entrypoints as subcommands.
 """
-from flatsurvey.jobs.completely_cylinder_periodic import CompletelyCylinderPeriodic
-from flatsurvey.jobs.cylinder_periodic_direction import CylinderPeriodicDirection
-from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 
 # *********************************************************************
 #  This file is part of flatsurvey.
 #
-#        Copyright (C) 2020-2021 Julian Rüth
+#        Copyright (C) 2020-2025 Julian Rüth
 #
 #  flatsurvey is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,11 +23,15 @@ from flatsurvey.jobs.flow_decomposition import FlowDecompositions
 #  You should have received a copy of the GNU General Public License
 #  along with flatsurvey. If not, see <https://www.gnu.org/licenses/>.
 # *********************************************************************
+
+from flatsurvey.jobs.completely_cylinder_periodic import CompletelyCylinderPeriodic
+from flatsurvey.jobs.cylinder_periodic_direction import CylinderPeriodicDirection
+from flatsurvey.jobs.flow_decompositions import FlowDecompositions
 from flatsurvey.jobs.orbit_closure import OrbitClosure
 from flatsurvey.jobs.saddle_connection_orientations import SaddleConnectionOrientations
 from flatsurvey.jobs.saddle_connections import SaddleConnections
-from flatsurvey.jobs.undetermined_interval_exchange_transformation import (
-    UndeterminedIntervalExchangeTransformation,
+from flatsurvey.jobs.undetermined_interval_exchange_transformations import (
+    UndeterminedIntervalExchangeTransformations,
 )
 
 commands = [
@@ -41,5 +42,5 @@ commands = [
     CylinderPeriodicDirection.click,
     SaddleConnections.click,
     SaddleConnectionOrientations.click,
-    UndeterminedIntervalExchangeTransformation.click,
+    UndeterminedIntervalExchangeTransformations.click,
 ]
